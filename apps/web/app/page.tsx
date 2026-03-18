@@ -6,13 +6,10 @@ export default function Home() {
           <span className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground">
             Open Source CLI
           </span>
-          <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">
-            create-turbo-stack
-          </h1>
+          <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">create-turbo-stack</h1>
           <p className="max-w-xl text-lg text-muted-foreground">
-            Scaffold production-ready Turborepo monorepos in seconds, not days.
-            Database, auth, API, shared UI, environment validation — all wired
-            correctly from the start.
+            Scaffold production-ready Turborepo monorepos in seconds, not days. Database, auth, API,
+            shared UI, environment validation — all wired correctly from the start.
           </p>
         </div>
 

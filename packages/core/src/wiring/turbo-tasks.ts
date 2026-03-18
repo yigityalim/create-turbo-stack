@@ -8,10 +8,7 @@ export interface TurboConfig {
   globalEnv: string[];
 }
 
-export function computeTurboConfig(
-  _preset: Preset,
-  _globalEnv: string[] = [],
-): TurboConfig {
+export function computeTurboConfig(_preset: Preset, _globalEnv: string[] = []): TurboConfig {
   // TODO: Phase 1 implementation
   return {
     $schema: "https://turborepo.dev/schema.json",

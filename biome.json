@@ -35,13 +35,6 @@
     }
   },
   "files": {
-    "ignore": [
-      "node_modules",
-      ".next",
-      ".turbo",
-      "dist",
-      "bun.lock",
-      "*.json"
-    ]
+    "ignore": ["node_modules", ".next", ".turbo", "dist", "bun.lock", "*.json"]
   }
 }

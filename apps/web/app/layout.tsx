@@ -14,12 +14,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "create-turbo-stack",
-  description:
-    "Scaffold production-ready Turborepo monorepos in seconds, not days.",
+  description: "Scaffold production-ready Turborepo monorepos in seconds, not days.",
   openGraph: {
     title: "create-turbo-stack",
-    description:
-      "Scaffold production-ready Turborepo monorepos in seconds, not days.",
+    description: "Scaffold production-ready Turborepo monorepos in seconds, not days.",
     url: "https://create-turbo-stack.dev",
     siteName: "create-turbo-stack",
     type: "website",
@@ -27,8 +25,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "create-turbo-stack",
-    description:
-      "Scaffold production-ready Turborepo monorepos in seconds, not days.",
+    description: "Scaffold production-ready Turborepo monorepos in seconds, not days.",
   },
 };
 
@@ -38,10 +35,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
         {children}
       </body>

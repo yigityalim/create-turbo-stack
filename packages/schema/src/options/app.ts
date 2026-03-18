@@ -18,7 +18,10 @@ export const CmsSchema = z.enum(["sanity", "keystatic", "none"]);
 export type Cms = z.infer<typeof CmsSchema>;
 
 export const AppSchema = z.object({
-  name: z.string().min(1).regex(/^[a-z0-9-]+$/),
+  name: z
+    .string()
+    .min(1)
+    .regex(/^[a-z0-9-]+$/),
   type: AppTypeSchema,
   port: z.number().int().min(1000).max(65535),
   i18n: z.boolean().default(false),

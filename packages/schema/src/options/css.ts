@@ -1,11 +1,6 @@
 import { z } from "zod";
 
-export const CssFrameworkSchema = z.enum([
-  "tailwind4",
-  "tailwind3",
-  "vanilla",
-  "css-modules",
-]);
+export const CssFrameworkSchema = z.enum(["tailwind4", "tailwind3", "vanilla", "css-modules"]);
 export type CssFramework = z.infer<typeof CssFrameworkSchema>;
 
 export const UiLibrarySchema = z.enum(["shadcn", "radix-raw", "none"]);
