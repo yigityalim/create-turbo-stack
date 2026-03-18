@@ -7,13 +7,17 @@ import { ValidatedPresetSchema } from "../preset";
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Deep-clone a fixture so mutations never bleed between tests. */
-function clone<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value));
+/** Deep-clone a fixture and return as a mutable record. */
+function fixture(): Record<string, unknown> {
+  return structuredClone(minimalJson) as Record<string, unknown>;
+}
+
+function fixtureApps(preset: Record<string, unknown>): Record<string, unknown>[] {
+  return preset.apps as Record<string, unknown>[];
 }
 
 /**
- * Extract the first Zod issue message matching a path predicate.
+ * Extract the first Zod issue message.
  * Returns undefined when parse succeeds (no issues).
  */
 function firstIssueMessage(data: unknown): string | undefined {
@@ -28,19 +32,19 @@ function firstIssueMessage(data: unknown): string | undefined {
 
 describe("ValidatedPresetSchema — valid presets", () => {
   it("accepts a minimal preset", () => {
-    const result = ValidatedPresetSchema.safeParse(clone(minimalJson));
+    const result = ValidatedPresetSchema.safeParse(structuredClone(minimalJson));
     expect(result.success).toBe(true);
   });
 
   it("accepts the saas-starter preset", () => {
-    const result = ValidatedPresetSchema.safeParse(clone(saasJson));
+    const result = ValidatedPresetSchema.safeParse(structuredClone(saasJson));
     expect(result.success).toBe(true);
   });
 
   it("accepts a preset with hono standalone-app + hono-standalone app type", () => {
-    const preset = clone(minimalJson);
-    preset.api = { strategy: "hono", mode: "standalone-app" } as any;
-    preset.apps.push({
+    const preset = fixture();
+    preset.api = { strategy: "hono", mode: "standalone-app" };
+    fixtureApps(preset).push({
       name: "hono-api",
       type: "hono-standalone",
       port: 3001,
@@ -60,32 +64,28 @@ describe("ValidatedPresetSchema — valid presets", () => {
 
 describe("ValidatedPresetSchema — rejected presets", () => {
   it("rejects supabase-auth when database strategy is not supabase", () => {
-    const preset = clone(minimalJson);
-    preset.auth = {
-      provider: "supabase-auth",
-      rbac: false,
-      entitlements: false,
-    };
-    // database.strategy is already "none" in minimal
+    const preset = fixture();
+    preset.auth = { provider: "supabase-auth", rbac: false, entitlements: false };
 
     const message = firstIssueMessage(preset);
     expect(message).toMatch(/supabase-auth requires database strategy 'supabase'/);
   });
 
   it("rejects duplicate app names", () => {
-    const preset = clone(minimalJson);
-    preset.apps.push({ ...clone(preset.apps[0]) }); // second app with same name "web"
+    const preset = fixture();
+    const apps = fixtureApps(preset);
+    apps.push(structuredClone(apps[0]));
 
     const message = firstIssueMessage(preset);
     expect(message).toMatch(/Duplicate app name/);
   });
 
   it("rejects duplicate ports", () => {
-    const preset = clone(minimalJson);
-    preset.apps.push({
+    const preset = fixture();
+    fixtureApps(preset).push({
       name: "web2",
       type: "nextjs",
-      port: 3000, // same as "web"
+      port: 3000,
       i18n: false,
       cms: "none",
       consumes: ["ui"],
@@ -96,13 +96,13 @@ describe("ValidatedPresetSchema — rejected presets", () => {
   });
 
   it("rejects i18n on a hono-standalone app", () => {
-    const preset = clone(minimalJson);
-    preset.api = { strategy: "hono", mode: "standalone-app" } as any;
-    preset.apps.push({
+    const preset = fixture();
+    preset.api = { strategy: "hono", mode: "standalone-app" };
+    fixtureApps(preset).push({
       name: "hono-api",
       type: "hono-standalone",
       port: 3001,
-      i18n: true, // invalid
+      i18n: true,
       cms: "none",
       consumes: [],
     });
@@ -112,21 +112,22 @@ describe("ValidatedPresetSchema — rejected presets", () => {
   });
 
   it("rejects an app that consumes an unknown package", () => {
-    const preset = clone(minimalJson);
-    preset.apps[0].consumes = ["ui", "nonexistent-pkg"];
+    const preset = fixture();
+    const apps = fixtureApps(preset);
+    (apps[0] as Record<string, unknown>).consumes = ["ui", "nonexistent-pkg"];
 
     const message = firstIssueMessage(preset);
     expect(message).toMatch(/consumes unknown package 'nonexistent-pkg'/);
   });
 
   it("rejects CMS on a non-nextjs app", () => {
-    const preset = clone(minimalJson);
-    preset.apps.push({
+    const preset = fixture();
+    fixtureApps(preset).push({
       name: "docs",
       type: "vite-react",
       port: 3001,
       i18n: false,
-      cms: "sanity", // only valid for nextjs
+      cms: "sanity",
       consumes: [],
     });
 

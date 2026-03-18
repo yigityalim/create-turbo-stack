@@ -13,7 +13,11 @@ import { RegistrySchema } from "../src/registry";
 const outDir = path.resolve(import.meta.dirname, "../../../apps/web/public/schema");
 fs.mkdirSync(outDir, { recursive: true });
 
-function writeSchema(filename: string, title: string, zodSchema: Parameters<typeof zodToJsonSchema>[0]) {
+function writeSchema(
+  filename: string,
+  title: string,
+  zodSchema: Parameters<typeof zodToJsonSchema>[0],
+) {
   const schema = zodToJsonSchema(zodSchema, { $refStrategy: "none" });
   const output = {
     $schema: "https://json-schema.org/draft/2020-12/schema",
