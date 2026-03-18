@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { createCommand } from "../src/commands/create";
 import { addCommand } from "../src/commands/add";
+import { createCommand } from "../src/commands/create";
 
 const program = new Command()
   .name("create-turbo-stack")

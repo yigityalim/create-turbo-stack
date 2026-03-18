@@ -8,7 +8,7 @@ export interface ResolveOptions {
 
 export function resolveFileTree(
   preset: Preset,
-  options: ResolveOptions = { includeContent: true },
+  _options: ResolveOptions = { includeContent: true },
 ): FileTree {
   // TODO: Phase 1 implementation
   return {

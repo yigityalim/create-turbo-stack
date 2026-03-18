@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { BasicsSchema } from "./options/basics";
-import { DatabaseSchema } from "./options/database";
 import { ApiSchema } from "./options/api";
-import { AuthSchema } from "./options/auth";
 import { AppSchema } from "./options/app";
-import { PackageSchema } from "./options/package";
+import { AuthSchema } from "./options/auth";
+import { BasicsSchema } from "./options/basics";
 import { CssSchema } from "./options/css";
+import { DatabaseSchema } from "./options/database";
 import { IntegrationsSchema } from "./options/integrations";
+import { PackageSchema } from "./options/package";
 
 export const PresetSchema = z.object({
   $schema: z.string().optional(),
