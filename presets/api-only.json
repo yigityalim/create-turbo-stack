@@ -1,0 +1,32 @@
+{
+  "$schema": "https://create-turbo-stack.dev/schema/preset.json",
+  "name": "api-only",
+  "version": "1.0.0",
+  "description": "API-only backend with Hono and Drizzle ORM",
+  "basics": {
+    "projectName": "my-api",
+    "packageManager": "bun",
+    "scope": "@my-api",
+    "typescript": "strict",
+    "linter": "biome",
+    "gitInit": true
+  },
+  "database": { "strategy": "drizzle", "driver": "postgres" },
+  "api": { "strategy": "hono", "mode": "standalone-app" },
+  "auth": { "provider": "none", "rbac": false, "entitlements": false },
+  "css": { "framework": "vanilla", "ui": "none", "styling": "static" },
+  "integrations": {
+    "analytics": "none",
+    "errorTracking": "sentry",
+    "email": "none",
+    "rateLimit": "upstash",
+    "ai": "none",
+    "envValidation": true
+  },
+  "apps": [
+    { "name": "api", "type": "hono-standalone", "port": 3000, "i18n": false, "cms": "none", "consumes": [] }
+  ],
+  "packages": [
+    { "name": "utils", "type": "utils", "producesCSS": false, "exports": ["."] }
+  ]
+}
