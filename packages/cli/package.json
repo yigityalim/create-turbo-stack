@@ -1,0 +1,56 @@
+{
+  "name": "create-turbo-stack",
+  "version": "0.0.0",
+  "description": "Scaffold production-ready Turborepo monorepos in seconds",
+  "type": "module",
+  "bin": {
+    "create-turbo-stack": "./bin/create-turbo-stack.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsup src/index.ts --format esm --dts",
+    "lint": "biome check",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@create-turbo-stack/core": "workspace:*",
+    "@create-turbo-stack/schema": "workspace:*",
+    "@create-turbo-stack/templates": "workspace:*",
+    "@clack/prompts": "^0.10.0",
+    "commander": "^13.0.0",
+    "picocolors": "^1.1.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.0.0"
+  },
+  "keywords": [
+    "turborepo",
+    "monorepo",
+    "scaffold",
+    "cli",
+    "create",
+    "turbo",
+    "nextjs",
+    "typescript"
+  ],
+  "author": "Mehmet Yigit Yalim",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mehmetyigityalim/create-turbo-stack.git",
+    "directory": "packages/cli"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
