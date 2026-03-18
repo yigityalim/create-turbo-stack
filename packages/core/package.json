@@ -12,7 +12,7 @@
   "scripts": {
     "lint": "biome check",
     "type-check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@create-turbo-stack/schema": "workspace:*",

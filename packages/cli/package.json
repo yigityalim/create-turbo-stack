@@ -17,7 +17,7 @@
     "build": "tsup src/index.ts --format esm --dts",
     "lint": "biome check",
     "type-check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@create-turbo-stack/core": "workspace:*",
