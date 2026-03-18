@@ -6,10 +6,7 @@
 export const templates: Record<string, Record<string, string>> = {};
 
 /** Get templates for a given category and type. */
-export function getTemplates(
-  category: string,
-  type: string,
-): Record<string, string> {
+export function getTemplates(category: string, type: string): Record<string, string> {
   const key = `${category}/${type}`;
   return templates[key] ?? {};
 }
