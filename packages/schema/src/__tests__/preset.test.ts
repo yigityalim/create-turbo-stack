@@ -39,7 +39,7 @@ describe("ValidatedPresetSchema — valid presets", () => {
 
   it("accepts a preset with hono standalone-app + hono-standalone app type", () => {
     const preset = clone(minimalJson);
-    preset.api = { strategy: "hono", mode: "standalone-app" };
+    preset.api = { strategy: "hono", mode: "standalone-app" } as any;
     preset.apps.push({
       name: "hono-api",
       type: "hono-standalone",
@@ -97,7 +97,7 @@ describe("ValidatedPresetSchema — rejected presets", () => {
 
   it("rejects i18n on a hono-standalone app", () => {
     const preset = clone(minimalJson);
-    preset.api = { strategy: "hono", mode: "standalone-app" };
+    preset.api = { strategy: "hono", mode: "standalone-app" } as any;
     preset.apps.push({
       name: "hono-api",
       type: "hono-standalone",
