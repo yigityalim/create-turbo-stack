@@ -47,7 +47,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mehmetyigityalim/create-turbo-stack.git",
+    "url": "https://github.com/yigityalim/create-turbo-stack.git",
     "directory": "packages/cli"
   },
   "engines": {

@@ -28,7 +28,7 @@ export default function Home() {
             Open Builder
           </a>
           <a
-            href="https://github.com/mehmetyigityalim/create-turbo-stack"
+            href="https://github.com/yigityalim/create-turbo-stack"
             className="rounded-lg border border-border px-4 py-2 font-medium transition-colors hover:bg-muted"
             target="_blank"
             rel="noopener noreferrer"

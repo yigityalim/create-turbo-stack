@@ -15,7 +15,7 @@ Thank you for your interest in contributing! This guide will help you get starte
 1. Fork and clone the repository:
 
 ```bash
-git clone https://github.com/mehmetyigityalim/create-turbo-stack.git
+git clone https://github.com/yigityalim/create-turbo-stack.git
 cd create-turbo-stack
 ```
 
@@ -189,7 +189,7 @@ See the [Registry documentation](./docs/registry.md) for how to create and publi
 
 ## Reporting Issues
 
-- Use [GitHub Issues](https://github.com/mehmetyigityalim/create-turbo-stack/issues)
+- Use [GitHub Issues](https://github.com/yigityalim/create-turbo-stack/issues)
 - Include reproduction steps
 - Include your environment (OS, Node version, package manager)
 
