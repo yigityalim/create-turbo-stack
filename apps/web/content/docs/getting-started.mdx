@@ -1,0 +1,81 @@
+---
+title: Getting Started
+description: Create your first project with create-turbo-stack
+---
+
+## Quick Start
+
+```bash
+npx create-turbo-stack my-project
+```
+
+The CLI will guide you through:
+
+1. **Package manager** — bun, pnpm, npm, or yarn
+2. **Organization scope** — e.g. `@my-project`
+3. **Database** — Supabase, Drizzle, Prisma, or none
+4. **API layer** — tRPC v11, Hono, Next.js Routes, or none
+5. **Authentication** — Supabase Auth, Better Auth, Clerk, NextAuth, Lucia, or none
+6. **CSS framework** — Tailwind 4, Tailwind 3, vanilla, CSS Modules
+7. **UI library** — shadcn/ui, Radix, or none
+8. **Apps** — Add one or more apps (Next.js, Hono, Vite, etc.)
+9. **Packages** — Add shared packages (UI, utils, etc.)
+10. **Integrations** — Sentry, PostHog, React Email, Vercel AI SDK
+
+After confirmation, the CLI generates all files, initializes git, and installs dependencies.
+
+## Using a Preset
+
+Skip the prompts with a preset:
+
+```bash
+# Built-in presets
+npx create-turbo-stack --preset minimal
+npx create-turbo-stack --preset saas-starter
+npx create-turbo-stack --preset api-only
+
+# Community preset (any URL)
+npx create-turbo-stack --preset https://example.com/my-stack.json
+```
+
+## Project Structure
+
+A generated project looks like this:
+
+```
+my-project/
+├── apps/
+│   └── web/                    # Next.js app
+│       ├── src/app/
+│       │   ├── globals.css     # Tailwind + @source directives
+│       │   ├── layout.tsx
+│       │   └── page.tsx
+│       ├── package.json        # catalog: deps
+│       └── tsconfig.json       # extends @scope/typescript-config
+├── packages/
+│   ├── typescript-config/      # Shared TS configs
+│   ├── env/                    # Environment validation
+│   └── ui/                     # Shared UI components
+│       ├── src/
+│       │   ├── index.ts
+│       │   └── globals.css
+│       └── package.json
+├── package.json                # Root with catalog + workspaces
+├── turbo.json                  # Task pipeline
+├── biome.json                  # Linter config
+└── .turbo-stack.json           # CLI config (tracks selections)
+```
+
+## What's Next
+
+```bash
+cd my-project
+bun dev
+```
+
+Your monorepo is ready. Add more apps or packages anytime:
+
+```bash
+npx create-turbo-stack add app
+npx create-turbo-stack add package
+```

@@ -1,0 +1,61 @@
+---
+title: Introduction
+description: What is create-turbo-stack and why does it exist?
+---
+
+**create-turbo-stack** is an opinionated, interactive CLI that scaffolds production-ready Turborepo monorepos with real-world patterns — database, auth, API, shared UI, environment validation, cross-package Tailwind CSS, and more.
+
+## The Problem
+
+`create-turbo` gives you a near-empty skeleton. Getting from skeleton to production-ready requires days of manual wiring:
+
+- **Tailwind 4 `@source` directives** across packages — miss one and classes silently get purged
+- **`catalog:` dependency management** synchronized across all workspaces
+- **`@t3-oss/env-nextjs` validation chains** per app with correct `extends`
+- **tRPC router wiring**, Supabase client setup, auth middleware — all require copy-paste boilerplate
+
+## The Solution
+
+One command. Every wire connected.
+
+```bash
+npx create-turbo-stack my-project
+```
+
+The CLI walks you through every decision — database, API layer, auth, CSS framework, integrations — and generates a fully wired monorepo where `bun install && bun run dev` just works.
+
+## Key Concepts
+
+### Preset
+
+Every project is a materialized **preset** — a JSON document that describes the complete stack. The CLI produces a preset from interactive prompts. The web builder produces a preset from UI selections. Community members share presets via URLs.
+
+```json
+{
+  "name": "my-project",
+  "basics": { "packageManager": "bun", "scope": "@my-project" },
+  "database": { "strategy": "supabase" },
+  "api": { "strategy": "trpc", "version": "v11" },
+  "auth": { "provider": "supabase-auth" },
+  "apps": [{ "name": "web", "type": "nextjs", "port": 3000 }],
+  "packages": [{ "name": "ui", "type": "react-library", "producesCSS": true }]
+}
+```
+
+### Wiring Engine
+
+The hard part isn't creating files — it's wiring them correctly. The wiring engine handles:
+
+- **CSS `@source`** — Auto-generates directives for every CSS-producing package consumed by each app
+- **Catalog** — Pins all dependencies once in root `package.json`, workspaces reference via `catalog:`
+- **Environment validation** — Composes `@t3-oss/env-nextjs` chains per app
+- **TypeScript config** — Inheritance chain via `@scope/typescript-config`
+- **turbo.json** — Task pipeline with correct `dependsOn` graph
+
+## Next Steps
+
+<Cards>
+  <Card title="Getting Started" href="/docs/getting-started" />
+  <Card title="CLI Reference" href="/docs/cli" />
+  <Card title="Presets" href="/docs/presets" />
+</Cards>

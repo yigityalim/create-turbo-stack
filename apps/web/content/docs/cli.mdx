@@ -1,0 +1,92 @@
+---
+title: CLI Reference
+description: All commands and options for create-turbo-stack
+---
+
+## create (default)
+
+Scaffold a new project.
+
+```bash
+npx create-turbo-stack [project-name] [options]
+```
+
+### Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `project-name` | Project directory name (prompted if omitted) |
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `--preset <url>` | Use a preset URL or file path |
+| `--yes` | Accept all defaults (not yet implemented) |
+| `-V, --version` | Output version number |
+| `-h, --help` | Display help |
+
+### Examples
+
+```bash
+# Interactive mode
+npx create-turbo-stack
+
+# With project name
+npx create-turbo-stack my-project
+
+# From preset
+npx create-turbo-stack --preset https://create-turbo-stack.dev/s/saas-starter.json
+npx create-turbo-stack --preset minimal
+```
+
+## add
+
+Add apps, packages, or integrations to an existing project.
+
+```bash
+npx create-turbo-stack add <type>
+```
+
+### Types
+
+| Type | Description | Status |
+|------|-------------|--------|
+| `app` | Add a new app | Planned (Phase 2) |
+| `package` | Add a new package | Planned (Phase 2) |
+| `integration` | Add a cross-cutting integration | Planned (Phase 3) |
+| `dependency` | Add a dependency via catalog | Planned (Phase 3) |
+
+## Generated Files
+
+When you run `create`, the CLI generates:
+
+### Root
+
+| File | Description |
+|------|-------------|
+| `package.json` | Workspaces + catalog dependencies |
+| `turbo.json` | Task pipeline |
+| `biome.json` | Linter/formatter config (if biome selected) |
+| `.turbo-stack.json` | CLI config tracking your selections |
+| `.gitignore` | Standard ignores |
+| `.npmrc` | `auto-install-peers=true` |
+| `.env.example` | All required env vars with examples |
+
+### Per App
+
+| File | Description |
+|------|-------------|
+| `package.json` | `catalog:` deps + `workspace:*` refs |
+| `tsconfig.json` | Extends `@scope/typescript-config` |
+| `globals.css` | Tailwind + `@source` directives |
+| `layout.tsx` | Root layout |
+| `page.tsx` | Home page |
+
+### Per Package
+
+| File | Description |
+|------|-------------|
+| `package.json` | Exports map + `catalog:` deps |
+| `tsconfig.json` | Extends base config |
+| `src/index.ts` | Entry point |

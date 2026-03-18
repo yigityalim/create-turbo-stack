@@ -17,10 +17,10 @@
   "dependencies": {
     "@create-turbo-stack/schema": "workspace:*",
     "@create-turbo-stack/templates": "workspace:*",
-    "eta": "^3.5.0"
+    "eta": "^4.5.1"
   },
   "devDependencies": {
-    "typescript": "^5.9.0",
-    "vitest": "^3.0.0"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
   }
 }

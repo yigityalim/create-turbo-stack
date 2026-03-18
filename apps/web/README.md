@@ -1,25 +1,24 @@
 # @create-turbo-stack/web
 
-Public website for create-turbo-stack.
+Public website for create-turbo-stack, built with [Fumadocs](https://fumadocs.dev) + Next.js 16.
 
-## Pages
+## Routes
 
-- `/` — Landing page
-- `/builder` — Interactive stack builder with live file tree preview
-- `/presets` — Community preset gallery
+| Route | Description |
+|-------|-------------|
+| `(home)` | Landing page |
+| `/docs` | Documentation (Fumadocs MDX) |
+| `/builder` | Interactive stack builder (planned) |
+| `/presets` | Community preset gallery (planned) |
+| `/schema/*` | JSON Schema files (static) |
+| `/s/*` | Preset files + registry index (static) |
 
 ## Development
 
 ```bash
-# From monorepo root
 bun run dev --filter=web
-
-# Or directly
-cd apps/web && bun run dev
 ```
 
-Opens at [http://localhost:3000](http://localhost:3000).
+## Docs
 
-## Architecture
-
-The web app imports `@create-turbo-stack/core` and `@create-turbo-stack/schema` directly. The builder uses `resolveFileTree()` from core to generate live file tree previews in the browser — no server-side generation needed.
+Add MDX files to `content/docs/`. They auto-appear in sidebar.

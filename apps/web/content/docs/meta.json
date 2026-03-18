@@ -1,0 +1,13 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "getting-started",
+    "---Guides---",
+    "presets",
+    "registry",
+    "---Reference---",
+    "cli",
+    "schema"
+  ]
+}

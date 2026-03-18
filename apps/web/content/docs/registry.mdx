@@ -1,0 +1,65 @@
+---
+title: Registry
+description: Create and publish your own preset registry
+---
+
+The registry system lets anyone publish and share presets — inspired by [shadcn's registry model](https://ui.shadcn.com/docs/registry).
+
+## How It Works
+
+1. Create preset JSON files conforming to the [schema](https://create-turbo-stack.dev/schema/preset.json)
+2. Host them at any URL (your website, GitHub Pages, Vercel, etc.)
+3. Create a `registry.json` index file
+4. Users install with: `npx create-turbo-stack --preset <url>`
+
+## Registry Format
+
+A registry is a JSON file that indexes your presets:
+
+```json
+{
+  "$schema": "https://create-turbo-stack.dev/schema/registry.json",
+  "name": "acme-stacks",
+  "homepage": "https://acme.com",
+  "items": [
+    {
+      "name": "acme-starter",
+      "title": "Acme Starter",
+      "description": "Internal starter for Acme Corp projects",
+      "type": "registry:preset",
+      "tags": ["nextjs", "supabase", "internal"],
+      "preset": "https://acme.com/stacks/starter.json"
+    }
+  ]
+}
+```
+
+## Registry Schema
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Registry name |
+| `homepage` | string? | Registry homepage URL |
+| `items` | array | List of registry items |
+
+### Registry Item
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Preset identifier |
+| `title` | string | Display name |
+| `description` | string | Short description |
+| `type` | string | Always `"registry:preset"` |
+| `author` | string? | Author name |
+| `tags` | string[] | Searchable tags |
+| `preset` | string | URL to the preset JSON |
+
+## Our Registry
+
+The official create-turbo-stack registry is at:
+
+```
+https://create-turbo-stack.dev/s/registry.json
+```
+
+It includes the built-in presets: `minimal`, `saas-starter`, and `api-only`.

@@ -1,0 +1,100 @@
+---
+title: Schema Reference
+description: JSON Schema definitions for presets, registry, and config
+---
+
+All schemas are available as JSON Schema files and as Zod v4 types in `@create-turbo-stack/schema`.
+
+## JSON Schema Files
+
+| Schema | URL |
+|--------|-----|
+| Preset | [/schema/preset.json](/schema/preset.json) |
+| Registry | [/schema/registry.json](/schema/registry.json) |
+| Config | [/schema/config.json](/schema/config.json) |
+
+Use `$schema` in your preset files for IDE autocompletion:
+
+```json
+{
+  "$schema": "https://create-turbo-stack.dev/schema/preset.json"
+}
+```
+
+## Preset Options
+
+### basics
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `projectName` | string | — | Project name (`[a-z0-9-]`) |
+| `packageManager` | `"bun"` \| `"pnpm"` \| `"npm"` \| `"yarn"` | `"bun"` | Package manager |
+| `scope` | string | — | Org scope (e.g. `@my-project`) |
+| `typescript` | `"strict"` \| `"relaxed"` | `"strict"` | TS strictness |
+| `linter` | `"biome"` \| `"eslint-prettier"` | `"biome"` | Linter choice |
+| `gitInit` | boolean | `true` | Initialize git |
+
+### database
+
+| Strategy | Extra Fields |
+|----------|-------------|
+| `"supabase"` | — |
+| `"drizzle"` | `driver`: `"postgres"` \| `"mysql"` \| `"sqlite"` \| `"turso"` \| `"neon"` \| `"planetscale"` |
+| `"prisma"` | — |
+| `"none"` | — |
+
+### api
+
+| Strategy | Extra Fields |
+|----------|-------------|
+| `"trpc"` | `version`: `"v11"` |
+| `"hono"` | `mode`: `"standalone-app"` \| `"nextjs-route"` |
+| `"rest-nextjs"` | — |
+| `"none"` | — |
+
+### auth
+
+| Field | Type | Default |
+|-------|------|---------|
+| `provider` | `"supabase-auth"` \| `"better-auth"` \| `"clerk"` \| `"next-auth"` \| `"lucia"` \| `"none"` | `"none"` |
+| `rbac` | boolean | `false` |
+| `entitlements` | boolean | `false` |
+
+### css
+
+| Field | Type | Default |
+|-------|------|---------|
+| `framework` | `"tailwind4"` \| `"tailwind3"` \| `"vanilla"` \| `"css-modules"` | `"tailwind4"` |
+| `ui` | `"shadcn"` \| `"radix-raw"` \| `"none"` | `"none"` |
+| `styling` | `"css-variables"` \| `"static"` | `"css-variables"` |
+
+### apps (array)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | App name (`[a-z0-9-]`) |
+| `type` | enum | `"nextjs"` \| `"nextjs-api-only"` \| `"expo"` \| `"hono-standalone"` \| `"vite-react"` \| `"vite-vue"` \| `"sveltekit"` \| `"astro"` \| `"remix"` \| `"tauri"` |
+| `port` | number | Dev server port (1000-65535) |
+| `i18n` | boolean | Enable internationalization |
+| `cms` | enum | `"sanity"` \| `"keystatic"` \| `"none"` |
+| `consumes` | string[] | Package names to depend on |
+
+### packages (array)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Package name (`[a-z0-9-]`) |
+| `type` | enum | `"ui"` \| `"utils"` \| `"config"` \| `"library"` \| `"react-library"` |
+| `producesCSS` | boolean | Contains Tailwind classes |
+| `exports` | string[] | Subpath exports (e.g. `["."]`) |
+
+### integrations
+
+| Field | Type | Default |
+|-------|------|---------|
+| `analytics` | `"posthog"` \| `"vercel-analytics"` \| `"plausible"` \| `"none"` | `"none"` |
+| `errorTracking` | `"sentry"` \| `"none"` | `"none"` |
+| `email` | `"react-email-resend"` \| `"nodemailer"` \| `"none"` | `"none"` |
+| `rateLimit` | `"upstash"` \| `"none"` | `"none"` |
+| `ai` | `"vercel-ai-sdk"` \| `"langchain"` \| `"none"` | `"none"` |
+| `envValidation` | boolean | `true` |
