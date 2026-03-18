@@ -12,10 +12,12 @@
   "scripts": {
     "lint": "biome check",
     "type-check": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "generate:schema": "bun scripts/generate-json-schema.ts"
   },
   "dependencies": {
-    "zod": "^3.24.0"
+    "zod": "^3.24.0",
+    "zod-to-json-schema": "^3.24.0"
   },
   "devDependencies": {
     "typescript": "^5.9.0",

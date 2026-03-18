@@ -1,0 +1,31 @@
+{
+  "$schema": "https://create-turbo-stack.dev/schema/registry.json",
+  "name": "create-turbo-stack",
+  "homepage": "https://create-turbo-stack.dev",
+  "items": [
+    {
+      "name": "minimal",
+      "title": "Minimal",
+      "description": "One Next.js app, one UI package, Tailwind 4, Biome",
+      "type": "registry:preset",
+      "tags": ["nextjs", "tailwind", "minimal"],
+      "preset": "https://create-turbo-stack.dev/s/minimal.json"
+    },
+    {
+      "name": "saas-starter",
+      "title": "SaaS Starter",
+      "description": "Full-stack SaaS with Supabase, tRPC, shadcn/ui, i18n, Sentry, PostHog",
+      "type": "registry:preset",
+      "tags": ["nextjs", "supabase", "trpc", "saas", "fullstack"],
+      "preset": "https://create-turbo-stack.dev/s/saas-starter.json"
+    },
+    {
+      "name": "api-only",
+      "title": "API Only",
+      "description": "Hono standalone API with Drizzle ORM, no frontend",
+      "type": "registry:preset",
+      "tags": ["hono", "drizzle", "api", "backend"],
+      "preset": "https://create-turbo-stack.dev/s/api-only.json"
+    }
+  ]
+}

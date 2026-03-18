@@ -1,0 +1,469 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "create-turbo-stack Config",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "default": "1.0.0"
+    },
+    "description": {
+      "type": "string"
+    },
+    "author": {
+      "type": "string"
+    },
+    "basics": {
+      "type": "object",
+      "properties": {
+        "projectName": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "packageManager": {
+          "type": "string",
+          "enum": [
+            "bun",
+            "pnpm",
+            "npm",
+            "yarn"
+          ],
+          "default": "bun"
+        },
+        "scope": {
+          "type": "string",
+          "pattern": "^@[a-z0-9-]+$"
+        },
+        "typescript": {
+          "type": "string",
+          "enum": [
+            "strict",
+            "relaxed"
+          ],
+          "default": "strict"
+        },
+        "linter": {
+          "type": "string",
+          "enum": [
+            "biome",
+            "eslint-prettier"
+          ],
+          "default": "biome"
+        },
+        "gitInit": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "projectName",
+        "scope"
+      ],
+      "additionalProperties": false
+    },
+    "database": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "type": "string",
+              "const": "supabase"
+            }
+          },
+          "required": [
+            "strategy"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "type": "string",
+              "const": "drizzle"
+            },
+            "driver": {
+              "type": "string",
+              "enum": [
+                "postgres",
+                "mysql",
+                "sqlite",
+                "turso",
+                "neon",
+                "planetscale"
+              ]
+            }
+          },
+          "required": [
+            "strategy",
+            "driver"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "type": "string",
+              "const": "prisma"
+            }
+          },
+          "required": [
+            "strategy"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "type": "string",
+              "const": "none"
+            }
+          },
+          "required": [
+            "strategy"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "api": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "type": "string",
+              "const": "trpc"
+            },
+            "version": {
+              "type": "string",
+              "const": "v11",
+              "default": "v11"
+            }
+          },
+          "required": [
+            "strategy"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "type": "string",
+              "const": "hono"
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "standalone-app",
+                "nextjs-route"
+              ]
+            }
+          },
+          "required": [
+            "strategy",
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "type": "string",
+              "const": "rest-nextjs"
+            }
+          },
+          "required": [
+            "strategy"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "type": "string",
+              "const": "none"
+            }
+          },
+          "required": [
+            "strategy"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "auth": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "supabase-auth",
+            "better-auth",
+            "clerk",
+            "next-auth",
+            "lucia",
+            "none"
+          ],
+          "default": "none"
+        },
+        "rbac": {
+          "type": "boolean",
+          "default": false
+        },
+        "entitlements": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "css": {
+      "type": "object",
+      "properties": {
+        "framework": {
+          "type": "string",
+          "enum": [
+            "tailwind4",
+            "tailwind3",
+            "vanilla",
+            "css-modules"
+          ],
+          "default": "tailwind4"
+        },
+        "ui": {
+          "type": "string",
+          "enum": [
+            "shadcn",
+            "radix-raw",
+            "none"
+          ],
+          "default": "none"
+        },
+        "styling": {
+          "type": "string",
+          "enum": [
+            "css-variables",
+            "static"
+          ],
+          "default": "css-variables"
+        }
+      },
+      "additionalProperties": false
+    },
+    "integrations": {
+      "type": "object",
+      "properties": {
+        "analytics": {
+          "type": "string",
+          "enum": [
+            "posthog",
+            "vercel-analytics",
+            "plausible",
+            "none"
+          ],
+          "default": "none"
+        },
+        "errorTracking": {
+          "type": "string",
+          "enum": [
+            "sentry",
+            "none"
+          ],
+          "default": "none"
+        },
+        "email": {
+          "type": "string",
+          "enum": [
+            "react-email-resend",
+            "nodemailer",
+            "none"
+          ],
+          "default": "none"
+        },
+        "rateLimit": {
+          "type": "string",
+          "enum": [
+            "upstash",
+            "none"
+          ],
+          "default": "none"
+        },
+        "ai": {
+          "type": "string",
+          "enum": [
+            "vercel-ai-sdk",
+            "langchain",
+            "none"
+          ],
+          "default": "none"
+        },
+        "envValidation": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "apps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "nextjs",
+              "nextjs-api-only",
+              "expo",
+              "hono-standalone",
+              "vite-react",
+              "vite-vue",
+              "sveltekit",
+              "astro",
+              "remix",
+              "tauri"
+            ]
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1000,
+            "maximum": 65535
+          },
+          "i18n": {
+            "type": "boolean",
+            "default": false
+          },
+          "cms": {
+            "type": "string",
+            "enum": [
+              "sanity",
+              "keystatic",
+              "none"
+            ],
+            "default": "none"
+          },
+          "consumes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "port"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ui",
+              "utils",
+              "config",
+              "library",
+              "react-library"
+            ]
+          },
+          "producesCSS": {
+            "type": "boolean",
+            "default": false
+          },
+          "exports": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "."
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ],
+        "additionalProperties": false
+      },
+      "default": []
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "cliVersion": {
+      "type": "string"
+    },
+    "catalog": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {}
+    },
+    "cssSourceMap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "default": {}
+    },
+    "autoPackages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    }
+  },
+  "required": [
+    "name",
+    "basics",
+    "database",
+    "api",
+    "auth",
+    "css",
+    "integrations",
+    "apps",
+    "generatedAt",
+    "cliVersion"
+  ],
+  "additionalProperties": false
+}
