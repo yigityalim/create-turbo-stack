@@ -1,19 +1,16 @@
-// @create-turbo-stack/core
-// Platform-agnostic business logic. No Node.js APIs allowed in this package.
+// Browser-safe exports — no Eta, no node:fs dependency.
+// Use this entry point in client-side code (web builder, etc.)
 
-// Diff engine (for add mode)
+// Diff engine
 export { applyMutations, diffTree, type FileMutation, type TreeDiff } from "./diff/tree-diff";
-// Template rendering
-export { buildTemplateContext, type TemplateContext } from "./render/template-context";
-export { renderTemplate } from "./render/template-engine";
 export { resolveAutoPackages } from "./resolve/auto-packages";
-// File tree resolution
+// File tree resolution (browser-safe)
 export { type ResolveOptions, resolveFileTree } from "./resolve/file-tree";
 export { fullPackageName, scopeToName, slugify } from "./utils/naming";
 // Utils
 export { basename, dirname, join, relativePath } from "./utils/path";
 export { type CatalogEntry, computeCatalog } from "./wiring/catalog";
-// Wiring computations
+// Wiring computations (all pure functions, browser-safe)
 export { type CssSourceMap, computeCssSourceMap } from "./wiring/css-source";
 export { computeEnvChain, type EnvChain, type EnvVar } from "./wiring/env-chain";
 export { computeExportsMap } from "./wiring/exports-map";

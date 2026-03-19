@@ -2,6 +2,7 @@ import type { FileTreeNode, Preset } from "@create-turbo-stack/schema";
 import { computeCatalog } from "../wiring/catalog";
 import { computeEnvChain } from "../wiring/env-chain";
 import { computeTurboConfig } from "../wiring/turbo-tasks";
+import { VERSIONS } from "../wiring/versions";
 
 /**
  * Resolve root-level config files: package.json, turbo.json, biome.json, .gitignore, etc.
@@ -38,7 +39,7 @@ export function resolveRootFiles(preset: Preset): FileTreeNode[] {
       turbo: "^2.8.0",
       typescript: catalogObj.typescript ?? "^5.9.0",
     },
-    packageManager: `${preset.basics.packageManager}@latest`,
+    packageManager: `${preset.basics.packageManager}@${VERSIONS[preset.basics.packageManager as keyof typeof VERSIONS] ?? "latest"}`,
     workspaces: ["apps/*", "packages/*"],
     ...(Object.keys(catalogObj).length > 0 ? { catalog: catalogObj } : {}),
   };

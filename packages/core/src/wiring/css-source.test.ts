@@ -60,10 +60,10 @@ describe("computeCssSourceMap", () => {
 
     const map = computeCssSourceMap(preset);
 
-    expect(map.web).toEqual(["../../src"]);
+    expect(map.web).toEqual([]);
   });
 
-  it("app consuming one CSS-producing package → self + package source", () => {
+  it("app consuming one CSS-producing package → package source", () => {
     const preset = makePreset({
       apps: [
         {
@@ -87,7 +87,7 @@ describe("computeCssSourceMap", () => {
 
     const map = computeCssSourceMap(preset);
 
-    expect(map.web).toEqual(["../../src", "../../../../packages/ui/src"]);
+    expect(map.web).toEqual(["../../packages/ui/src"]);
   });
 
   it("API-only app → not present in map", () => {
@@ -156,7 +156,7 @@ describe("computeCssSourceMap", () => {
 
     const map = computeCssSourceMap(preset);
 
-    expect(map.web).toEqual(["../../src", "../../../../packages/ui/src"]);
-    expect(map.marketing).toEqual(["../../src", "../../../../packages/design-system/src"]);
+    expect(map.web).toEqual(["../../packages/ui/src"]);
+    expect(map.marketing).toEqual(["../../packages/design-system/src"]);
   });
 });

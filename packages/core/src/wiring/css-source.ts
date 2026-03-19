@@ -33,13 +33,10 @@ export function computeCssSourceMap(preset: Preset): CssSourceMap {
 
     const sources: string[] = [];
 
-    // App's own source
-    sources.push("../../src");
-
     // Each consumed CSS-producing package
     for (const consumed of app.consumes) {
       if (cssPackages.has(consumed)) {
-        sources.push(`../../../../packages/${consumed}/src`);
+        sources.push(`../../packages/${consumed}/src`);
       }
     }
 

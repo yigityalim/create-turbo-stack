@@ -1,4 +1,5 @@
 import type { Preset } from "@create-turbo-stack/schema";
+import { VERSIONS } from "./versions";
 
 export interface CatalogEntry {
   name: string;
@@ -17,111 +18,160 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
   };
 
   // Always
-  add("typescript", "^5.9.0");
+  add("typescript", VERSIONS.typescript);
 
   // Linter
   if (preset.basics.linter === "biome") {
-    add("@biomejs/biome", "^1.9.0");
+    add("@biomejs/biome", VERSIONS.biome);
   } else {
-    add("eslint", "^9.0.0");
-    add("prettier", "^3.8.0");
+    add("eslint", VERSIONS.eslint);
+    add("prettier", VERSIONS.prettier);
   }
 
   // CSS
   if (preset.css.framework === "tailwind4") {
-    add("tailwindcss", "^4.0.0");
-    add("@tailwindcss/postcss", "^4.0.0");
+    add("tailwindcss", VERSIONS.tailwind4);
+    add("@tailwindcss/postcss", VERSIONS.tailwindPostcss);
   } else if (preset.css.framework === "tailwind3") {
-    add("tailwindcss", "^3.4.0");
-    add("postcss", "^8.0.0");
-    add("autoprefixer", "^10.0.0");
+    add("tailwindcss", VERSIONS.tailwind3);
+    add("postcss", VERSIONS.postcss);
+    add("autoprefixer", VERSIONS.autoprefixer);
   }
 
   if (preset.css.ui === "shadcn") {
-    add("tw-animate-css", "^1.0.0");
+    add("tw-animate-css", VERSIONS.twAnimateCss);
   }
 
   // Apps
   for (const app of preset.apps) {
     if (app.type === "nextjs" || app.type === "nextjs-api-only") {
-      add("next", "^15.0.0");
-      add("react", "^19.0.0");
-      add("react-dom", "^19.0.0");
-      add("@types/react", "^19.0.0");
-      add("@types/react-dom", "^19.0.0");
+      add("next", VERSIONS.next);
+      add("react", VERSIONS.react);
+      add("react-dom", VERSIONS.reactDom);
+      add("@types/react", VERSIONS.typesReact);
+      add("@types/react-dom", VERSIONS.typesReactDom);
+      add("@types/node", VERSIONS.typesNode);
     }
     if (app.type === "hono-standalone") {
-      add("hono", "^4.0.0");
+      add("hono", VERSIONS.hono);
+      add("@hono/node-server", VERSIONS.honoNodeServer);
+      add("tsx", VERSIONS.tsx);
+    }
+    if (app.type === "vite-react") {
+      add("react", VERSIONS.react);
+      add("react-dom", VERSIONS.reactDom);
+      add("@vitejs/plugin-react", VERSIONS.vitejsPluginReact);
+      add("vite", VERSIONS.vite);
+      add("@types/react", VERSIONS.typesReact);
+      add("@types/react-dom", VERSIONS.typesReactDom);
+    }
+    if (app.type === "sveltekit") {
+      add("@sveltejs/kit", VERSIONS.sveltejsKit);
+      add("svelte", VERSIONS.svelte);
+      add("@sveltejs/adapter-auto", VERSIONS.sveltejsAdapterAuto);
+      add("@sveltejs/vite-plugin-svelte", VERSIONS.sveltejsVitePluginSvelte);
+      add("vite", VERSIONS.vite);
+    }
+    if (app.type === "astro") {
+      add("astro", VERSIONS.astro);
+      add("@astrojs/react", VERSIONS.astrojsReact);
+    }
+    if (app.type === "remix") {
+      add("@remix-run/node", VERSIONS.remixRunNode);
+      add("@remix-run/react", VERSIONS.remixRunReact);
+      add("@remix-run/serve", VERSIONS.remixRunServe);
+      add("@remix-run/dev", VERSIONS.remixRunDev);
+      add("react", VERSIONS.react);
+      add("react-dom", VERSIONS.reactDom);
+      add("isbot", VERSIONS.isbot);
+      add("@types/react", VERSIONS.typesReact);
+      add("@types/react-dom", VERSIONS.typesReactDom);
+      add("vite", VERSIONS.vite);
     }
     if (app.i18n) {
-      add("next-intl", "^4.0.0");
+      add("next-intl", VERSIONS.nextIntl);
     }
   }
 
   // Database
   if (preset.database.strategy === "supabase") {
-    add("@supabase/supabase-js", "^2.0.0");
-    add("@supabase/ssr", "^0.5.0");
+    add("@supabase/supabase-js", VERSIONS.supabaseJs);
+    add("@supabase/ssr", VERSIONS.supabaseSsr);
   } else if (preset.database.strategy === "drizzle") {
-    add("drizzle-orm", "^0.38.0");
-    add("drizzle-kit", "^0.30.0");
+    add("drizzle-orm", VERSIONS.drizzleOrm);
+    add("drizzle-kit", VERSIONS.drizzleKit);
+    // Driver-specific deps
+    if ("driver" in preset.database) {
+      const driverDeps: Record<string, [string, string]> = {
+        postgres: ["postgres", VERSIONS.postgres],
+        mysql: ["mysql2", VERSIONS.mysql2],
+        sqlite: ["better-sqlite3", VERSIONS.betterSqlite3],
+        turso: ["@libsql/client", VERSIONS.libsqlClient],
+        neon: ["@neondatabase/serverless", VERSIONS.neonServerless],
+        planetscale: ["@planetscale/database", VERSIONS.planetscaleDatabase],
+      };
+      const dep = driverDeps[preset.database.driver];
+      if (dep) add(dep[0], dep[1]);
+    }
   } else if (preset.database.strategy === "prisma") {
-    add("prisma", "^6.0.0");
-    add("@prisma/client", "^6.0.0");
+    add("prisma", VERSIONS.prisma);
+    add("@prisma/client", VERSIONS.prismaClient);
   }
 
   // API
   if (preset.api.strategy === "trpc") {
-    add("@trpc/server", "^11.0.0");
-    add("@trpc/client", "^11.0.0");
-    add("@trpc/react-query", "^11.0.0");
-    add("@tanstack/react-query", "^5.0.0");
-    add("superjson", "^2.0.0");
-    add("zod", "^3.24.0");
+    add("@trpc/server", VERSIONS.trpcServer);
+    add("@trpc/client", VERSIONS.trpcClient);
+    add("@trpc/react-query", VERSIONS.trpcReactQuery);
+    add("@tanstack/react-query", VERSIONS.tanstackReactQuery);
+    add("superjson", VERSIONS.superjson);
+    add("zod", VERSIONS.zod);
   } else if (preset.api.strategy === "hono") {
-    add("hono", "^4.0.0");
+    add("hono", VERSIONS.hono);
   }
 
   // Auth
   if (preset.auth.provider === "better-auth") {
-    add("better-auth", "^1.0.0");
+    add("better-auth", VERSIONS.betterAuth);
   } else if (preset.auth.provider === "clerk") {
-    add("@clerk/nextjs", "^6.0.0");
+    add("@clerk/nextjs", VERSIONS.clerkNextjs);
   } else if (preset.auth.provider === "next-auth") {
-    add("next-auth", "^5.0.0");
+    add("next-auth", VERSIONS.nextAuth);
   }
 
   // Env
   if (preset.integrations.envValidation) {
-    add("@t3-oss/env-nextjs", "^0.12.0");
-    add("zod", "^3.24.0");
+    add("@t3-oss/env-nextjs", VERSIONS.t3Env);
+    add("zod", VERSIONS.zod);
   }
 
   // Integrations
   if (preset.integrations.analytics === "posthog") {
-    add("posthog-js", "^1.0.0");
-    add("posthog-node", "^4.0.0");
+    add("posthog-js", VERSIONS.posthogJs);
+    add("posthog-node", VERSIONS.posthogNode);
   } else if (preset.integrations.analytics === "vercel-analytics") {
-    add("@vercel/analytics", "^1.0.0");
+    add("@vercel/analytics", VERSIONS.vercelAnalytics);
   }
 
   if (preset.integrations.errorTracking === "sentry") {
-    add("@sentry/nextjs", "^9.0.0");
+    add("@sentry/nextjs", VERSIONS.sentryNextjs);
   }
 
   if (preset.integrations.email === "react-email-resend") {
-    add("resend", "^4.0.0");
-    add("@react-email/components", "^0.1.0");
+    add("resend", VERSIONS.resend);
+    add("@react-email/components", VERSIONS.reactEmailComponents);
+  } else if (preset.integrations.email === "nodemailer") {
+    add("nodemailer", VERSIONS.nodemailer);
   }
 
   if (preset.integrations.rateLimit === "upstash") {
-    add("@upstash/ratelimit", "^2.0.0");
-    add("@upstash/redis", "^1.0.0");
+    add("@upstash/ratelimit", VERSIONS.upstashRatelimit);
+    add("@upstash/redis", VERSIONS.upstashRedis);
   }
 
   if (preset.integrations.ai === "vercel-ai-sdk") {
-    add("ai", "^4.0.0");
-    add("@ai-sdk/openai", "^1.0.0");
+    add("ai", VERSIONS.ai);
+    add("@ai-sdk/openai", VERSIONS.aiSdkOpenai);
   }
 
   return Array.from(catalog.entries()).map(([name, version]) => ({ name, version }));

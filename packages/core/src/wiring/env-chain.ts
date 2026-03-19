@@ -106,6 +106,74 @@ export function computeEnvChain(preset: Preset): EnvChain {
     );
   }
 
+  // Email
+  if (preset.integrations.email === "react-email-resend") {
+    base.server.push(
+      {
+        name: "RESEND_API_KEY",
+        zodType: "z.string().min(1)",
+        example: "re_...",
+        description: "Resend API key",
+      },
+      {
+        name: "EMAIL_FROM",
+        zodType: "z.string().email()",
+        example: "noreply@example.com",
+        description: "Default sender email address",
+      },
+    );
+  } else if (preset.integrations.email === "nodemailer") {
+    base.server.push(
+      {
+        name: "SMTP_HOST",
+        zodType: "z.string().min(1)",
+        example: "smtp.gmail.com",
+        description: "SMTP host",
+      },
+      { name: "SMTP_PORT", zodType: "z.string().min(1)", example: "587", description: "SMTP port" },
+      {
+        name: "SMTP_USER",
+        zodType: "z.string().min(1)",
+        example: "user@example.com",
+        description: "SMTP user",
+      },
+      {
+        name: "SMTP_PASS",
+        zodType: "z.string().min(1)",
+        example: "password",
+        description: "SMTP password",
+      },
+    );
+  }
+
+  // Rate limiting
+  if (preset.integrations.rateLimit === "upstash") {
+    base.server.push(
+      {
+        name: "UPSTASH_REDIS_REST_URL",
+        zodType: "z.string().url()",
+        example: "https://xxx.upstash.io",
+        description: "Upstash Redis REST URL",
+      },
+      {
+        name: "UPSTASH_REDIS_REST_TOKEN",
+        zodType: "z.string().min(1)",
+        example: "AXxx...",
+        description: "Upstash Redis REST token",
+      },
+    );
+  }
+
+  // AI
+  if (preset.integrations.ai === "vercel-ai-sdk") {
+    base.server.push({
+      name: "OPENAI_API_KEY",
+      zodType: "z.string().min(1)",
+      example: "sk-...",
+      description: "OpenAI API key",
+    });
+  }
+
   // Per-app env
   const apps: EnvChain["apps"] = {};
   for (const app of preset.apps) {

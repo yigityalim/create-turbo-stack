@@ -55,5 +55,55 @@ export function resolveAutoPackages(preset: Preset): Package[] {
     });
   }
 
+  // Analytics
+  if (preset.integrations.analytics !== "none") {
+    auto.push({
+      name: "analytics",
+      type: "library",
+      producesCSS: false,
+      exports: [".", "./server"],
+    });
+  }
+
+  // Error tracking
+  if (preset.integrations.errorTracking === "sentry") {
+    auto.push({
+      name: "monitoring",
+      type: "library",
+      producesCSS: false,
+      exports: ["."],
+    });
+  }
+
+  // Email
+  if (preset.integrations.email !== "none") {
+    auto.push({
+      name: "email",
+      type: "library",
+      producesCSS: false,
+      exports: ["."],
+    });
+  }
+
+  // Rate limiting
+  if (preset.integrations.rateLimit === "upstash") {
+    auto.push({
+      name: "rate-limit",
+      type: "library",
+      producesCSS: false,
+      exports: ["."],
+    });
+  }
+
+  // AI
+  if (preset.integrations.ai !== "none") {
+    auto.push({
+      name: "ai",
+      type: "library",
+      producesCSS: false,
+      exports: ["."],
+    });
+  }
+
   return auto;
 }
