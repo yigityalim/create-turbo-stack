@@ -1,0 +1,106 @@
+---
+title: Analyze
+description: Reverse-engineer an existing Turborepo into a Preset.
+---
+
+The `analyze` command scans an existing Turborepo monorepo and generates a Preset JSON that describes its current stack. This is useful for:
+
+- **Importing** existing projects into the Builder for visualization
+- **Auditing** what technologies a monorepo uses
+- **Sharing** your stack configuration with others
+- **Diffing** your current state against an ideal configuration
+
+## Usage
+
+```bash
+npx create-turbo-stack analyze [path]
+```
+
+If no path is given, the current directory is used.
+
+## What It Detects
+
+| Category | Detects |
+|---|---|
+| **Package Manager** | bun, pnpm, npm, yarn (via lockfile) |
+| **Linter** | Biome, ESLint + Prettier |
+| **TypeScript** | Strict vs relaxed mode |
+| **Database** | Drizzle (+ driver), Prisma, Supabase |
+| **API** | tRPC, Hono, REST (Next.js API routes) |
+| **Auth** | Supabase Auth, Better Auth, Clerk, NextAuth, Lucia |
+| **CSS** | Tailwind 4, Tailwind 3, vanilla |
+| **UI** | shadcn/ui |
+| **Analytics** | PostHog, Vercel Analytics, Plausible |
+| **Error Tracking** | Sentry |
+| **Email** | React Email + Resend, Nodemailer |
+| **Rate Limiting** | Upstash |
+| **AI** | Vercel AI SDK, LangChain |
+| **Apps** | Next.js, Hono, detected by framework deps |
+| **Packages** | All workspace packages with type inference |
+
+## Confidence Levels
+
+Each detection returns a confidence level:
+
+- **certain** — Direct evidence found (e.g., `bun.lock` exists → bun)
+- **likely** — Strong indirect evidence (e.g., `drizzle-orm` in deps → drizzle)
+- **guess** — Weak signal or fallback (e.g., no lockfile → npm assumed)
+
+## Output
+
+By default, the analyzed preset is printed to stdout as JSON:
+
+```bash
+npx create-turbo-stack analyze ./my-project > preset.json
+```
+
+### Open in Builder
+
+Use `--open-builder` to open the result directly in the web Builder:
+
+```bash
+npx create-turbo-stack analyze --open-builder
+```
+
+This encodes the preset into a URL and opens your browser.
+
+### Save as Config
+
+Use `--save` to write the result to `.turbo-stack.json`:
+
+```bash
+npx create-turbo-stack analyze --save
+```
+
+## Example Output
+
+```json
+{
+  "basics": {
+    "projectName": "my-saas",
+    "scope": "@my-saas",
+    "packageManager": "pnpm",
+    "linter": "biome",
+    "typescript": "strict"
+  },
+  "apps": [
+    { "name": "web", "type": "nextjs", "port": 3000, "i18n": false, "consumes": ["ui", "db"] }
+  ],
+  "packages": [
+    { "name": "ui", "type": "ui", "producesCSS": true, "exports": ["."] },
+    { "name": "db", "type": "library", "producesCSS": false, "exports": ["."] }
+  ],
+  "database": { "strategy": "drizzle", "driver": "postgres" },
+  "api": { "strategy": "trpc" },
+  "auth": { "provider": "clerk" },
+  "css": { "framework": "tailwind4", "ui": "shadcn" },
+  "integrations": {
+    "envValidation": true,
+    "analytics": "posthog",
+    "errorTracking": "sentry",
+    "email": "none",
+    "rateLimit": "none",
+    "ai": "none"
+  }
+}
+```

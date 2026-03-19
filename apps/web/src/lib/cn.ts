@@ -1,1 +1,3 @@
-export { twMerge as cn } from 'tailwind-merge';
+import { cn } from "fumadocs-ui/utils/cn";
+
+export { cn };

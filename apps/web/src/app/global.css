@@ -17,3 +17,22 @@
   font-family: "Courier New", monospace;
   line-height: 1;
 }
+
+/* Shiki dual theme: light by default, dark when html has class="dark" */
+.shiki-code .shiki,
+.shiki-code .shiki span {
+  color: var(--shiki-light);
+  background-color: transparent;
+}
+
+.dark .shiki-code .shiki,
+.dark .shiki-code .shiki span {
+  color: var(--shiki-dark);
+}
+
+/* Ensure code in builder is selectable */
+.shiki-code,
+.shiki-code * {
+  user-select: text;
+  -webkit-user-select: text;
+}

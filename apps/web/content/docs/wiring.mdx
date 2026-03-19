@@ -1,0 +1,121 @@
+---
+title: Wiring
+description: How create-turbo-stack wires packages together correctly.
+---
+
+The core value of create-turbo-stack is not file generation — it's **wiring**. Every generated project has correct cross-package references, CSS imports, TypeScript inheritance, environment variables, and dependency versions. This page explains how.
+
+## CSS `@source` Directives
+
+When a Next.js app consumes a UI package that produces CSS, Tailwind needs to scan that package's files. create-turbo-stack generates the correct `@source` directives automatically.
+
+```css
+/* apps/web/src/app/globals.css */
+@import "tailwindcss";
+@source "../../packages/ui/src/**/*.tsx";
+@import "@myorg/ui/globals.css";
+```
+
+The `@source` paths are computed by `computeCssSourceMap()`, which looks at each app's `consumes` list and finds packages with `producesCSS: true`.
+
+## Catalog Dependencies
+
+Turborepo's catalog feature lets you pin dependency versions in one place. create-turbo-stack generates a `catalog` field in the root `package.json`:
+
+```json
+{
+  "catalog": {
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "typescript": "^5.9.0",
+    "@biomejs/biome": "^1.9.0"
+  }
+}
+```
+
+Individual packages reference these with `"catalog:"`:
+
+```json
+{
+  "dependencies": {
+    "next": "catalog:",
+    "react": "catalog:"
+  }
+}
+```
+
+The catalog is computed by `computeCatalog()`, which inspects every preset selection and adds the required dependencies with pinned versions.
+
+## Workspace References
+
+When an app consumes a package, it needs a workspace dependency. create-turbo-stack computes these automatically:
+
+```json
+{
+  "dependencies": {
+    "@myorg/ui": "workspace:*",
+    "@myorg/db": "workspace:*",
+    "@myorg/env": "workspace:*"
+  }
+}
+```
+
+Auto-consumed packages (db, api, auth, env) are added based on preset selections — you don't need to manually specify them in `consumes`.
+
+## TypeScript Config Chain
+
+Every generated project uses a shared `typescript-config` package. create-turbo-stack generates config files that match each target:
+
+| Target | Extends |
+|---|---|
+| Next.js app | `@myorg/typescript-config/nextjs.json` |
+| React library / UI | `@myorg/typescript-config/react.json` |
+| Node library | `@myorg/typescript-config/library.json` |
+| Config package | `@myorg/typescript-config/base.json` |
+
+## Environment Chain
+
+When you select integrations that need environment variables, create-turbo-stack:
+
+1. Generates a `.env.example` at root with all required variables
+2. Creates an `env` package (if `envValidation` is enabled) with Zod schemas using `@t3-oss/env-nextjs`
+3. Adds `globalEnv` to `turbo.json` so Turbo knows about them
+
+Each integration contributes its variables:
+
+| Integration | Variables |
+|---|---|
+| Supabase | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SUPABASE_*` |
+| Drizzle/Prisma | `DATABASE_URL` |
+| Clerk | `CLERK_SECRET_KEY`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` |
+| Sentry | `SENTRY_DSN` |
+| PostHog | `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` |
+| Resend | `RESEND_API_KEY`, `EMAIL_FROM` |
+| Upstash | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` |
+| AI SDK | `OPENAI_API_KEY` |
+
+## Turbo Tasks
+
+`turbo.json` tasks are generated based on selections:
+
+- **Always**: `build`, `dev`, `lint`, `type-check`
+- **Drizzle**: `db:generate`, `db:migrate`, `db:push`
+- **Prisma**: `db:generate`, `db:migrate`
+
+Build outputs are configured per app type (`.next/**` for Next.js, `dist/**` for Hono).
+
+## Exports Map
+
+Every package gets a proper `exports` field in `package.json`:
+
+```json
+{
+  "exports": {
+    ".": { "types": "./src/index.ts", "default": "./src/index.ts" },
+    "./server": { "types": "./src/server.ts", "default": "./src/server.ts" },
+    "./client": { "types": "./src/client.ts", "default": "./src/client.ts" }
+  }
+}
+```
+
+The exports are determined by the package type and what the integration requires (e.g., auth packages always export `./server`, `./client`, `./middleware`).

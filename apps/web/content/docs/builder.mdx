@@ -1,0 +1,74 @@
+---
+title: Builder
+description: Visual stack configurator — design your monorepo in the browser.
+---
+
+The Builder is a browser-based visual configurator that lets you design your Turborepo monorepo interactively. It produces a valid Preset JSON that can be used with the CLI or shared with others.
+
+## Opening the Builder
+
+Visit [/builder](/builder) on the website, or go directly to `https://create-turbo-stack.dev/builder`.
+
+## How It Works
+
+1. **Configure** your stack using the sidebar panels (basics, apps, packages, database, API, auth, CSS, integrations)
+2. **Preview** the generated file tree in real-time — powered by `@create-turbo-stack/core` running in the browser
+3. **Export** your preset as JSON, a shareable URL, or run it directly with the CLI
+
+The Builder uses the same `resolveFileTree()` function as the CLI, so what you see is exactly what you get.
+
+## Panels
+
+### Basics
+
+Set your project name, npm scope (`@myorg`), package manager (bun, pnpm, npm, yarn), TypeScript strictness, and linter choice.
+
+### Apps
+
+Add Next.js, Next.js API-only, or Hono standalone apps. Configure port numbers and which packages each app consumes.
+
+### Packages
+
+Add UI, library, or utility packages. Mark packages that produce CSS (important for Tailwind `@source` wiring).
+
+### Database
+
+Choose between Supabase, Drizzle (with driver selection), Prisma, or none.
+
+### API
+
+Choose between tRPC, Hono, REST (Next.js API routes), or none.
+
+### Auth
+
+Choose between Supabase Auth, Better Auth, Clerk, NextAuth, Lucia, or none.
+
+### CSS
+
+Choose Tailwind CSS 4, Tailwind CSS 3, or vanilla CSS. Optionally add shadcn/ui.
+
+### Integrations
+
+Toggle analytics (PostHog, Vercel Analytics, Plausible), error tracking (Sentry), email (React Email + Resend, Nodemailer), rate limiting (Upstash), AI (Vercel AI SDK), and environment validation (t3-env).
+
+## File Tree Preview
+
+The file tree updates in real-time as you change selections. Click any file to preview its rendered content in the code viewer.
+
+## Exporting
+
+### JSON Download
+
+Click **Export JSON** to download the preset as a `.json` file. Use it with the CLI:
+
+```bash
+npx create-turbo-stack my-project --preset ./my-preset.json
+```
+
+### Shareable URL
+
+Click **Copy URL** to get a shareable link with the preset encoded in the URL. Anyone with the link can open the Builder with your exact configuration.
+
+### CLI Command
+
+The Builder shows the equivalent CLI command at the bottom, so you can copy-paste it directly into your terminal.

@@ -14,7 +14,11 @@
   "database": { "strategy": "none" },
   "api": { "strategy": "none" },
   "auth": { "provider": "none", "rbac": false, "entitlements": false },
-  "css": { "framework": "tailwind4", "ui": "shadcn", "styling": "css-variables" },
+  "css": {
+    "framework": "tailwind4",
+    "ui": "shadcn",
+    "styling": "css-variables"
+  },
   "integrations": {
     "analytics": "none",
     "errorTracking": "none",
@@ -24,9 +28,21 @@
     "envValidation": true
   },
   "apps": [
-    { "name": "web", "type": "nextjs", "port": 3000, "i18n": false, "cms": "none", "consumes": ["ui"] }
+    {
+      "name": "web",
+      "type": "nextjs",
+      "port": 3000,
+      "i18n": false,
+      "cms": "none",
+      "consumes": ["ui"]
+    }
   ],
   "packages": [
-    { "name": "ui", "type": "react-library", "producesCSS": true, "exports": ["."] }
+    {
+      "name": "ui",
+      "type": "react-library",
+      "producesCSS": true,
+      "exports": ["."]
+    }
   ]
 }

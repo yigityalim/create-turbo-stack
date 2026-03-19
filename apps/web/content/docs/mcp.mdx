@@ -1,0 +1,99 @@
+---
+title: MCP Integration
+description: Use create-turbo-stack as an MCP server for AI-assisted development.
+---
+
+create-turbo-stack ships an [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that lets AI agents like Claude Code, Cursor, and Windsurf interact with your monorepo programmatically.
+
+## What Is MCP?
+
+MCP is a protocol developed by Anthropic that connects AI agents to external tools. Instead of the AI guessing file contents or running shell commands, it calls structured tools with validated inputs and gets structured outputs.
+
+```
+You: "add a supabase database to my project"
+  → AI calls add_integration tool via MCP
+  → create-turbo-stack modifies your monorepo
+  → Files created, configs updated, deps added
+```
+
+No manual prompting, no copy-paste. The AI uses your project's conventions automatically.
+
+## Setup
+
+### Claude Code
+
+Add to `~/.claude/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "turbo-stack": {
+      "command": "npx",
+      "args": ["create-turbo-stack", "mcp"]
+    }
+  }
+}
+```
+
+### Cursor
+
+Add to Cursor settings → MCP Servers:
+
+```json
+{
+  "turbo-stack": {
+    "command": "npx",
+    "args": ["create-turbo-stack", "mcp"]
+  }
+}
+```
+
+### Windsurf
+
+Add to `~/.windsurf/mcp.json` with the same format as Claude Code.
+
+## Available Tools
+
+| Tool | Description |
+|---|---|
+| `get_workspace_info` | Get current workspace configuration and detected stack |
+| `get_dependency_graph` | Show package dependency relationships |
+| `preview_files` | Preview files that would be generated for a given preset |
+| `add_app` | Add a new app to the monorepo |
+| `add_package` | Add a new package to the monorepo |
+| `add_integration` | Add an integration (analytics, email, etc.) |
+| `add_dependency` | Add a dependency to the catalog |
+
+## Available Resources
+
+| Resource | Description |
+|---|---|
+| `workspace://config` | Current `.turbo-stack.json` configuration |
+| `workspace://conventions` | Project conventions and coding standards |
+| `workspace://apps` | List of apps with metadata |
+| `workspace://packages` | List of packages with metadata |
+
+## Example Usage
+
+Once configured, you can use natural language with your AI assistant:
+
+```
+"Add PostHog analytics to this project"
+"Create a new Hono API server on port 4000"
+"What packages does the web app depend on?"
+"Add a rate-limit package using Upstash"
+```
+
+The AI will use the MCP tools automatically — no special syntax needed.
+
+## How It Works
+
+The MCP server runs as a local process on your machine. Communication happens over stdio (stdin/stdout), not HTTP. No data leaves your computer.
+
+```
+AI Agent ──stdio──→ create-turbo-stack mcp (local process)
+                         │
+                         ├── reads .turbo-stack.json
+                         ├── calls @create-turbo-stack/core
+                         └── writes files to disk
+```
