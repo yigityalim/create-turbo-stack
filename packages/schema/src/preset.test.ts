@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import minimalJson from "../../../../presets/minimal.json";
-import saasJson from "../../../../presets/saas-starter.json";
-import { ValidatedPresetSchema } from "../preset";
+import minimalJson from "../../../presets/minimal.json";
+import saasJson from "../../../presets/saas-starter.json";
+import { ValidatedPresetSchema } from "./preset";
 
 // ---------------------------------------------------------------------------
 // Helpers

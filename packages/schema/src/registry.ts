@@ -8,6 +8,12 @@ export const RegistryItemSchema = z.object({
   author: z.string().optional(),
   tags: z.array(z.string()).default([]),
   preset: z.string().url(),
+  /** Whether this preset has been reviewed and verified as safe. */
+  verified: z.boolean().default(false),
+  /** GitHub username of the submitter (for attribution). */
+  github: z.string().optional(),
+  /** Date the preset was added to the registry. */
+  addedAt: z.string().optional(),
 });
 
 export type RegistryItem = z.infer<typeof RegistryItemSchema>;

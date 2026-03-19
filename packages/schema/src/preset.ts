@@ -8,12 +8,19 @@ import { DatabaseSchema } from "./options/database";
 import { IntegrationsSchema } from "./options/integrations";
 import { PackageSchema } from "./options/package";
 
+/** Rejects strings containing Eta/EJS template syntax to prevent template injection. */
+const safeString = z
+  .string()
+  .refine((val) => !val.includes("<%") && !val.includes("%>") && !val.includes("${"), {
+    message: "String contains forbidden template syntax (<%, %>, ${)",
+  });
+
 export const PresetSchema = z.object({
   $schema: z.string().optional(),
-  name: z.string().min(1),
+  name: safeString.min(1),
   version: z.string().default("1.0.0"),
-  description: z.string().optional(),
-  author: z.string().optional(),
+  description: safeString.optional(),
+  author: safeString.optional(),
 
   basics: BasicsSchema,
   database: DatabaseSchema,
