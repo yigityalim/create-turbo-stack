@@ -201,6 +201,48 @@ create-turbo-stack add action --app partner --name createJobPosting
 
 ---
 
+### 3.2.5 `analyze` (Reverse Engineering)
+
+```bash
+create-turbo-stack analyze [path]
+```
+
+Scans an existing Turborepo workspace and generates a Preset JSON from it. This enables:
+
+- **Migration:** Bring an existing project into the create-turbo-stack ecosystem
+- **Builder link:** `--open-builder` flag generates a URL that opens the web builder pre-filled with the analyzed config
+- **Audit:** Compare actual project state against the preset to detect drift
+
+#### Detection targets
+
+| Category | Detection method |
+|----------|-----------------|
+| Package manager | Lock file presence (`bun.lock`, `pnpm-lock.yaml`, etc.) |
+| Linter | `biome.json` or `.eslintrc.*` |
+| TypeScript | `tsconfig.json` strictness flags |
+| Apps | `apps/*/package.json` with framework detection (Next.js, Hono, Expo, etc.) |
+| Packages | `packages/*/package.json` with type inference (ui, utils, config, library) |
+| Database | Drizzle config, Prisma schema, Supabase deps |
+| API | tRPC router exports, Hono app exports, Next.js route handlers |
+| Auth | Auth provider package deps + config detection |
+| CSS | Tailwind config version, PostCSS config, globals.css analysis |
+| Integrations | Package.json dep scanning (Sentry, PostHog, Resend, etc.) |
+
+#### Output
+
+```bash
+# Generate preset JSON
+create-turbo-stack analyze . --output preset.json
+
+# Open in web builder
+create-turbo-stack analyze . --open-builder
+
+# Compare with existing preset
+create-turbo-stack analyze . --diff preset.json
+```
+
+---
+
 ### 3.3 Project Config File (`.better-turbo.json`)
 
 Persisted at project root. Tracks:

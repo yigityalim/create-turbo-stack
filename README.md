@@ -112,14 +112,13 @@ This is a Turborepo monorepo:
 ```
 create-turbo-stack/
 ├── apps/
-│   └── web/              # Landing page + builder + community presets
+│   └── web/              # Landing page + docs + builder + community presets
 ├── packages/
 │   ├── cli/              # CLI entry point (npx create-turbo-stack)
-│   ├── core/             # Platform-agnostic business logic
-│   ├── schema/           # Zod schemas for presets, config, registry
-│   └── templates/        # EJS template files for code generation
-├── presets/              # Built-in preset definitions
-└── docs/                 # Documentation
+│   ├── core/             # Platform-agnostic business logic (browser + Node)
+│   ├── schema/           # Zod 4 schemas for presets, config, registry
+│   ├── templates/        # Eta template files for code generation
+│   └── analyzer/         # Reverse-engineer existing Turborepo projects
 ```
 
 ## Contributing
