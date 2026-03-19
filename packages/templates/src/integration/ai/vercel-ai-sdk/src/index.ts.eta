@@ -1,0 +1,1 @@
+export { generateText, streamText } from "./client";

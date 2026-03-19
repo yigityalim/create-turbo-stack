@@ -1,0 +1,24 @@
+import { createServerClient } from "@supabase/ssr";
+import type { NextRequest, NextResponse } from "next/server";
+
+export function updateSession(request: NextRequest, response: NextResponse) {
+  const supabase = createServerClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookies) {
+          for (const { name, value, options } of cookies) {
+            request.cookies.set(name, value);
+            response.cookies.set(name, value, options);
+          }
+        },
+      },
+    },
+  );
+
+  return supabase.auth.getUser();
+}

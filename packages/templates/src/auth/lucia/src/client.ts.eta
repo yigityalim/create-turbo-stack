@@ -1,0 +1,2 @@
+// Lucia is server-only — use server actions or API routes for auth
+export {};

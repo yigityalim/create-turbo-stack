@@ -1,0 +1,16 @@
+import type { MetaFunction } from "@remix-run/node";
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "<%= it.app.name %>" },
+    { name: "description", content: "<%= it.app.name %> app" },
+  ];
+};
+
+export default function Index() {
+  return (
+    <main>
+      <h1><%= it.app.name %></h1>
+    </main>
+  );
+}

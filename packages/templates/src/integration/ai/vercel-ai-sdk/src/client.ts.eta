@@ -1,0 +1,17 @@
+import { generateText as aiGenerateText, streamText as aiStreamText } from "ai";
+import { openai } from "@ai-sdk/openai";
+
+export async function generateText(prompt: string, model = "gpt-4o-mini") {
+  const { text } = await aiGenerateText({
+    model: openai(model),
+    prompt,
+  });
+  return text;
+}
+
+export function streamText(prompt: string, model = "gpt-4o-mini") {
+  return aiStreamText({
+    model: openai(model),
+    prompt,
+  });
+}

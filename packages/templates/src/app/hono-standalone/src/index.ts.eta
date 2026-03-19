@@ -1,0 +1,13 @@
+deimport { serve } from "@hono/node-server";
+<% if (it.api.strategy === 'hono') { %>import { app } from "<%= it.scope %>/api";
+<% } else { %>import { Hono } from "hono";
+<% } %>
+const port = <%= it.app.port %>;
+
+console.log(`Server running on http://localhost:${port}`);
+
+serve({
+  fetch: <% if (it.api.strategy === 'hono') { %>app<% } else { %>new Hono()
+  .get("/health", (c) => c.json({ status: "ok" }))<% } %>.fetch,
+  port,
+});

@@ -1,20 +1,49 @@
 # packages/templates
 
-Passive data package. Contains EJS template strings.
+Passive data package. Contains Eta template files (`.eta`) organized by category.
 
-## Current State
+## How It Works
 
-Phase 1 uses inline string generation in core resolvers. This package is a skeleton for Phase 2+ when templates will be extracted into .ejs files and bundled as a string map via build script.
+1. `.eta` files live in `src/` organized by category
+2. `scripts/build-templates.ts` reads all `.eta` files and generates `src/templates-map.ts`
+3. Core imports templates via `getTemplates(category)` and renders with Eta
 
-## Future Structure
+Run `bun run build:templates` to regenerate the map after editing `.eta` files.
+
+## Structure
 
 ```
-src/app/nextjs/        — Next.js app templates
-src/app/hono/          — Hono app templates
-src/package/ui/        — UI package templates
-src/package/library/   — Library package templates
-src/integration/       — Integration templates (supabase, trpc, etc.)
-src/root/              — Root config templates
+src/root/                          — Root config templates (.gitignore, .npmrc, .env.example)
+src/app/nextjs/                    — Next.js app templates
+src/app/nextjs-api-only/           — Next.js API-only app templates
+src/app/hono-standalone/           — Hono standalone server templates
+src/db/drizzle/                    — Drizzle ORM templates
+src/db/prisma/                     — Prisma templates
+src/db/supabase/                   — Supabase client templates
+src/api/trpc/                      — tRPC templates
+src/api/hono/                      — Hono API package templates
+src/api/rest-nextjs/               — REST API utilities templates
+src/auth/{provider}/               — Auth provider templates (5 providers)
+src/integration/analytics/{type}/  — Analytics templates
+src/integration/monitoring/sentry/ — Sentry templates
+src/integration/email/{type}/      — Email templates
+src/integration/rate-limit/upstash/— Rate limiting templates
+src/integration/ai/{type}/         — AI SDK templates
 ```
 
-Templates use Eta syntax (`<%= %>`, `<% %>`) — same as EJS but browser-compatible.
+## Template Syntax
+
+Templates use Eta syntax (`<%= %>` for output, `<% %>` for logic) with `it.` prefix for context:
+
+```eta
+import { createClient } from "<%= it.scope %>/db";
+<% if (it.database.strategy !== 'none') { %>
+import { db } from "<%= it.scope %>/db";
+<% } %>
+```
+
+## Adding Templates
+
+1. Create `.eta` file in the appropriate `src/` subdirectory
+2. Run `bun run build:templates` to regenerate the map
+3. Use `renderSourceFiles(category, basePath, context)` in core resolvers

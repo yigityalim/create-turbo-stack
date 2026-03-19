@@ -1,0 +1,2 @@
+export { PostHogProvider } from "./provider";
+export { trackEvent } from "./client";

@@ -1,0 +1,15 @@
+import { z } from "zod";
+import { createTRPCRouter, publicProcedure } from "./server";
+<% if (it.database && it.database.strategy !== 'none') { %>
+import { db } from "<%= it.scope %>/db";
+<% } %>
+
+export const appRouter = createTRPCRouter({
+  hello: publicProcedure
+    .input(z.object({ name: z.string() }))
+    .query(({ input }) => {
+      return { greeting: `Hello ${input.name}!` };
+    }),
+});
+
+export type AppRouter = typeof appRouter;

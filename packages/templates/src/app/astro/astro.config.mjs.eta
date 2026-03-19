@@ -1,0 +1,6 @@
+import { defineConfig } from "astro/config";
+<% if (it.hasReactPackages) { %>import react from "@astrojs/react";
+<% } %>
+export default defineConfig({<% if (it.hasReactPackages) { %>
+  integrations: [react()],<% } %>
+});

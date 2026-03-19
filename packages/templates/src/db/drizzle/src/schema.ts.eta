@@ -1,0 +1,8 @@
+import { <%= it.drizzleSchemaImports %> } from "<%= it.drizzleSchemaModule %>";
+
+export const posts = <%= it.drizzleTableFn %>("posts", {
+  id: <%= it.drizzleIdColumn %>,
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

@@ -1,0 +1,13 @@
+"use client";
+
+import Script from "next/script";
+
+export function PlausibleProvider({ domain }: { domain: string }) {
+  return (
+    <Script
+      defer
+      data-domain={domain}
+      src="https://plausible.io/js/script.js"
+    />
+  );
+}

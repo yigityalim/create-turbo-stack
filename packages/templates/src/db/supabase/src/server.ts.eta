@@ -1,0 +1,24 @@
+import { createServerClient } from "@supabase/ssr";
+import type { Database } from "./types";
+
+export function createClient(cookieStore: {
+  getAll: () => { name: string; value: string }[];
+  set: (name: string, value: string, options: Record<string, unknown>) => void;
+}) {
+  return createServerClient<Database>(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookies) {
+          for (const { name, value, options } of cookies) {
+            cookieStore.set(name, value, options);
+          }
+        },
+      },
+    },
+  );
+}

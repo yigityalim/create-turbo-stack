@@ -1,0 +1,5 @@
+import { createBrowserClient as createSupabaseBrowserClient } from "<%= it.scope %>/db";
+
+export function createBrowserClient() {
+  return createSupabaseBrowserClient();
+}

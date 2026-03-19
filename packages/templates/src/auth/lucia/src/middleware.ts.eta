@@ -1,0 +1,6 @@
+import type { NextRequest, NextResponse } from "next/server";
+
+export function authMiddleware(_request: NextRequest, _response: NextResponse) {
+  // Lucia validation happens in server components via validateRequest()
+  // Add custom middleware logic here if needed
+}

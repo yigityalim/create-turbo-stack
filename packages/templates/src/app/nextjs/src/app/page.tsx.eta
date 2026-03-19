@@ -1,0 +1,7 @@
+export default function Home() {
+  return (
+    <main>
+      <h1><%= it.app.name %></h1>
+    </main>
+  );
+}

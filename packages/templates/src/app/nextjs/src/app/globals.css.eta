@@ -1,0 +1,8 @@
+<% if (it.css.framework === 'tailwind4') { %>@import "tailwindcss";
+<% if (it.css.ui === 'shadcn') { %>@import "tw-animate-css";
+<% } %><% for (const source of it.wiring.cssSourceDirectives) { %>@source "<%= source %>";
+<% } %><% const consumedUi = it.app.consumes.find(c => it.packages.find(p => p.name === c && p.producesCSS)); %><% if (consumedUi) { %>@import "<%= it.scope %>/<%= consumedUi %>/globals.css";
+<% } %>
+@custom-variant dark (&:is(.dark *));
+<% } else { %>/* Global styles */
+<% } %>

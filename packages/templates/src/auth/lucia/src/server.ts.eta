@@ -1,0 +1,29 @@
+import { Lucia } from "lucia";
+import { cookies } from "next/headers";
+import { cache } from "react";
+
+const adapter = {
+  // TODO: Configure adapter based on your database
+};
+
+export const lucia = new Lucia(adapter as never, {
+  sessionCookie: {
+    expires: false,
+    attributes: {
+      secure: process.env.NODE_ENV === "production",
+    },
+  },
+});
+
+export const validateRequest = cache(async () => {
+  const sessionId = (await cookies()).get(lucia.sessionCookieName)?.value ?? null;
+  if (!sessionId) return { user: null, session: null };
+  const result = await lucia.validateSession(sessionId);
+  return result;
+});
+
+declare module "lucia" {
+  interface Register {
+    Lucia: typeof lucia;
+  }
+}

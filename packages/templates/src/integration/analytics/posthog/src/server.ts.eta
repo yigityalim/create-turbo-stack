@@ -1,0 +1,24 @@
+import { PostHog } from "posthog-node";
+
+let client: PostHog | null = null;
+
+function getClient(): PostHog {
+  if (!client) {
+    client = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+      host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    });
+  }
+  return client;
+}
+
+export function trackServerEvent(
+  distinctId: string,
+  event: string,
+  properties?: Record<string, unknown>,
+) {
+  getClient().capture({ distinctId, event, properties });
+}
+
+export async function shutdown() {
+  await getClient().shutdown();
+}

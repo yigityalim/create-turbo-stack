@@ -1,0 +1,2 @@
+export { auth, currentUser } from "@clerk/nextjs/server";
+export { ClerkProvider, SignIn, SignUp, UserButton } from "@clerk/nextjs";

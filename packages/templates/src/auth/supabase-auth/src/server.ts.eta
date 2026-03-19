@@ -1,0 +1,13 @@
+import { createClient } from "<%= it.scope %>/db";
+
+export async function getSession(cookieStore: Parameters<typeof createClient>[0]) {
+  const supabase = createClient(cookieStore);
+  const { data: { session } } = await supabase.auth.getSession();
+  return session;
+}
+
+export async function getUser(cookieStore: Parameters<typeof createClient>[0]) {
+  const supabase = createClient(cookieStore);
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+}
