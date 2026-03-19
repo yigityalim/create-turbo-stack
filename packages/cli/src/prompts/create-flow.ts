@@ -14,7 +14,7 @@ function onCancel<T>(value: T | symbol): T {
 
 export async function runCreatePrompts(projectName?: string): Promise<Preset> {
   // Banner
-  p.intro(`${pc.bgCyan(pc.black(" create-turbo-stack "))} ${pc.dim("v0.0.0")}`);
+  p.intro(`${pc.bgCyan(pc.black(" create-turbo-stack "))} ${pc.dim("v1.0.0")}`);
 
   // 1. Project name
   const name =

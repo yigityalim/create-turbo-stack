@@ -414,7 +414,7 @@ async function applyDiff(cwd: string, _oldPreset: Preset, newPreset: Preset) {
   const newConfig: TurboStackConfig = {
     ...newPreset,
     generatedAt: new Date().toISOString(),
-    cliVersion: "0.1.0",
+    cliVersion: "1.0.0",
     catalog: catalogObj,
     cssSourceMap: computeCssSourceMap(newPreset),
     autoPackages: resolveAutoPackages(newPreset).map((p) => p.name),

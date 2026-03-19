@@ -8,7 +8,7 @@ import { presetCommand } from "../src/commands/preset";
 const program = new Command()
   .name("create-turbo-stack")
   .description("Scaffold production-ready Turborepo monorepos")
-  .version("0.0.0");
+  .version("1.0.0");
 
 // Default: create
 program

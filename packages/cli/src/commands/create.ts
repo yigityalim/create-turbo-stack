@@ -96,7 +96,7 @@ export async function createCommand(
     const config: TurboStackConfig = {
       ...validated,
       generatedAt: new Date().toISOString(),
-      cliVersion: "0.1.0",
+      cliVersion: "1.0.0",
       catalog: catalogObj,
       cssSourceMap: computeCssSourceMap(validated),
       autoPackages: resolveAutoPackages(validated).map((p) => p.name),
