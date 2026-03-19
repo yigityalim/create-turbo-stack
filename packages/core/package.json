@@ -1,15 +1,20 @@
 {
   "name": "@create-turbo-stack/core",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "default": "./dist/browser.js"
     }
   },
+  "files": ["dist"],
   "scripts": {
+    "build": "tsc",
     "lint": "biome check",
     "type-check": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"
@@ -22,5 +27,6 @@
   "devDependencies": {
     "typescript": "^5.9.3",
     "vitest": "^4.1.0"
-  }
+  },
+  "license": "MIT"
 }
