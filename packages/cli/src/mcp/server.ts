@@ -1,4 +1,17 @@
-// TODO: Phase 5 — MCP server entry
-// Starts an MCP server using @modelcontextprotocol/sdk
-// Registers tools and resources
-// See SDD Section 10 for MCP architecture.
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { registerResources } from "./resources";
+import { registerTools } from "./tools";
+
+export async function startMcpServer() {
+  const server = new McpServer({
+    name: "create-turbo-stack",
+    version: "0.5.0",
+  });
+
+  registerTools(server);
+  registerResources(server);
+
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+}

@@ -51,7 +51,7 @@ export async function runCreatePrompts(projectName?: string): Promise<Preset> {
       placeholder: `@${name}`,
       defaultValue: `@${name}`,
       validate: (v) => {
-        if (!v.startsWith("@")) return "Scope must start with @";
+        if (!v || !v.startsWith("@")) return "Scope must start with @";
         if (!/^@[a-z0-9-]+$/.test(v)) return "Lowercase letters, numbers, and hyphens only";
       },
     }),
@@ -227,6 +227,9 @@ export async function runCreatePrompts(projectName?: string): Promise<Preset> {
           { value: "nextjs-api-only", label: "Next.js (API only)" },
           { value: "hono-standalone", label: "Hono standalone" },
           { value: "vite-react", label: "Vite + React" },
+          { value: "sveltekit", label: "SvelteKit" },
+          { value: "astro", label: "Astro" },
+          { value: "remix", label: "Remix" },
         ],
         initialValue: "nextjs",
       }),
@@ -236,7 +239,7 @@ export async function runCreatePrompts(projectName?: string): Promise<Preset> {
     nextPort += 1;
 
     let i18n = false;
-    if (appType === "nextjs") {
+    if (["nextjs", "sveltekit", "astro", "remix"].includes(appType as string)) {
       i18n = onCancel(
         await p.confirm({
           message: `Enable i18n for ${pc.cyan(appName)}?`,

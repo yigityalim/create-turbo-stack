@@ -1,13 +1,18 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import * as p from "@clack/prompts";
-import { resolveFileTree } from "@create-turbo-stack/core";
-import { ValidatedPresetSchema } from "@create-turbo-stack/schema";
+import {
+  computeCatalog,
+  computeCssSourceMap,
+  resolveAutoPackages,
+  resolveFileTree,
+} from "@create-turbo-stack/core";
 import type { Preset, TurboStackConfig } from "@create-turbo-stack/schema";
+import { ValidatedPresetSchema } from "@create-turbo-stack/schema";
 import pc from "picocolors";
 import { initGit } from "../io/git";
-import { installDependencies } from "../io/pm";
 import type { PM } from "../io/pm";
+import { installDependencies } from "../io/pm";
 import { writeFiles } from "../io/writer";
 import { runCreatePrompts } from "../prompts/create-flow";
 
@@ -15,14 +20,37 @@ export async function createCommand(
   projectName: string | undefined,
   options: { preset?: string; yes?: boolean },
 ) {
-  if (options.preset) {
-    // TODO: Phase 3 — fetch preset from URL or file
-    p.log.error("Preset loading not yet implemented. Use interactive mode.");
-    process.exit(1);
-  }
+  let preset: Preset;
 
-  // Interactive prompts
-  const preset: Preset = await runCreatePrompts(projectName);
+  if (options.preset) {
+    // Load preset from file or URL
+    let raw: string;
+    if (options.preset.startsWith("http://") || options.preset.startsWith("https://")) {
+      const res = await fetch(options.preset);
+      if (!res.ok) {
+        p.log.error(`Failed to fetch preset: ${res.status} ${res.statusText}`);
+        process.exit(1);
+      }
+      raw = await res.text();
+    } else {
+      raw = await fs.readFile(path.resolve(options.preset), "utf-8");
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (projectName) parsed.basics = { ...parsed.basics, projectName };
+      // Ensure required fields have fallbacks
+      if (!parsed.name) parsed.name = parsed.basics?.projectName ?? "my-project";
+      if (!parsed.version) parsed.version = "1.0.0";
+      preset = parsed;
+    } catch {
+      p.log.error("Invalid preset JSON.");
+      process.exit(1);
+    }
+  } else {
+    // Interactive prompts
+    preset = await runCreatePrompts(projectName);
+  }
 
   // Validate
   const result = ValidatedPresetSchema.safeParse(preset);
@@ -59,13 +87,19 @@ export async function createCommand(
     await writeFiles(outputDir, tree.nodes);
 
     // Write .turbo-stack.json
+    const catalogEntries = computeCatalog(validated);
+    const catalogObj: Record<string, string> = {};
+    for (const entry of catalogEntries) {
+      catalogObj[entry.name] = entry.version;
+    }
+
     const config: TurboStackConfig = {
       ...validated,
       generatedAt: new Date().toISOString(),
-      cliVersion: "0.0.0",
-      catalog: {},
-      cssSourceMap: {},
-      autoPackages: [],
+      cliVersion: "0.1.0",
+      catalog: catalogObj,
+      cssSourceMap: computeCssSourceMap(validated),
+      autoPackages: resolveAutoPackages(validated).map((p) => p.name),
     };
     await fs.writeFile(
       path.join(outputDir, ".turbo-stack.json"),
