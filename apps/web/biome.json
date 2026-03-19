@@ -1,9 +1,21 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.2.0/schema.json",
+  "root": false,
+  "$schema": "https://biomejs.dev/schemas/2.4.8/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
     "useIgnoreFile": true
+  },
+  "css": {
+    "parser": {
+      "cssModules": false
+    },
+    "formatter": {
+      "enabled": false
+    },
+    "linter": {
+      "enabled": false
+    }
   },
   "files": {
     "ignoreUnknown": true,
@@ -13,7 +25,8 @@
       "!.next",
       "!dist",
       "!build",
-      "!.source"
+      "!.source",
+      "!**/*.css"
     ]
   },
   "formatter": {
