@@ -1,12 +1,12 @@
 {
-  "name": "create-turbo-stack",
+  "name": "@create-turbo-stack/cli",
   "version": "1.0.0",
   "description": "Scaffold production-ready Turborepo monorepos in seconds",
   "type": "module",
   "bin": {
     "create-turbo-stack": "dist/bin/create-turbo-stack.js"
   },
-  "files": ["dist"],
+  "files": ["dist", "README.md", "LICENSE"],
   "scripts": {
     "dev": "tsx bin/create-turbo-stack.ts",
     "build": "tsup",

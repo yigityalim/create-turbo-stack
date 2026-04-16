@@ -4,11 +4,12 @@ import { analyzeCommand } from "../src/commands/analyze";
 import { createCommand } from "../src/commands/create";
 import { mcpCommand } from "../src/commands/mcp";
 import { presetCommand } from "../src/commands/preset";
+import { CLI_VERSION } from "../src/version";
 
 const program = new Command()
   .name("create-turbo-stack")
   .description("Scaffold production-ready Turborepo monorepos")
-  .version("1.0.0");
+  .version(CLI_VERSION);
 
 // Default: create
 program

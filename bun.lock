@@ -45,7 +45,7 @@
     },
     "packages/analyzer": {
       "name": "@create-turbo-stack/analyzer",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "dependencies": {
         "@create-turbo-stack/schema": "workspace:*",
       },
@@ -58,7 +58,7 @@
     },
     "packages/cli": {
       "name": "create-turbo-stack",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "bin": {
         "create-turbo-stack": "dist/bin/create-turbo-stack.js",
       },
@@ -85,7 +85,7 @@
     },
     "packages/core": {
       "name": "@create-turbo-stack/core",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "dependencies": {
         "@create-turbo-stack/schema": "workspace:*",
         "@create-turbo-stack/templates": "workspace:*",
@@ -98,7 +98,7 @@
     },
     "packages/schema": {
       "name": "@create-turbo-stack/schema",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "dependencies": {
         "zod": "^4.3.6",
         "zod-to-json-schema": "^3.25.1",
@@ -110,7 +110,7 @@
     },
     "packages/templates": {
       "name": "@create-turbo-stack/templates",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "devDependencies": {
         "typescript": "^5.9.3",
       },

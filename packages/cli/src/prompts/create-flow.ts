@@ -1,6 +1,7 @@
 import * as p from "@clack/prompts";
 import type { Preset } from "@create-turbo-stack/schema";
 import pc from "picocolors";
+import { CLI_VERSION } from "../version";
 
 function cancel(): never {
   p.cancel("Operation cancelled.");
@@ -14,7 +15,7 @@ function onCancel<T>(value: T | symbol): T {
 
 export async function runCreatePrompts(projectName?: string): Promise<Preset> {
   // Banner
-  p.intro(`${pc.bgCyan(pc.black(" create-turbo-stack "))} ${pc.dim("v1.0.0")}`);
+  p.intro(`${pc.bgCyan(pc.black(" create-turbo-stack "))} ${pc.dim(`v${CLI_VERSION}`)}`);
 
   // 1. Project name
   const name =

@@ -22,6 +22,7 @@ import {
   ValidatedPresetSchema,
 } from "@create-turbo-stack/schema";
 import pc from "picocolors";
+import { CLI_VERSION } from "../version";
 import { readExistingFiles, readProjectConfig, writeProjectConfig } from "../io/reader";
 import { writeFiles } from "../io/writer";
 
@@ -414,7 +415,7 @@ async function applyDiff(cwd: string, _oldPreset: Preset, newPreset: Preset) {
   const newConfig: TurboStackConfig = {
     ...newPreset,
     generatedAt: new Date().toISOString(),
-    cliVersion: "1.0.0",
+    cliVersion: CLI_VERSION,
     catalog: catalogObj,
     cssSourceMap: computeCssSourceMap(newPreset),
     autoPackages: resolveAutoPackages(newPreset).map((p) => p.name),

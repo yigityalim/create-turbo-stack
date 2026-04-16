@@ -10,6 +10,7 @@ import {
 import type { Preset, TurboStackConfig } from "@create-turbo-stack/schema";
 import { ValidatedPresetSchema } from "@create-turbo-stack/schema";
 import pc from "picocolors";
+import { CLI_VERSION } from "../version";
 import { initGit } from "../io/git";
 import type { PM } from "../io/pm";
 import { installDependencies } from "../io/pm";
@@ -96,7 +97,7 @@ export async function createCommand(
     const config: TurboStackConfig = {
       ...validated,
       generatedAt: new Date().toISOString(),
-      cliVersion: "1.0.0",
+      cliVersion: CLI_VERSION,
       catalog: catalogObj,
       cssSourceMap: computeCssSourceMap(validated),
       autoPackages: resolveAutoPackages(validated).map((p) => p.name),
