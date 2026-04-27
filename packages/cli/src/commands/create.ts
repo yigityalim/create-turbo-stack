@@ -4,22 +4,26 @@ import * as p from "@clack/prompts";
 import {
   computeCatalog,
   computeCssSourceMap,
+  migratePreset,
   resolveAutoPackages,
   resolveFileTree,
+  UnsupportedAppTypeError,
 } from "@create-turbo-stack/core";
-import type { Preset, TurboStackConfig } from "@create-turbo-stack/schema";
-import { ValidatedPresetSchema } from "@create-turbo-stack/schema";
+import type { FileTree, Preset, TurboStackConfig, UserConfig } from "@create-turbo-stack/schema";
+import { CURRENT_PRESET_SCHEMA_VERSION, ValidatedPresetSchema } from "@create-turbo-stack/schema";
 import pc from "picocolors";
-import { CLI_VERSION } from "../version";
 import { initGit } from "../io/git";
 import type { PM } from "../io/pm";
 import { installDependencies } from "../io/pm";
+import { validatePresetAgainstPolicy } from "../io/policy";
 import { writeFiles } from "../io/writer";
 import { runCreatePrompts } from "../prompts/create-flow";
+import { CLI_VERSION } from "../version";
 
 export async function createCommand(
   projectName: string | undefined,
-  options: { preset?: string; yes?: boolean },
+  options: { preset?: string; yes?: boolean; dryRun?: boolean },
+  userConfig?: UserConfig,
 ) {
   let preset: Preset;
 
@@ -43,17 +47,27 @@ export async function createCommand(
       // Ensure required fields have fallbacks
       if (!parsed.name) parsed.name = parsed.basics?.projectName ?? "my-project";
       if (!parsed.version) parsed.version = "1.0.0";
-      preset = parsed;
-    } catch {
-      p.log.error("Invalid preset JSON.");
+      // Run schema migrations so old preset JSONs are accepted by the
+      // current Zod validator instead of producing cryptic shape errors.
+      const migrated = migratePreset(parsed, CURRENT_PRESET_SCHEMA_VERSION);
+      preset = migrated as unknown as Preset;
+    } catch (err) {
+      p.log.error(`Invalid preset JSON: ${(err as Error).message}`);
       process.exit(1);
     }
   } else {
     // Interactive prompts
-    preset = await runCreatePrompts(projectName);
+    preset = await runCreatePrompts(projectName, userConfig);
   }
 
-  // Validate
+  // Policy enforcement (independent of input source)
+  const violations = validatePresetAgainstPolicy(preset, userConfig?.policy);
+  if (violations.length > 0) {
+    p.log.error("Preset violates policy:");
+    for (const v of violations) p.log.error(`  ${v}`);
+    process.exit(1);
+  }
+
   const result = ValidatedPresetSchema.safeParse(preset);
   if (!result.success) {
     p.log.error("Invalid configuration:");
@@ -66,7 +80,6 @@ export async function createCommand(
   const validated = result.data;
   const outputDir = path.resolve(process.cwd(), validated.basics.projectName);
 
-  // Check if directory exists
   try {
     await fs.access(outputDir);
     p.log.error(`Directory ${pc.cyan(validated.basics.projectName)} already exists.`);
@@ -77,17 +90,35 @@ export async function createCommand(
 
   const s = p.spinner();
 
-  // 1. Generate file tree
   s.start("Generating project files");
-  const tree = resolveFileTree(validated);
+  let tree: FileTree;
+  try {
+    tree = resolveFileTree(validated);
+  } catch (err) {
+    s.stop("Generation failed");
+    if (err instanceof UnsupportedAppTypeError) {
+      p.log.error(err.message);
+      process.exit(1);
+    }
+    throw err;
+  }
   s.stop(`Generated ${pc.cyan(String(tree.nodes.length))} files`);
 
-  // 2. Write to disk
+  // Dry-run: print what would be written and exit before touching disk.
+  if (options.dryRun) {
+    p.log.info(`(dry-run) would create ${pc.cyan(validated.basics.projectName)}/ with:`);
+    for (const node of tree.nodes) {
+      if (node.isDirectory) continue;
+      p.log.message(`  ${pc.green("+")} ${node.path}`);
+    }
+    p.outro(`(dry-run) ${tree.nodes.filter((n) => !n.isDirectory).length} files would be written.`);
+    return;
+  }
+
   s.start("Writing files to disk");
   try {
     await writeFiles(outputDir, tree.nodes);
 
-    // Write .turbo-stack.json
     const catalogEntries = computeCatalog(validated);
     const catalogObj: Record<string, string> = {};
     for (const entry of catalogEntries) {
@@ -110,12 +141,10 @@ export async function createCommand(
     s.stop("Files written");
   } catch (err) {
     s.stop("Failed to write files");
-    // Cleanup on failure
     await fs.rm(outputDir, { recursive: true, force: true }).catch(() => {});
     throw err;
   }
 
-  // 3. Git init
   s.start("Initializing git repository");
   try {
     initGit(outputDir);
@@ -124,7 +153,6 @@ export async function createCommand(
     s.stop("Git init skipped");
   }
 
-  // 4. Install dependencies
   s.start(`Installing dependencies with ${validated.basics.packageManager}`);
   try {
     installDependencies(outputDir, validated.basics.packageManager as PM);
@@ -133,7 +161,6 @@ export async function createCommand(
     s.stop("Dependency install failed — run manually");
   }
 
-  // 5. Done
   const pm = validated.basics.packageManager;
   p.note(
     [

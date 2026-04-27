@@ -48,7 +48,8 @@
       "!!**/.next",
       "!!**/.turbo",
       "!!**/dist",
-      "!!**/bun.lock"
+      "!!**/bun.lock",
+      "!!**/templates-map.ts"
     ]
   }
 }

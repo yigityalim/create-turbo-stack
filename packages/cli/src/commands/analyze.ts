@@ -17,7 +17,6 @@ type AnalyzeOptions = {
 export async function analyzeCommand(targetPath: string, options: AnalyzeOptions) {
   const root = path.resolve(targetPath || ".");
 
-  // JSON mode — no interactive output
   if (options.json) {
     const result = await analyze(root);
     process.stdout.write(JSON.stringify(result.preset, null, 2));
@@ -70,7 +69,6 @@ export async function analyzeCommand(targetPath: string, options: AnalyzeOptions
     }
   }
 
-  // Validate
   const validation = ValidatedPresetSchema.safeParse(result.preset);
   if (validation.success) {
     p.log.success("Generated preset is valid");
@@ -116,15 +114,13 @@ export async function analyzeCommand(targetPath: string, options: AnalyzeOptions
       const url = `https://create-turbo-stack.dev/builder?p=${compressed}`;
       p.log.info(`Builder URL: ${pc.cyan(url)}`);
 
-      // Try to open in browser
-      const { exec } = await import("node:child_process");
+      // when the URL contains a compressed preset payload.
       const openCmd =
         process.platform === "darwin"
           ? "open"
           : process.platform === "win32"
             ? "start"
             : "xdg-open";
-      // Use array form to prevent command injection via URL
       const { execFile } = await import("node:child_process");
       execFile(openCmd, [url]);
     }

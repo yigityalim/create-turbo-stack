@@ -57,7 +57,7 @@
       },
     },
     "packages/cli": {
-      "name": "create-turbo-stack",
+      "name": "@create-turbo-stack/cli",
       "version": "1.0.0",
       "bin": {
         "create-turbo-stack": "dist/bin/create-turbo-stack.js",
@@ -152,6 +152,8 @@
     "@clack/prompts": ["@clack/prompts@1.1.0", "", { "dependencies": { "@clack/core": "1.1.0", "sisteransi": "^1.0.5" } }, "sha512-pkqbPGtohJAvm4Dphs2M8xE29ggupihHdy1x84HNojZuMtFsHiUlRvqD24tM2+XmI+61LlfNceM3Wr7U5QES5g=="],
 
     "@create-turbo-stack/analyzer": ["@create-turbo-stack/analyzer@workspace:packages/analyzer"],
+
+    "@create-turbo-stack/cli": ["@create-turbo-stack/cli@workspace:packages/cli"],
 
     "@create-turbo-stack/core": ["@create-turbo-stack/core@workspace:packages/core"],
 
@@ -650,8 +652,6 @@
     "cookie-signature": ["cookie-signature@1.2.2", "", {}, "sha512-D76uU73ulSXrD1UXF4KE2TMxVVwhsnCgfAyTg9k8P6KGZjlXKrOLe4dJQKI3Bxi5wjesZoFXJWElNWBjPZMbhg=="],
 
     "cors": ["cors@2.8.6", "", { "dependencies": { "object-assign": "^4", "vary": "^1" } }, "sha512-tJtZBBHA6vjIAaF6EnIaq6laBBP9aq/Y3ouVJjEfoHbRBcHBAHYcMh/w8LDrk2PvIMMq8gmopa5D4V8RmbrxGw=="],
-
-    "create-turbo-stack": ["create-turbo-stack@workspace:packages/cli"],
 
     "cross-spawn": ["cross-spawn@7.0.6", "", { "dependencies": { "path-key": "^3.1.0", "shebang-command": "^2.0.0", "which": "^2.0.1" } }, "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA=="],
 

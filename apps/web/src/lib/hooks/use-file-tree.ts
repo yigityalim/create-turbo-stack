@@ -55,7 +55,6 @@ export function useFileTree(preset: Preset): UseFileTreeReturn {
         );
         const prevPaths = prevPathsRef.current;
 
-        // Compute diff
         if (prevPaths.size > 0) {
           const added = new Set<string>();
           const removed = new Set<string>();
@@ -94,7 +93,6 @@ export function useFileTree(preset: Preset): UseFileTreeReturn {
     }, 150);
 
     return () => clearTimeout(timerRef.current);
-    // biome-ignore lint/correctness/useExhaustiveDependencies: presetJson is a stable string derived from preset
   }, [presetJson]);
 
   const { fileCount, directoryCount } = useMemo(() => {

@@ -1,0 +1,107 @@
+---
+title: Plugins
+description: Add app frameworks and integration providers without forking the repo
+---
+
+create-turbo-stack ships built-in app types (Next.js, Hono, Vite, SvelteKit, Astro, Remix) and integration providers (Drizzle, Supabase, Clerk, Sentry, PostHog, …). Anything beyond that is a **plugin** — a small npm package whose default export is registered into the in-process registries at CLI startup.
+
+## Anatomy
+
+A plugin's default export is one of:
+
+- `AppTypeDefinition` — a new framework
+- `IntegrationDefinition` — a new provider in any category
+- An array of either / both — bundle multiple definitions in one package
+
+```ts
+// cts-plugin-nuxt/src/index.ts
+import { defineAppType } from "@create-turbo-stack/core";
+
+export default defineAppType({
+  type: "nuxt",
+  templateCategory: "app/nuxt",
+  templates: {
+    "src/app.vue.eta":  "<template>...</template>",
+    "src/main.ts.eta":  "import { createApp } from 'vue'\n...",
+  },
+  buildPackageJson(preset, app, ctx) { /* ... */ },
+  buildTsconfig(preset, app, ctx)    { /* ... */ },
+  buildTemplateContext(preset, app)  { /* ... */ },
+});
+```
+
+`templates` is the runtime equivalent of `packages/templates/src/app/<name>/`. Plugin templates win over built-ins on key collision — useful for swapping a single file at the company level.
+
+## package.json shape
+
+```json
+{
+  "name": "cts-plugin-nuxt",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": { ".": { "default": "./src/index.ts" } },
+  "files": ["src", "README.md"],
+  "peerDependencies": {
+    "@create-turbo-stack/core": "^1.0.0",
+    "@create-turbo-stack/schema": "^1.0.0"
+  }
+}
+```
+
+`peerDependencies` is the right field, not `dependencies`. The user's project already has these resolved; a duplicated copy means version drift.
+
+## Wiring it up
+
+In a target project:
+
+```bash
+npm install --save-dev cts-plugin-nuxt
+```
+
+```json
+// create-turbo-stack.json
+{
+  "$schema": "https://create-turbo-stack.dev/schema/user-config.json",
+  "plugins": ["cts-plugin-nuxt"]
+}
+```
+
+The CLI calls `await import("cts-plugin-nuxt")` at startup, reads `module.default`, and registers it. From that moment, the new value shows up in prompts, in `create-turbo-stack list`, and in the registries.
+
+## Schema enums
+
+For new app types or providers, the schema enum must already accept the value. If you need a new value, that's a PR against `@create-turbo-stack/schema`. Once the value lands in a published schema version your plugin can reference it — the registry-vs-schema sync test (`registry-sync.test.ts`) keeps the two honest.
+
+## Reference plugin
+
+`examples/cts-plugin-vite-vue/` in the repo is a complete, working plugin that adds Vite + Vue 3. It's the smallest concrete proof the contract works end-to-end. Copy-paste it as a starting point for new frameworks.
+
+## Testing your plugin
+
+Best path: import the default export, register it, render a fixture preset.
+
+```ts
+import { describe, expect, it } from "vitest";
+import {
+  registerAppType, resolveFileTree, getAppTypeDefinition,
+} from "@create-turbo-stack/core";
+import myPlugin from "./src/index";
+
+describe("plugin", () => {
+  registerAppType(myPlugin);
+  it("registers", () => {
+    expect(getAppTypeDefinition("nuxt")).toBe(myPlugin);
+  });
+  it("renders files", () => {
+    const tree = resolveFileTree(/* preset using nuxt */);
+    expect(tree.nodes.map(n => n.path)).toContain("apps/web/src/app.vue");
+  });
+});
+```
+
+See `packages/core/src/resolve/app-types/plugin-integration.test.ts` for the exact shape used internally.
+
+## Versioning
+
+Plugins follow regular semver against their `peerDependency` ranges. When `@create-turbo-stack/core` ships a major bump that changes the `AppTypeDefinition` shape, plugin authors widen `peerDependencies` and republish. CI in your plugin repo can run `bun add -D @create-turbo-stack/core@latest && bun run type-check` to catch breakage early.

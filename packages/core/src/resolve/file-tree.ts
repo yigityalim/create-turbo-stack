@@ -18,21 +18,17 @@ export function resolveFileTree(
 ): FileTree {
   const nodes: FileTreeNode[] = [];
 
-  // 1. Root config files
   nodes.push(...resolveRootFiles(preset));
 
-  // 2. Auto-generated packages (typescript-config, env, db, api, auth)
   const autoPackages = resolveAutoPackages(preset);
   for (const pkg of autoPackages) {
     nodes.push(...resolvePackageFiles(preset, pkg));
   }
 
-  // 3. User-specified packages
   for (const pkg of preset.packages) {
     nodes.push(...resolvePackageFiles(preset, pkg));
   }
 
-  // 4. Apps
   for (const app of preset.apps) {
     nodes.push(...resolveAppFiles(preset, app));
   }

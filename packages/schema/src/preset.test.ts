@@ -3,9 +3,7 @@ import minimalJson from "../../../presets/minimal.json";
 import saasJson from "../../../presets/saas-starter.json";
 import { ValidatedPresetSchema } from "./preset";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 /** Deep-clone a fixture and return as a mutable record. */
 function fixture(): Record<string, unknown> {
@@ -26,9 +24,7 @@ function firstIssueMessage(data: unknown): string | undefined {
   return result.error.issues[0]?.message;
 }
 
-// ---------------------------------------------------------------------------
 // Valid presets
-// ---------------------------------------------------------------------------
 
 describe("ValidatedPresetSchema — valid presets", () => {
   it("accepts a minimal preset", () => {
@@ -58,9 +54,7 @@ describe("ValidatedPresetSchema — valid presets", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Cross-field validation — rejection cases
-// ---------------------------------------------------------------------------
 
 describe("ValidatedPresetSchema — rejected presets", () => {
   it("rejects supabase-auth when database strategy is not supabase", () => {
@@ -132,6 +126,6 @@ describe("ValidatedPresetSchema — rejected presets", () => {
     });
 
     const message = firstIssueMessage(preset);
-    expect(message).toMatch(/CMS integration only supported for nextjs apps/);
+    expect(message).toMatch(/CMS field is only meaningful for nextjs apps/);
   });
 });

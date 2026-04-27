@@ -13,7 +13,12 @@ import { detectTypescript } from "./detectors/typescript";
 import type { AnalysisResult, DetectionReport } from "./types";
 import { readPackageJson } from "./utils/dep-scanner";
 
-export type { AnalysisResult, Detection, DetectionConfidence, DetectionReport } from "./types";
+export type {
+  AnalysisResult,
+  Detection,
+  DetectionConfidence,
+  DetectionReport,
+} from "./types";
 
 /**
  * Analyze an existing Turborepo project and generate a Preset.
@@ -21,12 +26,10 @@ export type { AnalysisResult, Detection, DetectionConfidence, DetectionReport } 
 export async function analyze(rootPath: string): Promise<AnalysisResult> {
   const root = path.resolve(rootPath);
 
-  // Detect scope from root package.json
   const rootPkg = await readPackageJson(root);
   const scope = detectScope(rootPkg);
   const projectName = rootPkg?.name ?? path.basename(root);
 
-  // Run all detections
   const [pm, linter, ts, db, api, auth, css, appsResult, pkgsResult, intResult] = await Promise.all(
     [
       detectPackageManager(root),
@@ -43,6 +46,7 @@ export async function analyze(rootPath: string): Promise<AnalysisResult> {
   );
 
   const preset: Preset = {
+    schemaVersion: "1.0",
     name: projectName,
     version: "1.0.0",
     description: `Analyzed from ${projectName}`,
@@ -79,10 +83,26 @@ export async function analyze(rootPath: string): Promise<AnalysisResult> {
     packageManager: pm,
     linter,
     typescript: ts,
-    database: { value: db.value.strategy, confidence: db.confidence, reason: db.reason },
-    api: { value: api.value.strategy, confidence: api.confidence, reason: api.reason },
-    auth: { value: auth.value.provider, confidence: auth.confidence, reason: auth.reason },
-    css: { value: css.value.framework, confidence: css.confidence, reason: css.reason },
+    database: {
+      value: db.value.strategy,
+      confidence: db.confidence,
+      reason: db.reason,
+    },
+    api: {
+      value: api.value.strategy,
+      confidence: api.confidence,
+      reason: api.reason,
+    },
+    auth: {
+      value: auth.value.provider,
+      confidence: auth.confidence,
+      reason: auth.reason,
+    },
+    css: {
+      value: css.value.framework,
+      confidence: css.confidence,
+      reason: css.reason,
+    },
     apps: appsResult.detections,
     packages: pkgsResult.detections,
     integrations: intResult.detections,

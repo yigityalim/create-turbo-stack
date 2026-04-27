@@ -10,12 +10,10 @@ export function resolvePackageFiles(preset: Preset, pkg: Package): FileTreeNode[
   const _scope = preset.basics.scope;
   const base = `packages/${pkg.name}`;
 
-  // Special case: typescript-config
   if (pkg.name === "typescript-config") {
     return resolveTypescriptConfigPackage(preset, base);
   }
 
-  // Route to specialized resolvers for auto-generated packages
   if (pkg.name === "db") return resolveDbPackage(preset, pkg, base);
   if (pkg.name === "api") return resolveApiPackage(preset, pkg, base);
   if (pkg.name === "auth") return resolveAuthPackage(preset, pkg, base);
@@ -26,13 +24,8 @@ export function resolvePackageFiles(preset: Preset, pkg: Package): FileTreeNode[
   if (pkg.name === "rate-limit") return resolveRateLimitPackage(preset, pkg, base);
   if (pkg.name === "ai") return resolveAiPackage(preset, pkg, base);
 
-  // Generic package
   return resolveGenericPackage(preset, pkg, base);
 }
-
-// ---------------------------------------------------------------------------
-// Generic package (user-specified)
-// ---------------------------------------------------------------------------
 
 function resolveGenericPackage(preset: Preset, pkg: Package, base: string): FileTreeNode[] {
   const nodes: FileTreeNode[] = [];
@@ -41,14 +34,12 @@ function resolveGenericPackage(preset: Preset, pkg: Package, base: string): File
 
   nodes.push(...makeBasePackageFiles(preset, pkg, base));
 
-  // src/index.ts
   nodes.push({
     path: `${base}/src/index.ts`,
     content: `// ${name}\nexport {};\n`,
     isDirectory: false,
   });
 
-  // Extra exports
   for (const exp of pkg.exports) {
     if (exp !== ".") {
       const fileName = exp.replace(/^\.\//, "");
@@ -60,7 +51,6 @@ function resolveGenericPackage(preset: Preset, pkg: Package, base: string): File
     }
   }
 
-  // CSS-producing packages get globals.css
   if (pkg.producesCSS) {
     nodes.push({
       path: `${base}/src/globals.css`,
@@ -72,16 +62,11 @@ function resolveGenericPackage(preset: Preset, pkg: Package, base: string): File
   return nodes;
 }
 
-// ---------------------------------------------------------------------------
-// Database package
-// ---------------------------------------------------------------------------
-
 function resolveDbPackage(preset: Preset, pkg: Package, base: string): FileTreeNode[] {
   const nodes: FileTreeNode[] = [];
   const scope = preset.basics.scope;
   const db = preset.database;
 
-  // Extra deps for db package
   const extraDeps: Record<string, string> = {};
   const extraDevDeps: Record<string, string> = {};
 
@@ -126,9 +111,7 @@ function resolveDbPackage(preset: Preset, pkg: Package, base: string): FileTreeN
   return nodes;
 }
 
-// ---------------------------------------------------------------------------
 // API package
-// ---------------------------------------------------------------------------
 
 function resolveApiPackage(preset: Preset, pkg: Package, base: string): FileTreeNode[] {
   const nodes: FileTreeNode[] = [];
@@ -171,9 +154,7 @@ function resolveApiPackage(preset: Preset, pkg: Package, base: string): FileTree
   return nodes;
 }
 
-// ---------------------------------------------------------------------------
 // Auth package
-// ---------------------------------------------------------------------------
 
 function resolveAuthPackage(preset: Preset, pkg: Package, base: string): FileTreeNode[] {
   const nodes: FileTreeNode[] = [];
@@ -219,9 +200,7 @@ function resolveAuthPackage(preset: Preset, pkg: Package, base: string): FileTre
   return nodes;
 }
 
-// ---------------------------------------------------------------------------
 // Env package
-// ---------------------------------------------------------------------------
 
 function resolveEnvPackage(preset: Preset, pkg: Package, base: string): FileTreeNode[] {
   const nodes: FileTreeNode[] = [];
@@ -234,10 +213,8 @@ function resolveEnvPackage(preset: Preset, pkg: Package, base: string): FileTree
 
   nodes.push(...makeBasePackageFiles(preset, pkg, base, extraDeps));
 
-  // Compute env vars from chain
   const envVars = computeBaseEnvVars(preset);
 
-  // src/index.ts
   const serverLines = envVars.server.map((v) => `    ${v.name}: ${v.zodType},`).join("\n");
   const clientLines = envVars.client.map((v) => `    ${v.name}: ${v.zodType},`).join("\n");
   const runtimeLines = [...envVars.server, ...envVars.client]
@@ -268,9 +245,7 @@ ${sections.join("\n")}
   return nodes;
 }
 
-// ---------------------------------------------------------------------------
 // Analytics package
-// ---------------------------------------------------------------------------
 
 function resolveAnalyticsPackage(preset: Preset, pkg: Package, base: string): FileTreeNode[] {
   const nodes: FileTreeNode[] = [];
@@ -297,9 +272,7 @@ function resolveAnalyticsPackage(preset: Preset, pkg: Package, base: string): Fi
   return nodes;
 }
 
-// ---------------------------------------------------------------------------
 // Monitoring package (Sentry)
-// ---------------------------------------------------------------------------
 
 function resolveMonitoringPackage(preset: Preset, pkg: Package, base: string): FileTreeNode[] {
   const nodes: FileTreeNode[] = [];
@@ -315,9 +288,7 @@ function resolveMonitoringPackage(preset: Preset, pkg: Package, base: string): F
   return nodes;
 }
 
-// ---------------------------------------------------------------------------
 // Email package
-// ---------------------------------------------------------------------------
 
 function resolveEmailPackage(preset: Preset, pkg: Package, base: string): FileTreeNode[] {
   const nodes: FileTreeNode[] = [];
@@ -343,9 +314,7 @@ function resolveEmailPackage(preset: Preset, pkg: Package, base: string): FileTr
   return nodes;
 }
 
-// ---------------------------------------------------------------------------
 // Rate limit package
-// ---------------------------------------------------------------------------
 
 function resolveRateLimitPackage(preset: Preset, pkg: Package, base: string): FileTreeNode[] {
   const nodes: FileTreeNode[] = [];
@@ -362,9 +331,7 @@ function resolveRateLimitPackage(preset: Preset, pkg: Package, base: string): Fi
   return nodes;
 }
 
-// ---------------------------------------------------------------------------
 // AI package
-// ---------------------------------------------------------------------------
 
 function resolveAiPackage(preset: Preset, pkg: Package, base: string): FileTreeNode[] {
   const nodes: FileTreeNode[] = [];
@@ -389,9 +356,7 @@ function resolveAiPackage(preset: Preset, pkg: Package, base: string): FileTreeN
   return nodes;
 }
 
-// ---------------------------------------------------------------------------
 // Shared helpers
-// ---------------------------------------------------------------------------
 
 /**
  * Generate base package files: package.json + tsconfig.json.
@@ -409,7 +374,6 @@ function makeBasePackageFiles(
   const name = fullPackageName(scope, pkg.name);
   const exportsMap: Record<string, unknown> = computeExportsMap(pkg);
 
-  // CSS-producing packages need a style export for globals.css
   if (pkg.producesCSS) {
     exportsMap["./globals.css"] = "./src/globals.css";
   }
@@ -439,7 +403,6 @@ function makeBasePackageFiles(
     isDirectory: false,
   });
 
-  // tsconfig.json
   const tsconfigBase =
     pkg.type === "ui" || pkg.type === "react-library"
       ? "react.json"
@@ -465,9 +428,7 @@ function makeBasePackageFiles(
   return nodes;
 }
 
-// ---------------------------------------------------------------------------
 // Drizzle helpers
-// ---------------------------------------------------------------------------
 
 function drizzleDriverDep(driver: string): { name: string } | null {
   const map: Record<string, string> = {
@@ -577,9 +538,7 @@ export const db = drizzle(client, { schema });
 `;
 }
 
-// ---------------------------------------------------------------------------
 // Env helpers
-// ---------------------------------------------------------------------------
 
 interface EnvVarDef {
   name: string;
@@ -590,7 +549,6 @@ function computeBaseEnvVars(preset: Preset): { server: EnvVarDef[]; client: EnvV
   const server: EnvVarDef[] = [];
   const client: EnvVarDef[] = [];
 
-  // Database
   if (preset.database.strategy === "supabase") {
     server.push({ name: "SUPABASE_URL", zodType: "z.string().url()" });
     server.push({ name: "SUPABASE_ANON_KEY", zodType: "z.string().min(1)" });
@@ -601,13 +559,11 @@ function computeBaseEnvVars(preset: Preset): { server: EnvVarDef[]; client: EnvV
     server.push({ name: "DATABASE_URL", zodType: "z.string().url()" });
   }
 
-  // Auth
   if (preset.auth.provider === "clerk") {
     server.push({ name: "CLERK_SECRET_KEY", zodType: "z.string().min(1)" });
     client.push({ name: "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", zodType: "z.string().min(1)" });
   }
 
-  // Integrations
   if (preset.integrations.errorTracking === "sentry") {
     server.push({ name: "SENTRY_DSN", zodType: "z.string().url()" });
   }
@@ -640,7 +596,6 @@ function resolveTypescriptConfigPackage(preset: Preset, base: string): FileTreeN
   const scope = preset.basics.scope;
   const strict = preset.basics.typescript === "strict";
 
-  // package.json
   nodes.push({
     path: `${base}/package.json`,
     content: JSON.stringify(

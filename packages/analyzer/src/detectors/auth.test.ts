@@ -9,9 +9,7 @@ afterEach(async () => {
 });
 
 describe("detectAuth", () => {
-  // ---------------------------------------------------------------------------
   // packages/auth — certain
-  // ---------------------------------------------------------------------------
 
   it("detects clerk via @clerk/nextjs in packages/auth", async () => {
     tmp = await createFixture({
@@ -53,9 +51,7 @@ describe("detectAuth", () => {
     expect(r.confidence).toBe("certain");
   });
 
-  // ---------------------------------------------------------------------------
   // Supabase auth via packages/db — high
-  // ---------------------------------------------------------------------------
 
   it("detects supabase-auth via @supabase/ssr in packages/db", async () => {
     tmp = await createFixture({
@@ -82,9 +78,7 @@ describe("detectAuth", () => {
     expect(r.value.provider).toBe("supabase-auth");
   });
 
-  // ---------------------------------------------------------------------------
   // Root package.json fallbacks — high
-  // ---------------------------------------------------------------------------
 
   it("detects clerk from root package.json — high confidence", async () => {
     tmp = await createFixture({
@@ -104,9 +98,7 @@ describe("detectAuth", () => {
     expect(r.confidence).toBe("high");
   });
 
-  // ---------------------------------------------------------------------------
   // Priority: packages/auth over root
-  // ---------------------------------------------------------------------------
 
   it("prefers packages/auth over root package.json", async () => {
     tmp = await createFixture({
@@ -118,9 +110,7 @@ describe("detectAuth", () => {
     expect(r.confidence).toBe("certain");
   });
 
-  // ---------------------------------------------------------------------------
   // Default values on Auth object
-  // ---------------------------------------------------------------------------
 
   it("always sets rbac: false by default", async () => {
     tmp = await createFixture({
@@ -140,9 +130,7 @@ describe("detectAuth", () => {
     expect(r.value.entitlements).toBe(false);
   });
 
-  // ---------------------------------------------------------------------------
   // None
-  // ---------------------------------------------------------------------------
 
   it("returns none/medium when no auth provider detected", async () => {
     tmp = await createFixture({ "package.json": { name: "bare" } });
@@ -167,9 +155,7 @@ describe("detectAuth", () => {
     expect(r.value.provider).toBe("none");
   });
 
-  // ---------------------------------------------------------------------------
   // Edge cases
-  // ---------------------------------------------------------------------------
 
   it("handles malformed packages/auth/package.json gracefully", async () => {
     const fs = await import("node:fs/promises");

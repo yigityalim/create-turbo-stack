@@ -3,9 +3,7 @@ import { computeCatalog } from "../../src/wiring/catalog";
 import { VERSIONS } from "../../src/wiring/versions";
 import { makeFullPreset, makePreset } from "../preset-factory";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function names(preset: Parameters<typeof computeCatalog>[0]): string[] {
   return computeCatalog(preset).map((e) => e.name);
@@ -15,9 +13,7 @@ function entry(preset: Parameters<typeof computeCatalog>[0], name: string) {
   return computeCatalog(preset).find((e) => e.name === name);
 }
 
-// ---------------------------------------------------------------------------
 // Always-present
-// ---------------------------------------------------------------------------
 
 describe("computeCatalog — always present", () => {
   it("includes typescript for every preset", () => {
@@ -28,10 +24,6 @@ describe("computeCatalog — always present", () => {
     expect(entry(makePreset(), "typescript")?.version).toBe(VERSIONS.typescript);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Linter
-// ---------------------------------------------------------------------------
 
 describe("computeCatalog — linter", () => {
   it("biome linter → @biomejs/biome present", () => {
@@ -65,10 +57,6 @@ describe("computeCatalog — linter", () => {
     expect(names(p)).not.toContain("@biomejs/biome");
   });
 });
-
-// ---------------------------------------------------------------------------
-// CSS
-// ---------------------------------------------------------------------------
 
 describe("computeCatalog — CSS", () => {
   it("tailwind4 → tailwindcss + @tailwindcss/postcss", () => {
@@ -116,10 +104,6 @@ describe("computeCatalog — CSS", () => {
     expect(n).not.toContain("postcss");
   });
 });
-
-// ---------------------------------------------------------------------------
-// Apps
-// ---------------------------------------------------------------------------
 
 describe("computeCatalog — apps", () => {
   it("nextjs app → next, react, react-dom, @types/react, @types/react-dom", () => {
@@ -211,10 +195,6 @@ describe("computeCatalog — apps", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Database
-// ---------------------------------------------------------------------------
-
 describe("computeCatalog — database", () => {
   it("supabase → @supabase/supabase-js + @supabase/ssr", () => {
     const p = makePreset({ database: { strategy: "supabase" } });
@@ -282,10 +262,6 @@ describe("computeCatalog — database", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// API
-// ---------------------------------------------------------------------------
-
 describe("computeCatalog — api", () => {
   it("trpc → @trpc/server, @trpc/client, superjson, zod", () => {
     const p = makePreset({ api: { strategy: "trpc", version: "v11" } });
@@ -313,10 +289,6 @@ describe("computeCatalog — api", () => {
     expect(names(p)).not.toContain("@trpc/server");
   });
 });
-
-// ---------------------------------------------------------------------------
-// Auth
-// ---------------------------------------------------------------------------
 
 describe("computeCatalog — auth", () => {
   it("clerk → @clerk/nextjs", () => {
@@ -350,10 +322,6 @@ describe("computeCatalog — auth", () => {
     expect(n).not.toContain("next-auth");
   });
 });
-
-// ---------------------------------------------------------------------------
-// Integrations
-// ---------------------------------------------------------------------------
 
 describe("computeCatalog — integrations", () => {
   it("envValidation: true → @t3-oss/env-nextjs + zod", () => {
@@ -429,9 +397,7 @@ describe("computeCatalog — integrations", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Deduplication
-// ---------------------------------------------------------------------------
 
 describe("computeCatalog — deduplication", () => {
   it("trpc + envValidation both need zod — no duplicate", () => {
@@ -484,10 +450,6 @@ describe("computeCatalog — deduplication", () => {
     expect(n).toContain("next-intl");
   });
 });
-
-// ---------------------------------------------------------------------------
-// Return shape
-// ---------------------------------------------------------------------------
 
 describe("computeCatalog — return shape", () => {
   it("returns CatalogEntry[] with name and version on every entry", () => {

@@ -5,6 +5,7 @@
 import type { Preset } from "@create-turbo-stack/schema";
 
 export const DEFAULT_PRESET: Preset = {
+  schemaVersion: "1.0",
   name: "my-turborepo",
   version: "1.0.0",
   description: "",
@@ -69,6 +70,7 @@ export const BUILTIN_PRESETS: {
     name: "SaaS Starter",
     description: "Next.js + Supabase + tRPC + shadcn + i18n",
     preset: {
+      schemaVersion: "1.0",
       name: "saas-starter",
       version: "1.0.0",
       description: "Full-stack SaaS starter with Supabase",
@@ -127,6 +129,7 @@ export const BUILTIN_PRESETS: {
     name: "API Only",
     description: "Hono standalone + Drizzle + PostgreSQL — no frontend",
     preset: {
+      schemaVersion: "1.0",
       name: "api-only",
       version: "1.0.0",
       description: "API-only monorepo with Hono and Drizzle",

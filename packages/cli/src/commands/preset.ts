@@ -32,6 +32,7 @@ async function presetSave(file?: string) {
   const outputPath = file ?? `${config.basics.projectName}.preset.json`;
 
   const preset: Preset = {
+    schemaVersion: "1.0",
     name: config.name ?? config.basics.projectName,
     version: "1.0.0",
     description: config.description ?? "",

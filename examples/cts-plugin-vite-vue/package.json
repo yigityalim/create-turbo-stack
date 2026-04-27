@@ -1,0 +1,30 @@
+{
+  "name": "cts-plugin-vite-vue",
+  "version": "0.1.0",
+  "description": "Reference plugin: Vite + Vue 3 app type for create-turbo-stack",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": ["src", "README.md"],
+  "scripts": {
+    "lint": "biome check",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "peerDependencies": {
+    "@create-turbo-stack/core": "workspace:*",
+    "@create-turbo-stack/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@create-turbo-stack/core": "workspace:*",
+    "@create-turbo-stack/schema": "workspace:*",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  },
+  "license": "MIT"
+}

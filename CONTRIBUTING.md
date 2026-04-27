@@ -37,6 +37,95 @@ bun run build
 bun run dev
 ```
 
+## Writing a Plugin
+
+You don't need to fork this repo to add a new framework or provider.
+Publish a small npm package; users wire it via `create-turbo-stack.json`.
+
+### Anatomy of a plugin
+
+A plugin is an npm package whose **default export** is one of:
+
+- `AppTypeDefinition` — a new framework (Nuxt, SolidStart, …)
+- `IntegrationDefinition` — a new provider in any category (auth, db, email, …)
+- An array of either / both — bundle multiple definitions in one package
+
+See `examples/cts-plugin-vite-vue/` for a complete working reference.
+
+### Minimal `package.json`
+
+```json
+{
+  "name": "cts-plugin-mything",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": { ".": { "default": "./src/index.ts" } },
+  "files": ["src", "README.md"],
+  "peerDependencies": {
+    "@create-turbo-stack/core": "^1.0.0",
+    "@create-turbo-stack/schema": "^1.0.0"
+  }
+}
+```
+
+`peerDependencies` is the right field, not `dependencies` — the user's
+project already has these, and you don't want a duplicated copy.
+
+### Writing the plugin
+
+```ts
+// src/index.ts
+import { defineAppType } from "@create-turbo-stack/core";
+
+export default defineAppType({
+  type: "nuxt",                  // must exist in AppTypeSchema
+  templateCategory: "app/nuxt",  // your namespace under getTemplates
+  templates: {
+    "src/app.vue.eta": "<template>...</template>",
+    // ...
+  },
+  buildPackageJson(preset, app, ctx) { /* ... */ },
+  buildTsconfig(preset, app, ctx)    { /* ... */ },
+  buildTemplateContext(preset, app)  { /* ... */ },
+});
+```
+
+For new schema enum values you need a PR against this repo first
+(adding `nuxt` to `AppTypeSchema`). Once the value lands in `@create-turbo-stack/schema`,
+your plugin can reference it.
+
+### Wiring it up downstream
+
+```json
+// create-turbo-stack.json
+{
+  "$schema": "https://create-turbo-stack.dev/schema/user-config.json",
+  "plugins": ["cts-plugin-mything"]
+}
+```
+
+The CLI calls `await import("cts-plugin-mything")` at startup, reads
+`module.default`, and registers it. From that moment, the new app
+type / provider shows up in prompts, in `list`, and in the registry.
+
+### Versioning
+
+Plugins follow regular semver against the `peerDependency` ranges they
+declare. When `@create-turbo-stack/core` ships a major bump that
+changes the `AppTypeDefinition` shape, your plugin's `peerDependencies`
+range should require the new major. CI in your plugin repo can run
+`bun add -D @create-turbo-stack/core@latest && bun run type-check` to
+catch breakage.
+
+### Testing
+
+Best path: write a test that imports your plugin's default export,
+calls `registerAppType` (or `registerIntegration`), then asserts
+`resolveFileTree(somePreset)` produces the files you expect. See
+`packages/core/src/resolve/app-types/plugin-integration.test.ts` for
+the exact shape.
+
 ## Project Structure
 
 ```

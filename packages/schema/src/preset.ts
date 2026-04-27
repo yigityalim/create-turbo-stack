@@ -15,9 +15,25 @@ const safeString = z
     message: "String contains forbidden template syntax (<%, %>, ${)",
   });
 
+/**
+ * Preset format version. Bumped when the schema shape changes in a way
+ * that older preset JSONs need to be transformed before they validate.
+ *
+ * The CLI runs registered migrations from the preset's recorded
+ * `schemaVersion` up to this current value before validating, so users
+ * with old preset files don't see Zod errors after a schema bump.
+ */
+export const CURRENT_PRESET_SCHEMA_VERSION = "1.0";
+
 export const PresetSchema = z.object({
   $schema: z.string().optional(),
+  /**
+   * Preset format/schema version. See CURRENT_PRESET_SCHEMA_VERSION.
+   * Defaults to "1.0" for backwards-compatible read of pre-versioning presets.
+   */
+  schemaVersion: z.string().default("1.0"),
   name: safeString.min(1),
+  /** Generated project's version (not the preset format's). */
   version: z.string().default("1.0.0"),
   description: safeString.optional(),
   author: safeString.optional(),
@@ -37,7 +53,6 @@ export type Preset = z.infer<typeof PresetSchema>;
 
 /** Preset with cross-field validation rules applied. */
 export const ValidatedPresetSchema = PresetSchema.superRefine((data, ctx) => {
-  // 1. supabase-auth requires supabase database
   if (data.auth.provider === "supabase-auth" && data.database.strategy !== "supabase") {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -46,7 +61,6 @@ export const ValidatedPresetSchema = PresetSchema.superRefine((data, ctx) => {
     });
   }
 
-  // 2. Hono standalone requires a hono-standalone app
   if (data.api.strategy === "hono" && data.api.mode === "standalone-app") {
     const hasHonoApp = data.apps.some((a) => a.type === "hono-standalone");
     if (!hasHonoApp) {
@@ -58,7 +72,6 @@ export const ValidatedPresetSchema = PresetSchema.superRefine((data, ctx) => {
     }
   }
 
-  // 3. i18n only for web-facing apps
   for (const [i, app] of data.apps.entries()) {
     if (app.i18n && !["nextjs", "sveltekit", "astro", "remix"].includes(app.type)) {
       ctx.addIssue({
@@ -69,7 +82,6 @@ export const ValidatedPresetSchema = PresetSchema.superRefine((data, ctx) => {
     }
   }
 
-  // 4. Unique app names
   const appNames = data.apps.map((a) => a.name);
   const dupeApp = appNames.find((n, i) => appNames.indexOf(n) !== i);
   if (dupeApp) {
@@ -80,7 +92,6 @@ export const ValidatedPresetSchema = PresetSchema.superRefine((data, ctx) => {
     });
   }
 
-  // 5. Unique package names
   const pkgNames = data.packages.map((p) => p.name);
   const dupePkg = pkgNames.find((n, i) => pkgNames.indexOf(n) !== i);
   if (dupePkg) {
@@ -91,7 +102,6 @@ export const ValidatedPresetSchema = PresetSchema.superRefine((data, ctx) => {
     });
   }
 
-  // 6. consumes must reference existing or auto-generated packages
   const allPackageNames = new Set([
     ...pkgNames,
     ...(data.database.strategy !== "none" ? ["db"] : []),
@@ -112,7 +122,6 @@ export const ValidatedPresetSchema = PresetSchema.superRefine((data, ctx) => {
     }
   }
 
-  // 7. Unique ports
   const ports = data.apps.map((a) => a.port);
   const dupePort = ports.find((p, i) => ports.indexOf(p) !== i);
   if (dupePort) {
@@ -123,12 +132,11 @@ export const ValidatedPresetSchema = PresetSchema.superRefine((data, ctx) => {
     });
   }
 
-  // 8. CMS only for nextjs
   for (const [i, app] of data.apps.entries()) {
     if (app.cms !== "none" && app.type !== "nextjs") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "CMS integration only supported for nextjs apps",
+        message: "CMS field is only meaningful for nextjs apps (and is currently unimplemented).",
         path: ["apps", i, "cms"],
       });
     }

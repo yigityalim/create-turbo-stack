@@ -21,16 +21,33 @@ import { join, relative, sep } from "node:path";
 const SRC_DIR = join(import.meta.dirname, "..", "src");
 const OUT_FILE = join(SRC_DIR, "templates-map.ts");
 
+/**
+ * Convention: directories whose name starts with `_` are reference /
+ * example templates. They're excluded from the production bundle by
+ * default — pass `--include-all` to include them.
+ *
+ * Why: `_TEMPLATE/` (and any future `_DRAFT/`, `_EXPERIMENTAL/`) live in
+ * the source tree as discoverable copy-paste references but shouldn't
+ * inflate the published `templates-map.ts` (which the browser builder
+ * also imports). Using a filename convention beats commenting code out.
+ */
+const INCLUDE_ALL = process.argv.includes("--include-all");
+
+function shouldSkipDir(name: string): boolean {
+  if (INCLUDE_ALL) return false;
+  return name.startsWith("_");
+}
+
 async function walkDir(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
   const files: string[] = [];
 
   for (const entry of entries) {
-    const fullPath = join(dir, entry.name);
     if (entry.isDirectory()) {
-      files.push(...(await walkDir(fullPath)));
+      if (shouldSkipDir(entry.name)) continue;
+      files.push(...(await walkDir(join(dir, entry.name))));
     } else if (entry.name.endsWith(".eta")) {
-      files.push(fullPath);
+      files.push(join(dir, entry.name));
     }
   }
 
@@ -72,7 +89,6 @@ function deriveKey(relPath: string): { key: string; file: string } {
     };
   }
 
-  // Fallback: single file in category dir
   return { key: category, file: parts.slice(1).join("/") };
 }
 

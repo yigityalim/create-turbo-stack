@@ -2,6 +2,7 @@ import type { App, Package, Preset } from "@create-turbo-stack/schema";
 
 export function makePreset(overrides: Partial<Preset> = {}): Preset {
   return {
+    schemaVersion: "1.0",
     name: "test",
     version: "1.0.0",
     basics: {

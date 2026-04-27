@@ -55,7 +55,6 @@ export function computeTsconfigChain(preset: Preset): TsconfigTarget[] {
     });
   }
 
-  // Apps
   for (const app of preset.apps) {
     const isNextjs = app.type === "nextjs" || app.type === "nextjs-api-only";
     targets.push({

@@ -11,6 +11,9 @@
     "---Concepts---",
     "wiring",
     "registry",
+    "plugins",
+    "config",
+    "versioning",
     "---Reference---",
     "cli",
     "schema"

@@ -1,0 +1,571 @@
+{
+  "title": "create-turbo-stack User Config",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "defaults": {
+      "type": "object",
+      "properties": {
+        "basics": {
+          "type": "object",
+          "properties": {
+            "scope": {
+              "type": "string",
+              "pattern": "^@[a-z0-9-]+$"
+            },
+            "packageManager": {
+              "type": "string",
+              "enum": [
+                "bun",
+                "pnpm",
+                "npm",
+                "yarn"
+              ]
+            },
+            "linter": {
+              "type": "string",
+              "enum": [
+                "biome",
+                "eslint-prettier"
+              ]
+            },
+            "typescript": {
+              "type": "string",
+              "enum": [
+                "strict",
+                "relaxed"
+              ]
+            },
+            "gitInit": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "auth": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "enum": [
+                "supabase-auth",
+                "better-auth",
+                "clerk",
+                "next-auth",
+                "lucia",
+                "none"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "database": {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "type": "string",
+              "enum": [
+                "supabase",
+                "drizzle",
+                "prisma",
+                "none"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "api": {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "type": "string",
+              "enum": [
+                "trpc",
+                "hono",
+                "rest-nextjs",
+                "none"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "css": {
+          "type": "object",
+          "properties": {
+            "framework": {
+              "type": "string",
+              "enum": [
+                "tailwind4",
+                "tailwind3",
+                "vanilla",
+                "css-modules"
+              ]
+            },
+            "ui": {
+              "type": "string",
+              "enum": [
+                "shadcn",
+                "none"
+              ]
+            },
+            "styling": {
+              "type": "string",
+              "enum": [
+                "css-variables",
+                "static"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "integrations": {
+          "type": "object",
+          "properties": {
+            "analytics": {
+              "type": "string",
+              "enum": [
+                "posthog",
+                "vercel-analytics",
+                "plausible",
+                "none"
+              ]
+            },
+            "errorTracking": {
+              "type": "string",
+              "enum": [
+                "sentry",
+                "none"
+              ]
+            },
+            "email": {
+              "type": "string",
+              "enum": [
+                "react-email-resend",
+                "nodemailer",
+                "none"
+              ]
+            },
+            "rateLimit": {
+              "type": "string",
+              "enum": [
+                "upstash",
+                "none"
+              ]
+            },
+            "ai": {
+              "type": "string",
+              "enum": [
+                "vercel-ai-sdk",
+                "langchain",
+                "none"
+              ]
+            },
+            "envValidation": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "policy": {
+      "type": "object",
+      "properties": {
+        "allow": {
+          "type": "object",
+          "properties": {
+            "appType": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "nextjs",
+                  "nextjs-api-only",
+                  "expo",
+                  "hono-standalone",
+                  "vite-react",
+                  "vite-vue",
+                  "sveltekit",
+                  "astro",
+                  "remix",
+                  "tauri"
+                ]
+              }
+            },
+            "packageManager": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "bun",
+                  "pnpm",
+                  "npm",
+                  "yarn"
+                ]
+              }
+            },
+            "linter": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "biome",
+                  "eslint-prettier"
+                ]
+              }
+            },
+            "auth": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "supabase-auth",
+                  "better-auth",
+                  "clerk",
+                  "next-auth",
+                  "lucia",
+                  "none"
+                ]
+              }
+            },
+            "database": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "supabase",
+                  "drizzle",
+                  "prisma",
+                  "none"
+                ]
+              }
+            },
+            "api": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "trpc",
+                  "hono",
+                  "rest-nextjs",
+                  "none"
+                ]
+              }
+            },
+            "cssFramework": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "tailwind4",
+                  "tailwind3",
+                  "vanilla",
+                  "css-modules"
+                ]
+              }
+            },
+            "cssUi": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "shadcn",
+                  "none"
+                ]
+              }
+            },
+            "analytics": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "posthog",
+                  "vercel-analytics",
+                  "plausible",
+                  "none"
+                ]
+              }
+            },
+            "errorTracking": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "sentry",
+                  "none"
+                ]
+              }
+            },
+            "email": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "react-email-resend",
+                  "nodemailer",
+                  "none"
+                ]
+              }
+            },
+            "rateLimit": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "upstash",
+                  "none"
+                ]
+              }
+            },
+            "ai": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "vercel-ai-sdk",
+                  "langchain",
+                  "none"
+                ]
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "forbid": {
+          "type": "object",
+          "properties": {
+            "appType": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "nextjs",
+                  "nextjs-api-only",
+                  "expo",
+                  "hono-standalone",
+                  "vite-react",
+                  "vite-vue",
+                  "sveltekit",
+                  "astro",
+                  "remix",
+                  "tauri"
+                ]
+              }
+            },
+            "packageManager": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "bun",
+                  "pnpm",
+                  "npm",
+                  "yarn"
+                ]
+              }
+            },
+            "linter": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "biome",
+                  "eslint-prettier"
+                ]
+              }
+            },
+            "auth": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "supabase-auth",
+                  "better-auth",
+                  "clerk",
+                  "next-auth",
+                  "lucia",
+                  "none"
+                ]
+              }
+            },
+            "database": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "supabase",
+                  "drizzle",
+                  "prisma",
+                  "none"
+                ]
+              }
+            },
+            "api": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "trpc",
+                  "hono",
+                  "rest-nextjs",
+                  "none"
+                ]
+              }
+            },
+            "cssFramework": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "tailwind4",
+                  "tailwind3",
+                  "vanilla",
+                  "css-modules"
+                ]
+              }
+            },
+            "cssUi": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "shadcn",
+                  "none"
+                ]
+              }
+            },
+            "analytics": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "posthog",
+                  "vercel-analytics",
+                  "plausible",
+                  "none"
+                ]
+              }
+            },
+            "errorTracking": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "sentry",
+                  "none"
+                ]
+              }
+            },
+            "email": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "react-email-resend",
+                  "nodemailer",
+                  "none"
+                ]
+              }
+            },
+            "rateLimit": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "upstash",
+                  "none"
+                ]
+              }
+            },
+            "ai": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "vercel-ai-sdk",
+                  "langchain",
+                  "none"
+                ]
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "require": {
+          "type": "object",
+          "properties": {
+            "typescript": {
+              "type": "string",
+              "enum": [
+                "strict",
+                "relaxed"
+              ]
+            },
+            "envValidation": {
+              "type": "boolean"
+            },
+            "packageManager": {
+              "type": "string",
+              "enum": [
+                "bun",
+                "pnpm",
+                "npm",
+                "yarn"
+              ]
+            },
+            "linter": {
+              "type": "string",
+              "enum": [
+                "biome",
+                "eslint-prettier"
+              ]
+            },
+            "database": {
+              "type": "string",
+              "enum": [
+                "supabase",
+                "drizzle",
+                "prisma",
+                "none"
+              ]
+            },
+            "auth": {
+              "type": "string",
+              "enum": [
+                "supabase-auth",
+                "better-auth",
+                "clerk",
+                "next-auth",
+                "lucia",
+                "none"
+              ]
+            },
+            "api": {
+              "type": "string",
+              "enum": [
+                "trpc",
+                "hono",
+                "rest-nextjs",
+                "none"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "plugins": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "additionalProperties": false
+}

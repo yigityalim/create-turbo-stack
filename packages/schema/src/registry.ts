@@ -21,7 +21,7 @@ export type RegistryItem = z.infer<typeof RegistryItemSchema>;
 export const RegistrySchema = z.object({
   $schema: z.string().optional(),
   name: z.string().min(1),
-  homepage: z.string().url().optional(),
+  homepage: z.url().optional(),
   items: z.array(RegistryItemSchema),
 });
 

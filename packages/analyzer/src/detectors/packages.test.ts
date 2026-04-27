@@ -9,9 +9,7 @@ afterEach(async () => {
 });
 
 describe("detectPackages", () => {
-  // ---------------------------------------------------------------------------
   // AUTO_PACKAGE_NAMES exclusion
-  // ---------------------------------------------------------------------------
 
   const AUTO_PACKAGES = [
     "typescript-config",
@@ -37,9 +35,7 @@ describe("detectPackages", () => {
     });
   }
 
-  // ---------------------------------------------------------------------------
   // Package type detection
-  // ---------------------------------------------------------------------------
 
   it("detects ui type for package named 'ui'", async () => {
     tmp = await createFixture({
@@ -114,9 +110,7 @@ describe("detectPackages", () => {
     expect(r.detections[0].confidence).toBe("medium");
   });
 
-  // ---------------------------------------------------------------------------
   // producesCSS
-  // ---------------------------------------------------------------------------
 
   it("producesCSS is true when tailwindcss in deps", async () => {
     tmp = await createFixture({
@@ -149,9 +143,7 @@ describe("detectPackages", () => {
     expect(r.packages[0].producesCSS).toBe(false);
   });
 
-  // ---------------------------------------------------------------------------
   // exports detection
-  // ---------------------------------------------------------------------------
 
   it("returns ['.'] when exports field is absent", async () => {
     tmp = await createFixture({
@@ -187,9 +179,7 @@ describe("detectPackages", () => {
     expect(r.packages[0].exports.sort()).toEqual([".", "./types", "./utils"].sort());
   });
 
-  // ---------------------------------------------------------------------------
   // Multiple packages
-  // ---------------------------------------------------------------------------
 
   it("returns all non-auto packages", async () => {
     tmp = await createFixture({
@@ -208,9 +198,7 @@ describe("detectPackages", () => {
     expect(names).toEqual(["core", "ui", "utils"].sort());
   });
 
-  // ---------------------------------------------------------------------------
   // Edge cases
-  // ---------------------------------------------------------------------------
 
   it("returns empty when packages dir does not exist", async () => {
     const { mkdtemp } = await import("node:fs/promises");

@@ -9,9 +9,7 @@ afterEach(async () => {
 });
 
 describe("detectIntegrations", () => {
-  // ---------------------------------------------------------------------------
   // Analytics
-  // ---------------------------------------------------------------------------
 
   it("detects posthog via posthog-js", async () => {
     tmp = await createFixture({
@@ -71,9 +69,7 @@ describe("detectIntegrations", () => {
     expect(r.detections.analytics.confidence).toBe("medium");
   });
 
-  // ---------------------------------------------------------------------------
   // Error tracking
-  // ---------------------------------------------------------------------------
 
   it("detects sentry via @sentry/nextjs", async () => {
     tmp = await createFixture({
@@ -100,9 +96,7 @@ describe("detectIntegrations", () => {
     expect(r.integrations.errorTracking).toBe("none");
   });
 
-  // ---------------------------------------------------------------------------
   // Email
-  // ---------------------------------------------------------------------------
 
   it("detects react-email-resend via resend", async () => {
     tmp = await createFixture({
@@ -147,9 +141,7 @@ describe("detectIntegrations", () => {
     expect(r.integrations.email).toBe("none");
   });
 
-  // ---------------------------------------------------------------------------
   // Rate limiting
-  // ---------------------------------------------------------------------------
 
   it("detects upstash via @upstash/ratelimit", async () => {
     tmp = await createFixture({
@@ -168,9 +160,7 @@ describe("detectIntegrations", () => {
     expect(r.integrations.rateLimit).toBe("none");
   });
 
-  // ---------------------------------------------------------------------------
   // AI
-  // ---------------------------------------------------------------------------
 
   it("detects vercel-ai-sdk via ai package", async () => {
     tmp = await createFixture({
@@ -215,9 +205,7 @@ describe("detectIntegrations", () => {
     expect(r.integrations.ai).toBe("none");
   });
 
-  // ---------------------------------------------------------------------------
   // Env validation
-  // ---------------------------------------------------------------------------
 
   it("detects env validation via @t3-oss/env-nextjs", async () => {
     tmp = await createFixture({
@@ -246,9 +234,7 @@ describe("detectIntegrations", () => {
     expect(r.integrations.envValidation).toBe(false);
   });
 
-  // ---------------------------------------------------------------------------
   // Cross-package scanning
-  // ---------------------------------------------------------------------------
 
   it("scans root + apps/* + packages/* for deps", async () => {
     tmp = await createFixture({
@@ -273,9 +259,7 @@ describe("detectIntegrations", () => {
     expect(r.integrations.analytics).toBe("posthog");
   });
 
-  // ---------------------------------------------------------------------------
   // detections shape
-  // ---------------------------------------------------------------------------
 
   it("returns all 6 detection keys", async () => {
     tmp = await createFixture({ "package.json": { name: "bare" } });

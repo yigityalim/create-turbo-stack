@@ -141,7 +141,6 @@ export function usePresetBuilder(): UsePresetBuilderReturn {
   const canUndo = pastRef.current.length > 0;
   const canRedo = futureRef.current.length > 0;
 
-  // Validate
   const validationErrors = useMemo<ValidationError[]>(() => {
     const result = ValidatedPresetSchema.safeParse(preset);
     if (result.success) return [];

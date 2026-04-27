@@ -25,9 +25,7 @@ const HONO_APP: App = {
   consumes: [],
 };
 
-// ---------------------------------------------------------------------------
 // Next.js app
-// ---------------------------------------------------------------------------
 
 describe("resolveAppFiles — nextjs", () => {
   it("all paths start with apps/web/", () => {
@@ -105,9 +103,7 @@ describe("resolveAppFiles — nextjs", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Hono standalone app
-// ---------------------------------------------------------------------------
 
 describe("resolveAppFiles — hono-standalone", () => {
   it("all paths start with apps/server/", () => {
@@ -150,21 +146,23 @@ describe("resolveAppFiles — hono-standalone", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Unknown app type
-// ---------------------------------------------------------------------------
 
-describe("resolveAppFiles — unknown type", () => {
-  it("returns empty array for unimplemented app types", () => {
+describe("resolveAppFiles — unimplemented type", () => {
+  it.each([
+    "expo",
+    "vite-vue",
+    "tauri",
+  ] as const)("throws UnsupportedAppTypeError for %s", (appType) => {
     const app: App = {
       name: "docs",
-      type: "tauri" as any,
+      type: appType as App["type"],
       port: 4321,
       i18n: false,
       cms: "none",
       consumes: [],
     };
     const p = makePreset({ apps: [app] });
-    expect(resolveAppFiles(p, app)).toEqual([]);
+    expect(() => resolveAppFiles(p, app)).toThrow(/has no scaffold implementation yet/);
   });
 });

@@ -70,7 +70,6 @@ const LABELS: Record<
   string,
   { label: string; description: string; icon?: string }
 > = {
-  // Package manager
   "packageManager.bun": {
     label: "Bun",
     description: "Fast JavaScript runtime & toolkit",
@@ -95,14 +94,12 @@ const LABELS: Record<
     description: "Less strict type checking",
   },
 
-  // Linter
   "linter.biome": { label: "Biome", description: "Fast formatter & linter" },
   "linter.eslint-prettier": {
     label: "ESLint + Prettier",
     description: "Classic lint & format",
   },
 
-  // Database strategy
   "database.supabase": {
     label: "Supabase",
     description: "Postgres platform with auth & realtime",

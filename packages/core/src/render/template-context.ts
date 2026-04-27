@@ -49,13 +49,11 @@ export function buildTemplateContext(
   const workspaceRefs = computeWorkspaceRefs(preset);
   const envChain = computeEnvChain(preset);
 
-  // Build catalog as Record<name, version>
   const catalogDeps: Record<string, string> = {};
   for (const entry of catalog) {
     catalogDeps[entry.name] = entry.version;
   }
 
-  // Determine target-specific context
   let app: App | undefined;
   let pkg: (Package & { fullName: string }) | undefined;
   let targetCssDirectives: string[] = [];

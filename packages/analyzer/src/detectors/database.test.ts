@@ -9,9 +9,7 @@ afterEach(async () => {
 });
 
 describe("detectDatabase", () => {
-  // ---------------------------------------------------------------------------
   // Drizzle — packages/db
-  // ---------------------------------------------------------------------------
 
   it("detects drizzle/postgres via drizzle-orm + postgres in packages/db", async () => {
     tmp = await createFixture({
@@ -81,9 +79,7 @@ describe("detectDatabase", () => {
     expect((r.value as any).driver).toBe("postgres");
   });
 
-  // ---------------------------------------------------------------------------
   // Drizzle via drizzle.config.ts dialect
-  // ---------------------------------------------------------------------------
 
   it("detects drizzle/postgres from drizzle.config.ts 'postgresql' dialect", async () => {
     tmp = await createFixture({
@@ -118,9 +114,7 @@ describe("detectDatabase", () => {
     expect((r.value as any).driver).toBe("sqlite");
   });
 
-  // ---------------------------------------------------------------------------
   // drizzle.config.ts in root (no packages/db)
-  // ---------------------------------------------------------------------------
 
   it("detects drizzle/postgres from root drizzle.config.ts — high confidence", async () => {
     tmp = await createFixture({ "drizzle.config.ts": "export default {}" });
@@ -129,9 +123,7 @@ describe("detectDatabase", () => {
     expect(r.confidence).toBe("high");
   });
 
-  // ---------------------------------------------------------------------------
   // Prisma
-  // ---------------------------------------------------------------------------
 
   it("detects prisma via @prisma/client in packages/db", async () => {
     tmp = await createFixture({
@@ -169,9 +161,7 @@ describe("detectDatabase", () => {
     expect(r.value.strategy).toBe("prisma");
   });
 
-  // ---------------------------------------------------------------------------
   // Supabase
-  // ---------------------------------------------------------------------------
 
   it("detects supabase via @supabase/supabase-js in packages/db", async () => {
     tmp = await createFixture({
@@ -184,9 +174,7 @@ describe("detectDatabase", () => {
     expect(r.confidence).toBe("certain");
   });
 
-  // ---------------------------------------------------------------------------
   // Root package.json fallbacks — high
-  // ---------------------------------------------------------------------------
 
   it("detects drizzle from root deps — high confidence", async () => {
     tmp = await createFixture({
@@ -215,9 +203,7 @@ describe("detectDatabase", () => {
     expect(r.confidence).toBe("high");
   });
 
-  // ---------------------------------------------------------------------------
   // Priority: drizzle wins over prisma when both found
-  // ---------------------------------------------------------------------------
 
   it("prefers drizzle over prisma when both in packages/db", async () => {
     tmp = await createFixture({
@@ -229,9 +215,7 @@ describe("detectDatabase", () => {
     expect(r.value.strategy).toBe("drizzle");
   });
 
-  // ---------------------------------------------------------------------------
   // None
-  // ---------------------------------------------------------------------------
 
   it("returns none/medium when no database detected", async () => {
     tmp = await createFixture({ "package.json": { name: "bare" } });

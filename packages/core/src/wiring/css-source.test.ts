@@ -2,11 +2,9 @@ import type { Preset } from "@create-turbo-stack/schema";
 import { describe, expect, it } from "vitest";
 import { computeCssSourceMap } from "./css-source";
 
-// ---------------------------------------------------------------------------
 // Minimal Preset factory
 // Produces a structurally valid Preset without going through Zod — wiring
 // functions accept the plain `Preset` type, so we don't need safeParse here.
-// ---------------------------------------------------------------------------
 
 function makePreset(overrides: Partial<Preset> = {}): Preset {
   return {
@@ -38,9 +36,7 @@ function makePreset(overrides: Partial<Preset> = {}): Preset {
   } as Preset;
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 describe("computeCssSourceMap", () => {
   it("app with no CSS packages consumed → only self source", () => {

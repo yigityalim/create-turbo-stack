@@ -14,6 +14,11 @@ export const AppTypeSchema = z.enum([
 ]);
 export type AppType = z.infer<typeof AppTypeSchema>;
 
+/**
+ * @deprecated CMS scaffolding is not implemented. The field is kept on
+ * `AppSchema` for backwards compatibility with older preset JSONs and
+ * the web builder, but no resolver reads it. Remove from new presets.
+ */
 export const CmsSchema = z.enum(["sanity", "keystatic", "none"]);
 export type Cms = z.infer<typeof CmsSchema>;
 

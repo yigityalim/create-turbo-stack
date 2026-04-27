@@ -10,42 +10,103 @@ export type FileMutation =
 export interface TreeDiff {
   create: FileTreeNode[];
   update: Array<{ path: string; mutations: FileMutation[] }>;
+  /**
+   * Files where disk content diverges from what the *previous* preset
+   * would have produced — i.e. the user hand-edited the file after the
+   * last scaffold. Populated only when `options.previousNodes` is given.
+   *
+   * The CLI surfaces these to the user before any overwrite. With
+   * `previousNodes` absent, divergence cannot be distinguished from
+   * legitimate updates and everything goes into `update` (legacy
+   * behaviour, kept for callers that don't track preset history).
+   */
+  conflict: Array<{ path: string; mutations: FileMutation[]; userContent: string }>;
   unchanged: string[];
+  delete: string[];
+}
+
+export interface DiffOptions {
+  /**
+   * The file tree produced by the *previous* preset state. When provided,
+   * `diffTree` populates `delete` with paths that existed previously but
+   * are absent from `desiredNodes`. This is what enables `remove app`,
+   * provider switches, and any other shrinking operation.
+   *
+   * Without this, `delete` is always empty (legacy add-only behaviour).
+   */
+  previousNodes?: FileTreeNode[];
 }
 
 /**
  * Compare existing files with desired file tree nodes and produce a diff.
  *
- * - Files that don't exist on disk → create
- * - Files that exist with different content → update (with overwrite mutation)
- * - Files that match exactly → unchanged
+ * - In `desired`, missing on disk → create
+ * - In `desired`, present on disk, content matches → unchanged
+ * - In `desired`, present on disk, content differs → update
+ * - In `previousNodes` but absent from `desired` → delete (requires options.previousNodes)
  */
 export function diffTree(
   existingFiles: Map<string, string>,
   desiredNodes: FileTreeNode[],
+  options: DiffOptions = {},
 ): TreeDiff {
   const create: FileTreeNode[] = [];
   const update: TreeDiff["update"] = [];
+  const conflict: TreeDiff["conflict"] = [];
   const unchanged: string[] = [];
+  const deletePaths: string[] = [];
+
+  // Index of what *we* wrote last time (if caller is tracking history).
+  const previousByPath = new Map<string, string>();
+  if (options.previousNodes) {
+    for (const n of options.previousNodes) {
+      if (n.isDirectory) continue;
+      if (typeof n.content === "string") previousByPath.set(n.path, n.content);
+    }
+  }
 
   for (const node of desiredNodes) {
     if (node.isDirectory) continue;
 
     const existing = existingFiles.get(node.path);
     if (existing === undefined) {
-      // File doesn't exist on disk
       create.push(node);
-    } else if (existing === node.content) {
-      // Content matches
+      continue;
+    }
+    if (existing === node.content) {
       unchanged.push(node.path);
+      continue;
+    }
+
+    const mutations = computeMutations(existing, node);
+
+    // Decide: clean update or user-touched conflict.
+    // - Without previousNodes we can't tell — preserve legacy behaviour (update).
+    // - With previousNodes: disk matches what we last wrote → safe update.
+    //                      otherwise → user has edited the file → conflict.
+    if (options.previousNodes) {
+      const previousContent = previousByPath.get(node.path);
+      const isOurs = previousContent !== undefined && previousContent === existing;
+      if (isOurs) {
+        update.push({ path: node.path, mutations });
+      } else {
+        conflict.push({ path: node.path, mutations, userContent: existing });
+      }
     } else {
-      // Content differs — produce smart mutations where possible
-      const mutations = computeMutations(existing, node);
       update.push({ path: node.path, mutations });
     }
   }
 
-  return { create, update, unchanged };
+  if (options.previousNodes) {
+    const desiredPaths = new Set(desiredNodes.filter((n) => !n.isDirectory).map((n) => n.path));
+    for (const prev of options.previousNodes) {
+      if (prev.isDirectory) continue;
+      if (desiredPaths.has(prev.path)) continue;
+      deletePaths.push(prev.path);
+    }
+  }
+
+  return { create, update, conflict, unchanged, delete: deletePaths };
 }
 
 /**
@@ -56,43 +117,72 @@ export function diffTree(
 function computeMutations(existing: string, node: FileTreeNode): FileMutation[] {
   const desired = node.content ?? "";
 
-  // JSON files: try to produce append-to-json mutations
   if (node.path.endsWith(".json")) {
     const jsonMutations = computeJsonMutations(existing, desired);
     if (jsonMutations) return jsonMutations;
   }
 
-  // CSS files: detect @source directive additions
   if (node.path.endsWith(".css")) {
     const cssMutations = computeCssMutations(existing, desired);
     if (cssMutations) return cssMutations;
   }
 
-  // Fallback: overwrite
   return [{ type: "overwrite", content: desired }];
 }
 
+/**
+ * Recursive JSON diff. Walks the *desired* tree and emits one
+ * `append-to-json` mutation per primitive / array leaf that differs from
+ * the existing tree. Keys present in `existing` but absent from `desired`
+ * are left untouched — this preserves user-authored additions
+ * (custom package.json scripts, extra tsconfig paths, ad-hoc keys, etc.)
+ * across `add` / provider switches.
+ */
 function computeJsonMutations(existing: string, desired: string): FileMutation[] | null {
   try {
     const existingObj = JSON.parse(existing);
     const desiredObj = JSON.parse(desired);
 
-    const mutations: FileMutation[] = [];
-
-    // Find keys added or changed at root level
-    for (const [key, value] of Object.entries(desiredObj)) {
-      if (JSON.stringify(existingObj[key]) !== JSON.stringify(value)) {
-        mutations.push({
-          type: "append-to-json",
-          jsonPath: [key],
-          value,
-        });
-      }
+    // If either side is a primitive or array, fall back to whole-file overwrite.
+    if (
+      existingObj === null ||
+      desiredObj === null ||
+      typeof existingObj !== "object" ||
+      typeof desiredObj !== "object" ||
+      Array.isArray(existingObj) ||
+      Array.isArray(desiredObj)
+    ) {
+      return null;
     }
 
+    const mutations: FileMutation[] = [];
+    walkJson(existingObj, desiredObj, [], mutations);
     return mutations.length > 0 ? mutations : null;
   } catch {
     return null;
+  }
+}
+
+function walkJson(
+  existing: unknown,
+  desired: unknown,
+  path: string[],
+  mutations: FileMutation[],
+): void {
+  // Treat arrays and primitives as leaves — replace whole.
+  const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+    v !== null && typeof v === "object" && !Array.isArray(v);
+
+  if (!isPlainObject(desired)) {
+    if (JSON.stringify(existing) !== JSON.stringify(desired)) {
+      mutations.push({ type: "append-to-json", jsonPath: path, value: desired });
+    }
+    return;
+  }
+
+  for (const [key, value] of Object.entries(desired)) {
+    const existingValue = isPlainObject(existing) ? existing[key] : undefined;
+    walkJson(existingValue, value, [...path, key], mutations);
   }
 }
 
@@ -166,7 +256,6 @@ export function applyMutations(content: string, mutations: FileMutation[]): stri
       }
 
       case "insert-css-source": {
-        // Insert after the last existing @source line, or after @import block
         const lastSource = result.lastIndexOf("@source");
         if (lastSource !== -1) {
           const lineEnd = result.indexOf("\n", lastSource);
@@ -193,6 +282,7 @@ function escapeRegExp(str: string): string {
 }
 
 function setNestedValue(obj: Record<string, unknown>, path: string[], value: unknown): void {
+  if (path.length === 0) return; // root replacement isn't expressible as a path mutation
   let current: Record<string, unknown> = obj;
   for (let i = 0; i < path.length - 1; i++) {
     if (typeof current[path[i]] !== "object" || current[path[i]] === null) {

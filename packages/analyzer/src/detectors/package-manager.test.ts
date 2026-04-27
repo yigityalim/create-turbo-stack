@@ -9,9 +9,7 @@ afterEach(async () => {
 });
 
 describe("detectPackageManager", () => {
-  // ---------------------------------------------------------------------------
   // Certain detections via lockfile
-  // ---------------------------------------------------------------------------
 
   it("detects bun via bun.lock (text lockfile)", async () => {
     tmp = await createFixture({ "bun.lock": "" });
@@ -52,9 +50,7 @@ describe("detectPackageManager", () => {
     expect(r.confidence).toBe("certain");
   });
 
-  // ---------------------------------------------------------------------------
   // Priority: bun.lock wins over other lockfiles present simultaneously
-  // ---------------------------------------------------------------------------
 
   it("prefers bun.lock over pnpm-lock.yaml when both present", async () => {
     tmp = await createFixture({ "bun.lock": "", "pnpm-lock.yaml": "" });
@@ -86,9 +82,7 @@ describe("detectPackageManager", () => {
     expect(r.value).toBe("yarn");
   });
 
-  // ---------------------------------------------------------------------------
   // Default / fallback
-  // ---------------------------------------------------------------------------
 
   it("defaults to bun with low confidence when no lockfile found", async () => {
     tmp = await createFixture({ "package.json": { name: "test" } });
@@ -112,9 +106,7 @@ describe("detectPackageManager", () => {
     expect(r.reason.length).toBeGreaterThan(0);
   });
 
-  // ---------------------------------------------------------------------------
   // Edge cases
-  // ---------------------------------------------------------------------------
 
   it("does not pick up lockfiles inside subdirectories", async () => {
     tmp = await createFixture({ "apps/web/bun.lock": "" });

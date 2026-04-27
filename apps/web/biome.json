@@ -26,7 +26,9 @@
       "!dist",
       "!build",
       "!.source",
-      "!**/*.css"
+      "!**/*.css",
+      "!public/schema",
+      "!public/s"
     ]
   },
   "formatter": {
@@ -37,7 +39,16 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "style": {
+        "noNonNullAssertion": "off"
+      },
+      "suspicious": {
+        "noExplicitAny": "warn"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "warn"
+      }
     },
     "domains": {
       "next": "recommended",

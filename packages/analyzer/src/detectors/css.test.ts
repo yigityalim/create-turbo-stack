@@ -9,9 +9,7 @@ afterEach(async () => {
 });
 
 describe("detectCss", () => {
-  // ---------------------------------------------------------------------------
   // Tailwind v4 detection
-  // ---------------------------------------------------------------------------
 
   it("detects tailwind4 when tailwindcss in apps/web with no tailwind.config", async () => {
     tmp = await createFixture({
@@ -32,9 +30,7 @@ describe("detectCss", () => {
     expect(r.value.framework).toBe("tailwind4");
   });
 
-  // ---------------------------------------------------------------------------
   // Tailwind v3 detection (tailwind.config present)
-  // ---------------------------------------------------------------------------
 
   it("detects tailwind3 when tailwind.config.ts exists in app", async () => {
     tmp = await createFixture({
@@ -54,9 +50,7 @@ describe("detectCss", () => {
     expect(r.value.framework).toBe("tailwind3");
   });
 
-  // ---------------------------------------------------------------------------
   // shadcn UI detection via components.json
-  // ---------------------------------------------------------------------------
 
   it("detects shadcn when components.json exists at root", async () => {
     tmp = await createFixture({
@@ -84,9 +78,7 @@ describe("detectCss", () => {
     expect(r.value.ui).toBe("none");
   });
 
-  // ---------------------------------------------------------------------------
   // Styling default
-  // ---------------------------------------------------------------------------
 
   it("always sets styling to css-variables", async () => {
     tmp = await createFixture({
@@ -96,9 +88,7 @@ describe("detectCss", () => {
     expect(r.value.styling).toBe("css-variables");
   });
 
-  // ---------------------------------------------------------------------------
   // Vanilla CSS fallback
-  // ---------------------------------------------------------------------------
 
   it("returns vanilla/none when no tailwind found anywhere", async () => {
     tmp = await createFixture({
@@ -118,9 +108,7 @@ describe("detectCss", () => {
     expect(r.value.framework).toBe("vanilla");
   });
 
-  // ---------------------------------------------------------------------------
   // Multiple apps — first app with tailwind wins
-  // ---------------------------------------------------------------------------
 
   it("detects tailwind when found in second app (first has no tailwind)", async () => {
     tmp = await createFixture({
@@ -132,9 +120,7 @@ describe("detectCss", () => {
     expect(r.value.framework).not.toBe("vanilla");
   });
 
-  // ---------------------------------------------------------------------------
   // Root tailwind dep (not in apps)
-  // ---------------------------------------------------------------------------
 
   it("detects tailwind4 from root package.json when apps have none", async () => {
     tmp = await createFixture({
@@ -145,9 +131,7 @@ describe("detectCss", () => {
     expect(r.value.framework).toBe("tailwind4");
   });
 
-  // ---------------------------------------------------------------------------
   // Edge cases
-  // ---------------------------------------------------------------------------
 
   it("does not crash when apps dir has no package.json", async () => {
     const { mkdir } = await import("node:fs/promises");

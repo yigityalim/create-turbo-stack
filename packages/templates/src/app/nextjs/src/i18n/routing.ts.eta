@@ -1,0 +1,11 @@
+<% if (it.app.i18n) { %>import { defineRouting } from "next-intl/routing";
+
+/**
+ * Locales supported by this app. Add to `locales` and drop a JSON file
+ * into `messages/` to add a language; everything else is automatic.
+ */
+export const routing = defineRouting({
+  locales: ["en", "tr"],
+  defaultLocale: "en",
+});
+<% } %>

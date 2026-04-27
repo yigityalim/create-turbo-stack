@@ -1,4 +1,5 @@
 import type { Preset } from "@create-turbo-stack/schema";
+import { getIntegration, type IntegrationCategory } from "../integrations";
 
 export interface EnvChain {
   base: { server: EnvVar[]; client: EnvVar[] };
@@ -14,167 +15,57 @@ export interface EnvVar {
   description: string;
 }
 
+/**
+ * Map a Preset to the (category, provider) pair that determines which
+ * integration's env vars apply. Returns null when the slot is set to
+ * "none" / disabled.
+ */
+function resolveSelection(
+  preset: Preset,
+  category: IntegrationCategory,
+): { provider: string } | null {
+  switch (category) {
+    case "auth":
+      return preset.auth.provider === "none" ? null : { provider: preset.auth.provider };
+    case "database":
+      return preset.database.strategy === "none" ? null : { provider: preset.database.strategy };
+    case "api":
+      return preset.api.strategy === "none" ? null : { provider: preset.api.strategy };
+    case "analytics":
+    case "errorTracking":
+    case "email":
+    case "rateLimit":
+    case "ai": {
+      const value = preset.integrations[category];
+      return !value || value === "none" ? null : { provider: value };
+    }
+  }
+}
+
+const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
+  "auth",
+  "database",
+  "api",
+  "analytics",
+  "errorTracking",
+  "email",
+  "rateLimit",
+  "ai",
+];
+
 export function computeEnvChain(preset: Preset): EnvChain {
   const base: EnvChain["base"] = { server: [], client: [] };
 
-  // Database
-  if (preset.database.strategy === "supabase") {
-    base.server.push(
-      {
-        name: "SUPABASE_URL",
-        zodType: "z.string().url()",
-        example: "https://xxx.supabase.co",
-        description: "Supabase project URL",
-      },
-      {
-        name: "SUPABASE_ANON_KEY",
-        zodType: "z.string().min(1)",
-        example: "eyJ...",
-        description: "Supabase anonymous key",
-      },
-      {
-        name: "SUPABASE_SERVICE_ROLE_KEY",
-        zodType: "z.string().min(1)",
-        example: "eyJ...",
-        description: "Supabase service role key (server-only)",
-      },
-    );
-    base.client.push(
-      {
-        name: "NEXT_PUBLIC_SUPABASE_URL",
-        zodType: "z.string().url()",
-        example: "https://xxx.supabase.co",
-        description: "Supabase URL (client)",
-      },
-      {
-        name: "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-        zodType: "z.string().min(1)",
-        example: "eyJ...",
-        description: "Supabase anon key (client)",
-      },
-    );
-  } else if (preset.database.strategy === "drizzle" || preset.database.strategy === "prisma") {
-    base.server.push({
-      name: "DATABASE_URL",
-      zodType: "z.string().url()",
-      example: "postgresql://user:pass@localhost:5432/db",
-      description: "Database connection URL",
-    });
+  for (const category of INTEGRATION_CATEGORIES) {
+    const selection = resolveSelection(preset, category);
+    if (!selection) continue;
+    const integration = getIntegration(category, selection.provider);
+    if (!integration?.envVars) continue;
+    const vars = integration.envVars(preset);
+    if (vars.server) base.server.push(...vars.server);
+    if (vars.client) base.client.push(...vars.client);
   }
 
-  // Auth
-  if (preset.auth.provider === "clerk") {
-    base.server.push({
-      name: "CLERK_SECRET_KEY",
-      zodType: "z.string().min(1)",
-      example: "sk_test_...",
-      description: "Clerk secret key",
-    });
-    base.client.push({
-      name: "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-      zodType: "z.string().min(1)",
-      example: "pk_test_...",
-      description: "Clerk publishable key",
-    });
-  }
-
-  // Sentry
-  if (preset.integrations.errorTracking === "sentry") {
-    base.server.push({
-      name: "SENTRY_DSN",
-      zodType: "z.string().url()",
-      example: "https://xxx@sentry.io/xxx",
-      description: "Sentry DSN",
-    });
-  }
-
-  // PostHog
-  if (preset.integrations.analytics === "posthog") {
-    base.client.push(
-      {
-        name: "NEXT_PUBLIC_POSTHOG_KEY",
-        zodType: "z.string().min(1)",
-        example: "phc_...",
-        description: "PostHog project API key",
-      },
-      {
-        name: "NEXT_PUBLIC_POSTHOG_HOST",
-        zodType: "z.string().url()",
-        example: "https://us.i.posthog.com",
-        description: "PostHog host",
-      },
-    );
-  }
-
-  // Email
-  if (preset.integrations.email === "react-email-resend") {
-    base.server.push(
-      {
-        name: "RESEND_API_KEY",
-        zodType: "z.string().min(1)",
-        example: "re_...",
-        description: "Resend API key",
-      },
-      {
-        name: "EMAIL_FROM",
-        zodType: "z.string().email()",
-        example: "noreply@example.com",
-        description: "Default sender email address",
-      },
-    );
-  } else if (preset.integrations.email === "nodemailer") {
-    base.server.push(
-      {
-        name: "SMTP_HOST",
-        zodType: "z.string().min(1)",
-        example: "smtp.gmail.com",
-        description: "SMTP host",
-      },
-      { name: "SMTP_PORT", zodType: "z.string().min(1)", example: "587", description: "SMTP port" },
-      {
-        name: "SMTP_USER",
-        zodType: "z.string().min(1)",
-        example: "user@example.com",
-        description: "SMTP user",
-      },
-      {
-        name: "SMTP_PASS",
-        zodType: "z.string().min(1)",
-        example: "password",
-        description: "SMTP password",
-      },
-    );
-  }
-
-  // Rate limiting
-  if (preset.integrations.rateLimit === "upstash") {
-    base.server.push(
-      {
-        name: "UPSTASH_REDIS_REST_URL",
-        zodType: "z.string().url()",
-        example: "https://xxx.upstash.io",
-        description: "Upstash Redis REST URL",
-      },
-      {
-        name: "UPSTASH_REDIS_REST_TOKEN",
-        zodType: "z.string().min(1)",
-        example: "AXxx...",
-        description: "Upstash Redis REST token",
-      },
-    );
-  }
-
-  // AI
-  if (preset.integrations.ai === "vercel-ai-sdk") {
-    base.server.push({
-      name: "OPENAI_API_KEY",
-      zodType: "z.string().min(1)",
-      example: "sk-...",
-      description: "OpenAI API key",
-    });
-  }
-
-  // Per-app env
   const apps: EnvChain["apps"] = {};
   for (const app of preset.apps) {
     apps[app.name] = { server: [], client: [] };

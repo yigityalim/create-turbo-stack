@@ -1,0 +1,70 @@
+---
+title: Schema Versioning
+description: Migrate older preset JSONs as the schema evolves
+---
+
+Every preset declares its `schemaVersion`. As the schema shape changes (a field is renamed, an enum restructured, a default shifts), older preset JSONs need a transform before they validate against the current Zod. The CLI runs registered migrations from the preset's recorded version up to `CURRENT_PRESET_SCHEMA_VERSION` automatically.
+
+## How it works
+
+1. CLI reads the preset (from `.turbo-stack.json` or `--preset <url>`).
+2. If `preset.schemaVersion` matches the current target, no-op.
+3. Otherwise: walk the migration registry, applying each `from → to` step in order.
+4. Validate the migrated shape against the live Zod schema.
+5. Continue with the validated preset.
+
+Without this, a CLI bump that removes a field would error out on every existing project.
+
+## Adding a migration
+
+When you bump `CURRENT_PRESET_SCHEMA_VERSION` (in `packages/schema/src/preset.ts`), drop a migration file alongside it:
+
+```ts
+// packages/core/src/migrations/v1-0-to-1-1.ts
+import { definePresetMigration } from "@create-turbo-stack/core";
+
+export default definePresetMigration({
+  from: "1.0",
+  to:   "1.1",
+  apply(preset) {
+    // shape transformation; return the new shape with bumped version
+    const { legacyField, ...rest } = preset as { legacyField?: unknown };
+    return { ...rest, schemaVersion: "1.1" };
+  },
+});
+```
+
+Append it to `BUILT_IN_PRESET_MIGRATIONS` in `packages/core/src/migrations/index.ts`. The runner picks it up; nothing else to wire.
+
+## Upgrade command
+
+End users run `upgrade` to apply pending migrations to their project:
+
+```bash
+npx create-turbo-stack upgrade [--dry-run]
+```
+
+The command validates the migrated shape and re-applies the resolved file tree through the diff engine — you see, file by file, what the upgrade actually changes. Atomic; rolls back on any failure.
+
+## Idempotency
+
+`upgrade` on a project already at the current version is a no-op. You can wire it into a project's `prepare` script without thinking about it.
+
+## When migrations fail
+
+The runner throws an explicit error if no chain reaches the target. That happens if:
+
+- The preset's recorded version is from a future CLI (downgrade not supported)
+- A migration step is missing (someone bumped the version without dropping a transform)
+
+In both cases the CLI surfaces the gap and aborts; it never silently scaffolds against a half-known shape.
+
+## Testing a migration
+
+`packages/core/src/migrations/integration.test.ts` is the reference. Pattern:
+
+1. Build a fixture in the old shape.
+2. Run `migratePreset(old, "<new>")`.
+3. Assert the result against `ValidatedPresetSchema.safeParse(...)` — the live validator must accept the migrated shape.
+
+The unit tests around the registry only prove the chain walk works; this integration test proves the output is still a valid preset.

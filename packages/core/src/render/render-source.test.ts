@@ -23,9 +23,7 @@ vi.mock("@create-turbo-stack/templates", () => ({
   },
 }));
 
-// ---------------------------------------------------------------------------
 // renderSourceFiles
-// ---------------------------------------------------------------------------
 
 describe("renderSourceFiles", () => {
   it("returns FileTreeNode[] for valid category", () => {
@@ -87,9 +85,7 @@ describe("renderSourceFiles", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // renderSingleFile
-// ---------------------------------------------------------------------------
 
 describe("renderSingleFile", () => {
   it("returns rendered content for existing template", () => {

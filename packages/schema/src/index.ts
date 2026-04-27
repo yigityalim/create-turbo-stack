@@ -13,3 +13,4 @@ export * from "./options/integrations";
 export * from "./options/package";
 export * from "./preset";
 export * from "./registry";
+export * from "./user-config";

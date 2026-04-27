@@ -9,9 +9,7 @@ afterEach(async () => {
 });
 
 describe("detectApps", () => {
-  // ---------------------------------------------------------------------------
   // App type detection
-  // ---------------------------------------------------------------------------
 
   it("detects nextjs via next dependency", async () => {
     tmp = await createFixture({
@@ -59,9 +57,7 @@ describe("detectApps", () => {
     expect(r.detections[0].confidence).toBe("low");
   });
 
-  // ---------------------------------------------------------------------------
   // Port detection
-  // ---------------------------------------------------------------------------
 
   it("extracts port from -p 3001 in dev script", async () => {
     tmp = await createFixture({
@@ -121,9 +117,7 @@ describe("detectApps", () => {
     expect(r.apps[0].port).toBe(3000);
   });
 
-  // ---------------------------------------------------------------------------
   // i18n detection
-  // ---------------------------------------------------------------------------
 
   it("sets i18n: true when next-intl is a dependency", async () => {
     tmp = await createFixture({
@@ -143,9 +137,7 @@ describe("detectApps", () => {
     expect(r.apps[0].i18n).toBe(false);
   });
 
-  // ---------------------------------------------------------------------------
   // workspace consumes
-  // ---------------------------------------------------------------------------
 
   it("populates consumes with workspace deps matching scope", async () => {
     tmp = await createFixture({
@@ -175,9 +167,7 @@ describe("detectApps", () => {
     expect(r.apps[0].consumes).toEqual([]);
   });
 
-  // ---------------------------------------------------------------------------
   // Multiple apps
-  // ---------------------------------------------------------------------------
 
   it("returns all apps when multiple exist", async () => {
     tmp = await createFixture({
@@ -194,9 +184,7 @@ describe("detectApps", () => {
     expect(types).toContain("hono-standalone");
   });
 
-  // ---------------------------------------------------------------------------
   // Edge cases
-  // ---------------------------------------------------------------------------
 
   it("returns empty arrays when apps dir does not exist", async () => {
     const { mkdtemp } = await import("node:fs/promises");

@@ -9,9 +9,7 @@ afterEach(async () => {
 });
 
 describe("detectApi", () => {
-  // ---------------------------------------------------------------------------
   // tRPC — certain
-  // ---------------------------------------------------------------------------
 
   it("detects tRPC via @trpc/server in packages/api", async () => {
     tmp = await createFixture({
@@ -35,9 +33,7 @@ describe("detectApi", () => {
     expect(r.value.strategy).toBe("trpc");
   });
 
-  // ---------------------------------------------------------------------------
   // Hono in packages/api — certain
-  // ---------------------------------------------------------------------------
 
   it("detects hono via hono in packages/api", async () => {
     tmp = await createFixture({
@@ -48,9 +44,7 @@ describe("detectApi", () => {
     expect(r.confidence).toBe("certain");
   });
 
-  // ---------------------------------------------------------------------------
   // tRPC takes priority over hono in packages/api
-  // ---------------------------------------------------------------------------
 
   it("prefers tRPC over hono when both in packages/api", async () => {
     tmp = await createFixture({
@@ -62,9 +56,7 @@ describe("detectApi", () => {
     expect(r.value.strategy).toBe("trpc");
   });
 
-  // ---------------------------------------------------------------------------
   // REST via Next.js — medium
-  // ---------------------------------------------------------------------------
 
   it("detects rest-nextjs when Next.js app exists and packages/api is absent", async () => {
     tmp = await createFixture({
@@ -98,9 +90,7 @@ describe("detectApi", () => {
     expect(r.value.strategy).toBe("rest-nextjs");
   });
 
-  // ---------------------------------------------------------------------------
   // None
-  // ---------------------------------------------------------------------------
 
   it("returns none/medium when no API layer detected", async () => {
     tmp = await createFixture({ "package.json": { name: "bare" } });
@@ -126,9 +116,7 @@ describe("detectApi", () => {
     expect(r.value.strategy).toBe("none");
   });
 
-  // ---------------------------------------------------------------------------
   // Edge cases
-  // ---------------------------------------------------------------------------
 
   it("packages/api with empty package.json → falls through to none", async () => {
     tmp = await createFixture({ "packages/api/package.json": "" });

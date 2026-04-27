@@ -1,0 +1,7 @@
+// Demonstrates conditional rendering — when the rendered content trims
+// to empty, render-source skips writing the file entirely. Useful for
+// integration-aware files (Sentry, PostHog, i18n setup, etc).
+
+<% if (it.integrations && it.integrations.errorTracking === "sentry") { %>
+export const errorTracking = "sentry";
+<% } %>

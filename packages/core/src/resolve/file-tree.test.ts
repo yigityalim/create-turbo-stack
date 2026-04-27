@@ -5,9 +5,7 @@ import minimalJson from "../../../../presets/minimal.json";
 import saasJson from "../../../../presets/saas-starter.json";
 import { resolveFileTree } from "./file-tree";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value));
@@ -28,9 +26,7 @@ function parseJson<T = unknown>(
   return JSON.parse(node.content) as T;
 }
 
-// ---------------------------------------------------------------------------
 // minimal preset — file existence
-// ---------------------------------------------------------------------------
 
 describe("resolveFileTree — minimal preset", () => {
   it("produces expected root config files", () => {
@@ -66,10 +62,6 @@ describe("resolveFileTree — minimal preset", () => {
     expect(paths.some((p) => p.startsWith("apps/web/"))).toBe(true);
   });
 
-  // -------------------------------------------------------------------------
-  // package.json catalog
-  // -------------------------------------------------------------------------
-
   it("root package.json contains a catalog with typescript", () => {
     const { nodes } = resolveFileTree(clone(minimalJson) as Preset);
     const pkg = parseJson<Record<string, unknown>>(nodes, "package.json");
@@ -96,15 +88,12 @@ describe("resolveFileTree — minimal preset", () => {
     expect(pkg.workspaces).toContain("packages/*");
   });
 
-  // -------------------------------------------------------------------------
   // globals.css @source directives
-  // -------------------------------------------------------------------------
 
   it("web app globals.css contains @source directive for consumed package", () => {
     const { nodes } = resolveFileTree(clone(minimalJson) as Preset);
 
     // globals.css may live at different sub-paths depending on template;
-    // find whichever node under apps/web/ contains @source
     const cssNode = nodes.find(
       (n) => n.path.startsWith("apps/web/") && n.content?.includes("@source"),
     );
@@ -115,9 +104,7 @@ describe("resolveFileTree — minimal preset", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // saas-starter preset — auto-generated packages
-// ---------------------------------------------------------------------------
 
 describe("resolveFileTree — saas-starter preset", () => {
   it("auto-generates db package (supabase strategy)", () => {
@@ -149,9 +136,7 @@ describe("resolveFileTree — saas-starter preset", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Preview mode (includeContent: false)
-// ---------------------------------------------------------------------------
 
 describe("resolveFileTree — preview mode", () => {
   it("all nodes have undefined content when includeContent is false", () => {
@@ -182,9 +167,7 @@ describe("resolveFileTree — preview mode", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Phase 2 — Database scaffolding
-// ---------------------------------------------------------------------------
 
 describe("resolveFileTree — database scaffolding", () => {
   it("drizzle preset generates schema, client, and config files", () => {
@@ -251,9 +234,7 @@ describe("resolveFileTree — database scaffolding", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Phase 2 — API scaffolding
-// ---------------------------------------------------------------------------
 
 describe("resolveFileTree — API scaffolding", () => {
   it("trpc preset generates router, server, client files", () => {
@@ -310,9 +291,7 @@ describe("resolveFileTree — API scaffolding", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Phase 2 — Auth scaffolding
-// ---------------------------------------------------------------------------
 
 describe("resolveFileTree — auth scaffolding", () => {
   it("supabase-auth generates server/client/middleware", () => {
@@ -367,9 +346,7 @@ describe("resolveFileTree — auth scaffolding", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Phase 2 — Env package
-// ---------------------------------------------------------------------------
 
 describe("resolveFileTree — env package", () => {
   it("env package uses @t3-oss/env-nextjs", () => {
@@ -404,9 +381,7 @@ describe("resolveFileTree — env package", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Phase 2 — Hono standalone app
-// ---------------------------------------------------------------------------
 
 describe("resolveFileTree — Hono standalone app", () => {
   it("generates Hono app files", () => {
@@ -452,9 +427,7 @@ describe("resolveFileTree — Hono standalone app", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Phase 2 — Catalog includes driver deps
-// ---------------------------------------------------------------------------
 
 describe("resolveFileTree — catalog driver dependencies", () => {
   it("includes postgres driver in catalog for drizzle+postgres", () => {
@@ -485,9 +458,7 @@ describe("resolveFileTree — catalog driver dependencies", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Phase 3 — Integration packages
-// ---------------------------------------------------------------------------
 
 describe("resolveFileTree — analytics package (PostHog)", () => {
   it("generates PostHog provider, client, and server files", () => {

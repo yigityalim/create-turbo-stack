@@ -21,9 +21,7 @@ export async function removeFixture(dir: string): Promise<void> {
   await fs.rm(dir, { recursive: true, force: true });
 }
 
-// ---------------------------------------------------------------------------
 // Canonical package.json builders — reused across multiple test files
-// ---------------------------------------------------------------------------
 
 export function pkgWith(
   deps: Record<string, string> = {},
@@ -54,9 +52,7 @@ export function workspacePkg(
   };
 }
 
-// ---------------------------------------------------------------------------
 // Preset fixture builders — canonical monorepo structures
-// ---------------------------------------------------------------------------
 
 /**
  * Minimal monorepo: bun, biome, Next.js app, no database/auth/api.
@@ -98,7 +94,6 @@ export const SAAS_FULL_FIXTURE: Record<string, string | object> = {
   "biome.json": {},
   "tsconfig.json": { compilerOptions: { strict: true } },
 
-  // apps
   "apps/web/package.json": workspacePkg(
     "@saas/web",
     {
@@ -121,7 +116,6 @@ export const SAAS_FULL_FIXTURE: Record<string, string | object> = {
     { start: "expo start" },
   ),
 
-  // packages
   "packages/api/package.json": workspacePkg("@saas/api", {
     "@trpc/server": "^11.0.0",
   }),

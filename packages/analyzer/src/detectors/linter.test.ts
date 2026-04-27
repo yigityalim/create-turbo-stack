@@ -9,9 +9,7 @@ afterEach(async () => {
 });
 
 describe("detectLinter", () => {
-  // ---------------------------------------------------------------------------
   // biome.json / biome.jsonc — certain
-  // ---------------------------------------------------------------------------
 
   it("detects biome via biome.json at root", async () => {
     tmp = await createFixture({
@@ -40,9 +38,7 @@ describe("detectLinter", () => {
     expect(r.confidence).toBe("certain");
   });
 
-  // ---------------------------------------------------------------------------
   // ESLint config files — high
-  // ---------------------------------------------------------------------------
 
   const eslintFiles = [
     ".eslintrc.js",
@@ -63,10 +59,6 @@ describe("detectLinter", () => {
       await removeFixture(tmp);
     });
   }
-
-  // ---------------------------------------------------------------------------
-  // package.json dep fallback — high
-  // ---------------------------------------------------------------------------
 
   it("detects biome via @biomejs/biome in devDependencies", async () => {
     tmp = await createFixture({
@@ -97,9 +89,7 @@ describe("detectLinter", () => {
     expect(r.value).toBe("biome");
   });
 
-  // ---------------------------------------------------------------------------
   // Default fallback — low
-  // ---------------------------------------------------------------------------
 
   it("defaults to biome with low confidence when nothing found", async () => {
     tmp = await createFixture({ "package.json": { name: "empty-pkg" } });
@@ -117,9 +107,7 @@ describe("detectLinter", () => {
     expect(r.confidence).toBe("low");
   });
 
-  // ---------------------------------------------------------------------------
   // Edge cases
-  // ---------------------------------------------------------------------------
 
   it("does not detect eslint config in subdirectories", async () => {
     tmp = await createFixture({ "apps/web/.eslintrc.json": {} });

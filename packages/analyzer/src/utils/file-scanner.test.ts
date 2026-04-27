@@ -15,9 +15,7 @@ afterEach(async () => {
   await removeFixture(tmp);
 });
 
-// ---------------------------------------------------------------------------
 // fileExists
-// ---------------------------------------------------------------------------
 
 describe("fileExists", () => {
   it("returns true for an existing file", async () => {
@@ -70,9 +68,7 @@ describe("fileExists", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // readFileIfExists
-// ---------------------------------------------------------------------------
 
 describe("readFileIfExists", () => {
   it("returns file content as utf-8 string", async () => {
@@ -129,9 +125,7 @@ describe("readFileIfExists", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // listDirs
-// ---------------------------------------------------------------------------
 
 describe("listDirs", () => {
   it("returns directory names only, not files", async () => {
@@ -193,9 +187,7 @@ describe("listDirs", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // readJsonFile
-// ---------------------------------------------------------------------------
 
 describe("readJsonFile", () => {
   it("parses valid JSON object", async () => {

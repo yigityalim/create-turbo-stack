@@ -19,7 +19,6 @@ interface TurboTask {
 export function computeTurboConfig(preset: Preset, globalEnv: string[] = []): TurboConfig {
   const tasks: Record<string, TurboTask> = {};
 
-  // Build outputs based on app types
   const buildOutputs: string[] = [];
   if (preset.apps.some((a) => a.type.startsWith("nextjs"))) {
     buildOutputs.push(".next/**", "!.next/cache/**");

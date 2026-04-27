@@ -1,4 +1,5 @@
 import type { Preset } from "@create-turbo-stack/schema";
+import { getIntegration, type IntegrationCategory } from "../integrations";
 import { VERSIONS } from "./versions";
 
 export interface CatalogEntry {
@@ -20,7 +21,6 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
   // Always
   add("typescript", VERSIONS.typescript);
 
-  // Linter
   if (preset.basics.linter === "biome") {
     add("@biomejs/biome", VERSIONS.biome);
   } else {
@@ -28,7 +28,6 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
     add("prettier", VERSIONS.prettier);
   }
 
-  // CSS
   if (preset.css.framework === "tailwind4") {
     add("tailwindcss", VERSIONS.tailwind4);
     add("@tailwindcss/postcss", VERSIONS.tailwindPostcss);
@@ -40,9 +39,10 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
 
   if (preset.css.ui === "shadcn") {
     add("tw-animate-css", VERSIONS.twAnimateCss);
+    add("clsx", VERSIONS.clsx);
+    add("tailwind-merge", VERSIONS.tailwindMerge);
   }
 
-  // Apps
   for (const app of preset.apps) {
     if (app.type === "nextjs" || app.type === "nextjs-api-only") {
       add("next", VERSIONS.next);
@@ -93,86 +93,49 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
     }
   }
 
-  // Database
-  if (preset.database.strategy === "supabase") {
-    add("@supabase/supabase-js", VERSIONS.supabaseJs);
-    add("@supabase/ssr", VERSIONS.supabaseSsr);
-  } else if (preset.database.strategy === "drizzle") {
-    add("drizzle-orm", VERSIONS.drizzleOrm);
-    add("drizzle-kit", VERSIONS.drizzleKit);
-    // Driver-specific deps
-    if ("driver" in preset.database) {
-      const driverDeps: Record<string, [string, string]> = {
-        postgres: ["postgres", VERSIONS.postgres],
-        mysql: ["mysql2", VERSIONS.mysql2],
-        sqlite: ["better-sqlite3", VERSIONS.betterSqlite3],
-        turso: ["@libsql/client", VERSIONS.libsqlClient],
-        neon: ["@neondatabase/serverless", VERSIONS.neonServerless],
-        planetscale: ["@planetscale/database", VERSIONS.planetscaleDatabase],
-      };
-      const dep = driverDeps[preset.database.driver];
-      if (dep) add(dep[0], dep[1]);
-    }
-  } else if (preset.database.strategy === "prisma") {
-    add("prisma", VERSIONS.prisma);
-    add("@prisma/client", VERSIONS.prismaClient);
-  }
-
-  // API
-  if (preset.api.strategy === "trpc") {
-    add("@trpc/server", VERSIONS.trpcServer);
-    add("@trpc/client", VERSIONS.trpcClient);
-    add("@trpc/react-query", VERSIONS.trpcReactQuery);
-    add("@tanstack/react-query", VERSIONS.tanstackReactQuery);
-    add("superjson", VERSIONS.superjson);
-    add("zod", VERSIONS.zod);
-  } else if (preset.api.strategy === "hono") {
-    add("hono", VERSIONS.hono);
-  }
-
-  // Auth
-  if (preset.auth.provider === "better-auth") {
-    add("better-auth", VERSIONS.betterAuth);
-  } else if (preset.auth.provider === "clerk") {
-    add("@clerk/nextjs", VERSIONS.clerkNextjs);
-  } else if (preset.auth.provider === "next-auth") {
-    add("next-auth", VERSIONS.nextAuth);
-  }
-
-  // Env
+  // Env validation: a built-in pseudo-integration (boolean flag, not a provider)
   if (preset.integrations.envValidation) {
     add("@t3-oss/env-nextjs", VERSIONS.t3Env);
     add("zod", VERSIONS.zod);
   }
 
-  // Integrations
-  if (preset.integrations.analytics === "posthog") {
-    add("posthog-js", VERSIONS.posthogJs);
-    add("posthog-node", VERSIONS.posthogNode);
-  } else if (preset.integrations.analytics === "vercel-analytics") {
-    add("@vercel/analytics", VERSIONS.vercelAnalytics);
-  }
-
-  if (preset.integrations.errorTracking === "sentry") {
-    add("@sentry/nextjs", VERSIONS.sentryNextjs);
-  }
-
-  if (preset.integrations.email === "react-email-resend") {
-    add("resend", VERSIONS.resend);
-    add("@react-email/components", VERSIONS.reactEmailComponents);
-  } else if (preset.integrations.email === "nodemailer") {
-    add("nodemailer", VERSIONS.nodemailer);
-  }
-
-  if (preset.integrations.rateLimit === "upstash") {
-    add("@upstash/ratelimit", VERSIONS.upstashRatelimit);
-    add("@upstash/redis", VERSIONS.upstashRedis);
-  }
-
-  if (preset.integrations.ai === "vercel-ai-sdk") {
-    add("ai", VERSIONS.ai);
-    add("@ai-sdk/openai", VERSIONS.aiSdkOpenai);
+  // Provider-driven catalog entries (auth, database, api, analytics, ...)
+  // come from the integration registry — no hardcoded if-cascade.
+  for (const category of INTEGRATION_CATEGORIES) {
+    const provider = resolveCategorySelection(preset, category);
+    if (!provider) continue;
+    const integration = getIntegration(category, provider);
+    if (!integration) continue;
+    for (const entry of integration.catalogEntries(preset)) {
+      add(entry.name, entry.version);
+    }
   }
 
   return Array.from(catalog.entries()).map(([name, version]) => ({ name, version }));
+}
+
+const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
+  "auth",
+  "database",
+  "api",
+  "analytics",
+  "errorTracking",
+  "email",
+  "rateLimit",
+  "ai",
+];
+
+function resolveCategorySelection(preset: Preset, category: IntegrationCategory): string | null {
+  switch (category) {
+    case "auth":
+      return preset.auth.provider === "none" ? null : preset.auth.provider;
+    case "database":
+      return preset.database.strategy === "none" ? null : preset.database.strategy;
+    case "api":
+      return preset.api.strategy === "none" ? null : preset.api.strategy;
+    default: {
+      const value = preset.integrations[category];
+      return !value || value === "none" ? null : value;
+    }
+  }
 }

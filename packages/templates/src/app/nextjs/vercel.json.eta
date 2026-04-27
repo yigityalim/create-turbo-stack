@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "cd ../.. && turbo run build --filter=<%= it.app.name %>",
+  "installCommand": "cd ../.. && <%= it.packageManager === 'bun' ? 'bun install' : it.packageManager === 'pnpm' ? 'pnpm install --frozen-lockfile' : 'npm install' %>"
+}

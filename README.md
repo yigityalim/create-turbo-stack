@@ -1,129 +1,98 @@
 # create-turbo-stack
 
-Scaffold production-ready Turborepo monorepos in seconds, not days.
-
-`create-turbo-stack` is an opinionated, interactive CLI that generates fully wired Turborepo workspaces with real-world patterns: database layer, auth, API routing, shared UI, environment validation, cross-package Tailwind CSS, and more.
-
-## Why?
-
-`create-turbo` gives you a near-empty skeleton. Getting from skeleton to production-ready requires days of manual wiring:
-
-- Tailwind 4 `@source` directives across packages (miss one → silent CSS purging)
-- `catalog:` dependency management synchronized across all workspaces
-- `@t3-oss/env-nextjs` validation chains per app
-- tRPC router wiring, Supabase client setup, auth middleware
-- TypeScript config inheritance chains
-
-**create-turbo-stack** automates all of this.
-
-## Quick Start
+Scaffold production-ready Turborepo monorepos.
 
 ```bash
 npx create-turbo-stack my-project
 ```
 
-Or use a preset:
+`create-turbo-stack` is an opinionated CLI that generates a fully wired Turborepo workspace: catalog dependencies, TypeScript config inheritance, Tailwind 4 `@source` directives across packages, env validation chains, and integration glue (auth, DB, API, analytics) — the moving parts that make `create-turbo` only a starting point.
 
-```bash
-npx create-turbo-stack --preset https://create-turbo-stack.dev/s/saas-starter.json
-```
+## What it does
 
-## Features
+- **Interactive scaffolding** — pick package manager, database, API, auth, CSS, UI library, integrations.
+- **Wiring engine** — CSS `@source`, catalog deps, env chain, tsconfig inheritance, workspace refs are all computed, not hand-written.
+- **Incremental edits** — `add app`, `add package`, `add integration`, `remove ...`. Conflicts with manual edits are detected and you're asked what to do.
+- **Reverse engineering** — `analyze` reads an existing Turborepo and produces a preset JSON, with an optional builder URL.
+- **Plugin architecture** — `defineAppType()` and `defineIntegration()` add new frameworks or providers in one file. User projects can pull plugins via `npm install` + `create-turbo-stack.json`.
+- **Visual builder** — drag-drop preset configurator with file tree preview at [create-turbo-stack.dev](https://create-turbo-stack.dev).
+- **MCP server** — Claude Code, Cursor, Windsurf can scaffold via Model Context Protocol.
 
-- **Interactive scaffolding** — Choose your stack: database, API, auth, CSS, integrations
-- **Wiring engine** — CSS `@source`, catalog deps, env chains, tsconfig inheritance — all automated
-- **Incremental additions** — `create-turbo-stack add app`, `add package`, `add integration`
-- **Preset system** — Save, share, and reuse stack configurations (inspired by shadcn registry)
-- **Web builder** — Visual stack configurator with live file tree preview at [create-turbo-stack.dev](https://create-turbo-stack.dev)
-- **MCP server** — AI agents (Claude Code, Cursor) can scaffold via Model Context Protocol
-- **Idempotent operations** — Safe to re-run, won't duplicate or overwrite manual changes
+## Stack options
 
-## Stack Options
+| Category | Implemented |
+|---|---|
+| Package manager | bun, pnpm, npm, yarn |
+| Database | Supabase, Drizzle (6 drivers), Prisma |
+| API | tRPC v11, Hono, Next.js API Routes |
+| Auth | Supabase Auth, Better Auth, Clerk, NextAuth, Lucia |
+| CSS | Tailwind 4 (full), Tailwind 3 / vanilla / CSS Modules (basic) |
+| UI | shadcn/ui, Radix |
+| Apps | Next.js, Next.js API-only, Hono, Vite + React, SvelteKit, Astro, Remix |
+| Integrations | Sentry, PostHog, Vercel Analytics, Plausible, React Email + Resend, Nodemailer, Upstash, Vercel AI SDK, Langchain |
+| Linter | Biome |
 
-| Category | Options |
-|----------|---------|
-| **Package Manager** | bun, pnpm, npm, yarn |
-| **Database** | Supabase, Drizzle, Prisma, none |
-| **API** | tRPC v11, Hono, Next.js API Routes, none |
-| **Auth** | Supabase Auth, Better Auth, Clerk, NextAuth, Lucia, none |
-| **CSS** | Tailwind 4, Tailwind 3, vanilla, CSS Modules |
-| **UI** | shadcn/ui, Radix (raw), none |
-| **Apps** | Next.js, Expo, Hono, Vite (React/Vue), SvelteKit, Astro, Remix, Tauri |
-| **Integrations** | Sentry, PostHog, Plausible, React Email + Resend, Upstash, Vercel AI SDK |
+App types declared in the schema but not yet implemented (Expo, Vite + Vue, Tauri) raise an explicit error rather than producing a broken project.
 
 ## Usage
 
-### Create a new project
-
 ```bash
+# Interactive
 npx create-turbo-stack
+
+# From a preset (URL or path)
+npx create-turbo-stack --preset https://create-turbo-stack.dev/s/saas-starter.json
+
+# Inside an existing project
+create-turbo-stack add app          # add a new app
+create-turbo-stack add package      # add a workspace package
+create-turbo-stack add integration  # set / change a provider
+create-turbo-stack remove app       # remove an app and its files
+
+# Reverse-engineer
+create-turbo-stack analyze              # print preset JSON
+create-turbo-stack analyze --open-builder
+
+# AI agent integration
+create-turbo-stack mcp
 ```
 
-Interactive prompts guide you through every decision.
+## Project config — `create-turbo-stack.json`
 
-### Add to an existing project
+Optional. Drop one in your repo (or any parent directory) to set defaults, lock down choices, and load plugins:
 
-```bash
-# Add a new app
-npx create-turbo-stack add app
-
-# Add a new package
-npx create-turbo-stack add package
-
-# Add an integration (e.g., Sentry, analytics)
-npx create-turbo-stack add integration
+```json
+{
+  "$schema": "https://create-turbo-stack.dev/schema/user-config.json",
+  "defaults": {
+    "basics": { "scope": "@acme", "packageManager": "pnpm" }
+  },
+  "policy": {
+    "allow":   { "auth": ["clerk", "better-auth"] },
+    "require": { "typescript": "strict", "envValidation": true }
+  },
+  "plugins": ["@acme/cts-plugins"]
+}
 ```
 
-### Use a preset
+`defaults` pre-fill prompts. `policy.allow` / `policy.forbid` filter prompt options; `policy.require` skips a prompt and locks the value. `plugins` are npm package names whose default export contributes `AppTypeDefinition` or `IntegrationDefinition` entries.
 
-```bash
-# Built-in presets
-npx create-turbo-stack --preset minimal
-npx create-turbo-stack --preset saas-starter
-npx create-turbo-stack --preset api-only
-
-# Community presets (any URL)
-npx create-turbo-stack --preset https://example.com/my-stack.json
-```
-
-### MCP Server (for AI agents)
-
-```bash
-npx create-turbo-stack mcp
-```
-
-See [MCP documentation](./docs/mcp.md) for setup with Claude Code, Cursor, etc.
-
-## Community Presets
-
-Share your stack with the community! Create a preset JSON conforming to the [preset schema](https://create-turbo-stack.dev/schema/preset.json) and host it at any URL.
-
-```bash
-# Anyone can use your preset
-npx create-turbo-stack --preset https://your-site.com/your-stack.json
-```
-
-See [Registry documentation](./docs/registry.md) for details on creating and publishing presets.
-
-## Project Structure
-
-This is a Turborepo monorepo:
+## Repo layout
 
 ```
-create-turbo-stack/
-├── apps/
-│   └── web/              # Landing page + docs + builder + community presets
-├── packages/
-│   ├── cli/              # CLI entry point (npx create-turbo-stack)
-│   ├── core/             # Platform-agnostic business logic (browser + Node)
-│   ├── schema/           # Zod 4 schemas for presets, config, registry
-│   ├── templates/        # Eta template files for code generation
-│   └── analyzer/         # Reverse-engineer existing Turborepo projects
+apps/web/            Landing page, docs, visual builder
+packages/cli/        CLI (npx entry point)
+packages/core/       Platform-agnostic engine (runs in Node and browser)
+packages/schema/     Zod 4 schemas
+packages/templates/  Eta source-file templates
+packages/analyzer/   Existing-project detection
 ```
+
+`packages/core` has a hard rule: **no Node.js imports**. The browser builder uses the same engine.
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+See `CONTRIBUTING.md`. New frameworks: copy `packages/core/src/resolve/app-types/_TEMPLATE.ts`. New providers: see `packages/core/src/integrations/_TEMPLATE.ts`. Schema-vs-registry drift is enforced by `registry-sync.test.ts` in CI.
 
 ## License
 

@@ -1,0 +1,6 @@
+// <%= it.app.name %> — entry point
+// Scope: <%= it.scope %>
+// Listens on port <%= it.app.port %>
+
+export const APP_NAME = "<%= it.app.name %>";
+export const APP_PORT = <%= it.app.port %>;

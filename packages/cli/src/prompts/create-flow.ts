@@ -1,6 +1,7 @@
 import * as p from "@clack/prompts";
-import type { Preset } from "@create-turbo-stack/schema";
+import type { Preset, UserConfig } from "@create-turbo-stack/schema";
 import pc from "picocolors";
+import { filterOptions, lockedValue } from "../io/policy";
 import { CLI_VERSION } from "../version";
 
 function cancel(): never {
@@ -13,11 +14,34 @@ function onCancel<T>(value: T | symbol): T {
   return value as T;
 }
 
-export async function runCreatePrompts(projectName?: string): Promise<Preset> {
-  // Banner
+/**
+ * Filter a prompt's option list against `policy.allow` / `policy.forbid`,
+ * fall back to the full list if filtering would empty it (avoids
+ * silently breaking the flow when the user's config is contradictory —
+ * the validation step will surface the real error).
+ */
+function filtered<T extends string, O extends { value: T }>(
+  options: readonly O[],
+  policy: UserConfig["policy"] | undefined,
+  category: Parameters<typeof filterOptions>[2],
+): O[] {
+  const allowedValues = filterOptions(
+    options.map((o) => o.value),
+    policy,
+    category,
+  );
+  const filteredOpts = options.filter((o) => allowedValues.includes(o.value));
+  return filteredOpts.length > 0 ? filteredOpts : [...options];
+}
+
+export async function runCreatePrompts(
+  projectName?: string,
+  userConfig?: UserConfig,
+): Promise<Preset> {
+  const defaults = userConfig?.defaults;
+  const policy = userConfig?.policy;
   p.intro(`${pc.bgCyan(pc.black(" create-turbo-stack "))} ${pc.dim(`v${CLI_VERSION}`)}`);
 
-  // 1. Project name
   const name =
     projectName ??
     onCancel(
@@ -31,26 +55,32 @@ export async function runCreatePrompts(projectName?: string): Promise<Preset> {
       }),
     );
 
-  // 2. Package manager
-  const packageManager = onCancel(
-    await p.select({
-      message: "Package manager",
-      options: [
-        { value: "bun", label: "bun", hint: "recommended" },
-        { value: "pnpm", label: "pnpm" },
-        { value: "npm", label: "npm" },
-        { value: "yarn", label: "yarn" },
-      ],
-      initialValue: "bun",
-    }),
-  );
+  const lockedPm = lockedValue(policy, "packageManager");
+  const packageManager =
+    lockedPm ??
+    onCancel(
+      await p.select({
+        message: "Package manager",
+        options: filtered(
+          [
+            { value: "bun", label: "bun", hint: "recommended" },
+            { value: "pnpm", label: "pnpm" },
+            { value: "npm", label: "npm" },
+            { value: "yarn", label: "yarn" },
+          ] as const,
+          policy,
+          "packageManager",
+        ),
+        initialValue: defaults?.basics?.packageManager ?? "bun",
+      }),
+    );
 
-  // 3. Scope
+  const defaultScope = defaults?.basics?.scope ?? `@${name}`;
   const scope = onCancel(
     await p.text({
       message: "Organization scope",
-      placeholder: `@${name}`,
-      defaultValue: `@${name}`,
+      placeholder: defaultScope,
+      defaultValue: defaultScope,
       validate: (v) => {
         if (!v || !v.startsWith("@")) return "Scope must start with @";
         if (!/^@[a-z0-9-]+$/.test(v)) return "Lowercase letters, numbers, and hyphens only";
@@ -58,17 +88,24 @@ export async function runCreatePrompts(projectName?: string): Promise<Preset> {
     }),
   );
 
-  // 4. Database
   const dbStrategy = onCancel(
     await p.select({
       message: "Database strategy",
-      options: [
-        { value: "supabase", label: "Supabase", hint: "Postgres + Auth + Realtime" },
-        { value: "drizzle", label: "Drizzle ORM" },
-        { value: "prisma", label: "Prisma" },
-        { value: "none", label: "None" },
-      ],
-      initialValue: "none",
+      options: filtered(
+        [
+          {
+            value: "supabase",
+            label: "Supabase",
+            hint: "Postgres + Auth + Realtime",
+          },
+          { value: "drizzle", label: "Drizzle ORM" },
+          { value: "prisma", label: "Prisma" },
+          { value: "none", label: "None" },
+        ] as const,
+        policy,
+        "database",
+      ),
+      initialValue: defaults?.database?.strategy ?? "none",
     }),
   );
 
@@ -92,17 +129,20 @@ export async function runCreatePrompts(projectName?: string): Promise<Preset> {
     database = { strategy: dbStrategy } as Preset["database"];
   }
 
-  // 5. API
   const apiStrategy = onCancel(
     await p.select({
       message: "API layer",
-      options: [
-        { value: "trpc", label: "tRPC v11", hint: "type-safe, recommended" },
-        { value: "hono", label: "Hono", hint: "lightweight REST" },
-        { value: "rest-nextjs", label: "Next.js API Routes" },
-        { value: "none", label: "None" },
-      ],
-      initialValue: "none",
+      options: filtered(
+        [
+          { value: "trpc", label: "tRPC v11", hint: "type-safe, recommended" },
+          { value: "hono", label: "Hono", hint: "lightweight REST" },
+          { value: "rest-nextjs", label: "Next.js API Routes" },
+          { value: "none", label: "None" },
+        ] as const,
+        policy,
+        "api",
+      ),
+      initialValue: defaults?.api?.strategy ?? "none",
     }),
   );
 
@@ -124,21 +164,31 @@ export async function runCreatePrompts(projectName?: string): Promise<Preset> {
     api = { strategy: apiStrategy } as Preset["api"];
   }
 
-  // 6. Auth
   const authProvider = onCancel(
     await p.select({
       message: "Authentication",
-      options: [
-        ...(dbStrategy === "supabase"
-          ? [{ value: "supabase-auth", label: "Supabase Auth", hint: "recommended with Supabase" }]
-          : []),
-        { value: "better-auth", label: "Better Auth" },
-        { value: "clerk", label: "Clerk" },
-        { value: "next-auth", label: "NextAuth" },
-        { value: "lucia", label: "Lucia" },
-        { value: "none", label: "None" },
-      ],
-      initialValue: dbStrategy === "supabase" ? "supabase-auth" : "none",
+      options: filtered(
+        [
+          ...(dbStrategy === "supabase"
+            ? [
+                {
+                  value: "supabase-auth" as const,
+                  label: "Supabase Auth",
+                  hint: "recommended with Supabase",
+                },
+              ]
+            : []),
+          { value: "better-auth" as const, label: "Better Auth" },
+          { value: "clerk" as const, label: "Clerk" },
+          { value: "next-auth" as const, label: "NextAuth" },
+          { value: "lucia" as const, label: "Lucia" },
+          { value: "none" as const, label: "None" },
+        ],
+        policy,
+        "auth",
+      ),
+      initialValue:
+        defaults?.auth?.provider ?? (dbStrategy === "supabase" ? "supabase-auth" : "none"),
     }),
   );
 
@@ -148,31 +198,37 @@ export async function runCreatePrompts(projectName?: string): Promise<Preset> {
     entitlements: false,
   };
 
-  // 7. CSS
   const cssFramework = onCancel(
     await p.select({
       message: "CSS framework",
-      options: [
-        { value: "tailwind4", label: "Tailwind CSS 4", hint: "recommended" },
-        { value: "tailwind3", label: "Tailwind CSS 3" },
-        { value: "vanilla", label: "Vanilla CSS" },
-        { value: "css-modules", label: "CSS Modules" },
-      ],
-      initialValue: "tailwind4",
+      options: filtered(
+        [
+          { value: "tailwind4", label: "Tailwind CSS 4", hint: "recommended" },
+          { value: "tailwind3", label: "Tailwind CSS 3" },
+          { value: "vanilla", label: "Vanilla CSS" },
+          { value: "css-modules", label: "CSS Modules" },
+        ] as const,
+        policy,
+        "cssFramework",
+      ),
+      initialValue: defaults?.css?.framework ?? "tailwind4",
     }),
   );
 
-  let uiLib: Preset["css"]["ui"] = "none";
+  let uiLib: Preset["css"]["ui"] = defaults?.css?.ui ?? "none";
   if (cssFramework === "tailwind4" || cssFramework === "tailwind3") {
     uiLib = onCancel(
       await p.select({
         message: "UI library",
-        options: [
-          { value: "shadcn", label: "shadcn/ui", hint: "recommended" },
-          { value: "radix-raw", label: "Radix (raw)" },
-          { value: "none", label: "None" },
-        ],
-        initialValue: "shadcn",
+        options: filtered(
+          [
+            { value: "shadcn", label: "shadcn/ui", hint: "recommended" },
+            { value: "none", label: "None" },
+          ] as const,
+          policy,
+          "cssUi",
+        ),
+        initialValue: defaults?.css?.ui ?? "shadcn",
       }),
     ) as Preset["css"]["ui"];
   }
@@ -183,19 +239,24 @@ export async function runCreatePrompts(projectName?: string): Promise<Preset> {
     styling: "css-variables",
   };
 
-  // 8. Linter
-  const linter = onCancel(
-    await p.select({
-      message: "Linter / Formatter",
-      options: [
-        { value: "biome", label: "Biome", hint: "fast, single tool" },
-        { value: "eslint-prettier", label: "ESLint + Prettier" },
-      ],
-      initialValue: "biome",
-    }),
-  );
+  const lockedLinter = lockedValue(policy, "linter");
+  const linter =
+    lockedLinter ??
+    onCancel(
+      await p.select({
+        message: "Linter / Formatter",
+        options: filtered(
+          [
+            { value: "biome", label: "Biome", hint: "fast, single tool" },
+            { value: "eslint-prettier", label: "ESLint + Prettier" },
+          ] as const,
+          policy,
+          "linter",
+        ),
+        initialValue: defaults?.basics?.linter ?? "biome",
+      }),
+    );
 
-  // 9. Apps
   p.log.info(pc.cyan("Apps"));
   const apps: Preset["apps"] = [];
   let addMoreApps = true;
@@ -223,15 +284,19 @@ export async function runCreatePrompts(projectName?: string): Promise<Preset> {
     const appType = onCancel(
       await p.select({
         message: `Type for ${pc.cyan(appName)}`,
-        options: [
-          { value: "nextjs", label: "Next.js" },
-          { value: "nextjs-api-only", label: "Next.js (API only)" },
-          { value: "hono-standalone", label: "Hono standalone" },
-          { value: "vite-react", label: "Vite + React" },
-          { value: "sveltekit", label: "SvelteKit" },
-          { value: "astro", label: "Astro" },
-          { value: "remix", label: "Remix" },
-        ],
+        options: filtered(
+          [
+            { value: "nextjs" as const, label: "Next.js" },
+            { value: "nextjs-api-only" as const, label: "Next.js (API only)" },
+            { value: "hono-standalone" as const, label: "Hono standalone" },
+            { value: "vite-react" as const, label: "Vite + React" },
+            { value: "sveltekit" as const, label: "SvelteKit" },
+            { value: "astro" as const, label: "Astro" },
+            { value: "remix" as const, label: "Remix" },
+          ],
+          policy,
+          "appType",
+        ),
         initialValue: "nextjs",
       }),
     );
@@ -268,7 +333,6 @@ export async function runCreatePrompts(projectName?: string): Promise<Preset> {
     }
   }
 
-  // 10. Packages
   p.log.info(pc.cyan("Packages"));
   const packages: Preset["packages"] = [];
   let addMorePkgs = true;
@@ -320,7 +384,10 @@ export async function runCreatePrompts(projectName?: string): Promise<Preset> {
           message: `Type for ${pc.cyan(pkgName)}`,
           options: [
             { value: "library", label: "Library (TypeScript)" },
-            { value: "react-library", label: "React Library (hooks + components)" },
+            {
+              value: "react-library",
+              label: "React Library (hooks + components)",
+            },
             { value: "ui", label: "UI (React components)" },
             { value: "utils", label: "Utilities" },
             { value: "config", label: "Config (shared configuration)" },
@@ -358,27 +425,68 @@ export async function runCreatePrompts(projectName?: string): Promise<Preset> {
     }
   }
 
-  // Wire consumes: each app consumes all user packages by default
   const allPkgNames = packages.map((pk) => pk.name);
   for (const app of apps) {
     app.consumes = [...allPkgNames];
   }
 
-  // 11. Integrations
+  // Items whose category is fully constrained by allow/forbid are
+  // hidden from the picker so the user can't pick something invalid.
+  const allIntegrationItems = [
+    {
+      value: "posthog",
+      label: "PostHog analytics",
+      category: "analytics" as const,
+    },
+    {
+      value: "vercel-analytics",
+      label: "Vercel Analytics",
+      category: "analytics" as const,
+    },
+    {
+      value: "sentry",
+      label: "Sentry error tracking",
+      category: "errorTracking" as const,
+    },
+    {
+      value: "react-email-resend",
+      label: "React Email + Resend",
+      category: "email" as const,
+    },
+    {
+      value: "upstash",
+      label: "Upstash rate limiting",
+      category: "rateLimit" as const,
+    },
+    { value: "vercel-ai-sdk", label: "Vercel AI SDK", category: "ai" as const },
+  ];
+  const integrationOptions = allIntegrationItems
+    .filter((item) => {
+      const allow = policy?.allow?.[item.category] as readonly string[] | undefined;
+      const forbid = policy?.forbid?.[item.category] as readonly string[] | undefined;
+      if (forbid?.includes(item.value)) return false;
+      if (allow && allow.length > 0 && !allow.includes(item.value)) return false;
+      return true;
+    })
+    .map(({ value, label }) => ({ value, label }));
+
   const extras = onCancel(
     await p.multiselect({
       message: "Integrations",
-      options: [
-        { value: "posthog", label: "PostHog analytics" },
-        { value: "vercel-analytics", label: "Vercel Analytics" },
-        { value: "sentry", label: "Sentry error tracking" },
-        { value: "react-email-resend", label: "React Email + Resend" },
-        { value: "upstash", label: "Upstash rate limiting" },
-        { value: "vercel-ai-sdk", label: "Vercel AI SDK" },
-      ],
+      options: integrationOptions,
       required: false,
+      initialValues: [
+        ...(defaults?.integrations?.analytics === "posthog" ? ["posthog"] : []),
+        ...(defaults?.integrations?.analytics === "vercel-analytics" ? ["vercel-analytics"] : []),
+        ...(defaults?.integrations?.errorTracking === "sentry" ? ["sentry"] : []),
+        ...(defaults?.integrations?.email === "react-email-resend" ? ["react-email-resend"] : []),
+        ...(defaults?.integrations?.rateLimit === "upstash" ? ["upstash"] : []),
+        ...(defaults?.integrations?.ai === "vercel-ai-sdk" ? ["vercel-ai-sdk"] : []),
+      ],
     }),
   );
+
+  const requiredEnvValidation = lockedValue(policy, "envValidation");
 
   const integrations: Preset["integrations"] = {
     analytics: extras.includes("posthog")
@@ -390,10 +498,9 @@ export async function runCreatePrompts(projectName?: string): Promise<Preset> {
     email: extras.includes("react-email-resend") ? "react-email-resend" : "none",
     rateLimit: extras.includes("upstash") ? "upstash" : "none",
     ai: extras.includes("vercel-ai-sdk") ? "vercel-ai-sdk" : "none",
-    envValidation: true,
+    envValidation: requiredEnvValidation ?? defaults?.integrations?.envValidation ?? true,
   };
 
-  // 12. Summary
   p.log.message("");
   p.log.message(pc.bold("Summary:"));
   p.log.message(`  Project:    ${pc.cyan(name)}`);
@@ -421,15 +528,16 @@ export async function runCreatePrompts(projectName?: string): Promise<Preset> {
   if (!confirmed) cancel();
 
   const preset: Preset = {
+    schemaVersion: "1.0",
     name,
     version: "1.0.0",
     basics: {
       projectName: name,
       packageManager: packageManager as Preset["basics"]["packageManager"],
       scope,
-      typescript: "strict",
+      typescript: lockedValue(policy, "typescript") ?? defaults?.basics?.typescript ?? "strict",
       linter: linter as Preset["basics"]["linter"],
-      gitInit: true,
+      gitInit: defaults?.basics?.gitInit ?? true,
     },
     database,
     api,

@@ -1,20 +1,9 @@
-import fs from "node:fs/promises";
-import path from "node:path";
 import * as p from "@clack/prompts";
-import {
-  applyMutations,
-  computeCatalog,
-  computeCssSourceMap,
-  diffTree,
-  resolveAutoPackages,
-  resolveFileTree,
-} from "@create-turbo-stack/core";
-import type { App, Package, Preset, TurboStackConfig } from "@create-turbo-stack/schema";
+import { resolveAutoPackages, SUPPORTED_APP_TYPES } from "@create-turbo-stack/core";
+import type { App, Package, Preset, UserConfig } from "@create-turbo-stack/schema";
 import {
   AiSchema,
   AnalyticsSchema,
-  AppTypeSchema,
-  CmsSchema,
   EmailSchema,
   ErrorTrackingSchema,
   PackageTypeSchema,
@@ -22,31 +11,51 @@ import {
   ValidatedPresetSchema,
 } from "@create-turbo-stack/schema";
 import pc from "picocolors";
-import { CLI_VERSION } from "../version";
-import { readExistingFiles, readProjectConfig, writeProjectConfig } from "../io/reader";
-import { writeFiles } from "../io/writer";
+import { applyDiff } from "../io/apply-diff";
+import { filterOptions, validatePresetAgainstPolicy } from "../io/policy";
+import { readProjectConfig } from "../io/reader";
+import { addDependencyCommand } from "./add-dependency";
 
-export async function addCommand(type: string) {
+export async function addCommand(
+  type: string,
+  userConfig?: UserConfig,
+  options: { dryRun?: boolean; to?: string; dev?: boolean; version?: string } = {},
+  extra?: string,
+) {
   switch (type) {
     case "app":
-      return addApp();
+      return addApp(userConfig, options);
     case "package":
-      return addPackage();
+      return addPackage(userConfig, options);
     case "integration":
-      return addIntegration();
+      return addIntegration(userConfig, options);
+    case "dependency":
+    case "dep":
+      // `extra` carries the npm package name (e.g. `add dependency lodash`).
+      if (!extra) {
+        p.log.error(
+          `Usage: ${pc.cyan("create-turbo-stack add dependency <package> [--to=<workspace>] [--dev]")}`,
+        );
+        process.exit(1);
+      }
+      return addDependencyCommand(extra, options);
     default:
       p.log.error(
-        `Unknown add type: ${pc.cyan(type)}. Use ${pc.cyan("app")}, ${pc.cyan("package")}, or ${pc.cyan("integration")}.`,
+        `Unknown add type: ${pc.cyan(type)}. Use ${pc.cyan("app")}, ${pc.cyan("package")}, ${pc.cyan("integration")}, or ${pc.cyan("dependency")}.`,
       );
       process.exit(1);
   }
 }
 
-// ---------------------------------------------------------------------------
-// Add App
-// ---------------------------------------------------------------------------
+function exitIfPolicyViolated(preset: Preset, policy: UserConfig["policy"] | undefined): void {
+  const violations = validatePresetAgainstPolicy(preset, policy);
+  if (violations.length === 0) return;
+  p.log.error("This change violates the project policy:");
+  for (const v of violations) p.log.error(`  ${v}`);
+  process.exit(1);
+}
 
-async function addApp() {
+async function addApp(userConfig?: UserConfig, options: { dryRun?: boolean } = {}) {
   const cwd = process.cwd();
   const config = await readProjectConfig(cwd);
 
@@ -57,7 +66,6 @@ async function addApp() {
 
   p.intro(`${pc.bgCyan(pc.black(" add app "))} to ${pc.cyan(config.basics.projectName)}`);
 
-  // Existing app names for validation
   const existingNames = new Set(config.apps.map((a) => a.name));
 
   const name = (await p.text({
@@ -71,13 +79,17 @@ async function addApp() {
   })) as string;
   if (p.isCancel(name)) return process.exit(0);
 
+  const allowedTypes = filterOptions(SUPPORTED_APP_TYPES, userConfig?.policy, "appType");
+  if (allowedTypes.length === 0) {
+    p.log.error("Project policy forbids every supported app type — nothing to add.");
+    process.exit(1);
+  }
   const appType = (await p.select({
     message: "App type",
-    options: AppTypeSchema.options.map((t) => ({ value: t, label: t })),
+    options: allowedTypes.map((t) => ({ value: t, label: t })),
   })) as App["type"];
   if (p.isCancel(appType)) return process.exit(0);
 
-  // Auto-increment port (start from 3000 if no apps exist)
   const DEFAULT_START_PORT = 3000;
   const maxPort =
     config.apps.length > 0 ? Math.max(...config.apps.map((a) => a.port)) : DEFAULT_START_PORT - 1;
@@ -94,22 +106,16 @@ async function addApp() {
 
   let i18n = false;
   if (["nextjs", "sveltekit", "astro", "remix"].includes(appType)) {
-    i18n = ((await p.confirm({ message: "Enable i18n?", initialValue: false })) ??
-      false) as boolean;
+    i18n = ((await p.confirm({
+      message: "Enable i18n?",
+      initialValue: false,
+    })) ?? false) as boolean;
     if (p.isCancel(i18n)) return process.exit(0);
   }
 
-  let cms: App["cms"] = "none";
-  if (appType === "nextjs") {
-    cms = (await p.select({
-      message: "CMS",
-      options: CmsSchema.options.map((c) => ({ value: c, label: c })),
-      initialValue: "none",
-    })) as App["cms"];
-    if (p.isCancel(cms)) return process.exit(0);
-  }
+  // CMS field is deprecated; default to "none" without prompting.
+  const cms: App["cms"] = "none";
 
-  // Available packages to consume
   const allPackages = [
     ...config.packages.map((p) => p.name),
     ...resolveAutoPackages(config as Preset).map((p) => p.name),
@@ -135,13 +141,11 @@ async function addApp() {
     consumes,
   };
 
-  // Update preset
   const updatedPreset: Preset = {
     ...config,
     apps: [...config.apps, newApp],
   };
 
-  // Validate
   const result = ValidatedPresetSchema.safeParse(updatedPreset);
   if (!result.success) {
     p.log.error("Validation failed:");
@@ -151,17 +155,14 @@ async function addApp() {
     process.exit(1);
   }
 
-  // Apply diff
-  await applyDiff(cwd, config as Preset, result.data);
+  exitIfPolicyViolated(result.data, userConfig?.policy);
+
+  await applyDiff(cwd, config as Preset, result.data, { dryRun: options.dryRun });
 
   p.outro(`${pc.green("Done!")} App ${pc.cyan(name)} added.`);
 }
 
-// ---------------------------------------------------------------------------
-// Add Package
-// ---------------------------------------------------------------------------
-
-async function addPackage() {
+async function addPackage(userConfig?: UserConfig, options: { dryRun?: boolean } = {}) {
   const cwd = process.cwd();
   const config = await readProjectConfig(cwd);
 
@@ -217,13 +218,11 @@ async function addPackage() {
     exports: exports.length > 0 ? exports : ["."],
   };
 
-  // Update preset
   const updatedPreset: Preset = {
     ...config,
     packages: [...config.packages, newPkg],
   };
 
-  // Validate
   const result = ValidatedPresetSchema.safeParse(updatedPreset);
   if (!result.success) {
     p.log.error("Validation failed:");
@@ -233,18 +232,15 @@ async function addPackage() {
     process.exit(1);
   }
 
-  // Apply diff
-  await applyDiff(cwd, config as Preset, result.data);
+  exitIfPolicyViolated(result.data, userConfig?.policy);
+
+  await applyDiff(cwd, config as Preset, result.data, { dryRun: options.dryRun });
 
   const scope = config.basics.scope;
   p.outro(`${pc.green("Done!")} Package ${pc.cyan(`${scope}/${name}`)} created.`);
 }
 
-// ---------------------------------------------------------------------------
-// Add Integration
-// ---------------------------------------------------------------------------
-
-async function addIntegration() {
+async function addIntegration(userConfig?: UserConfig, options: { dryRun?: boolean } = {}) {
   const cwd = process.cwd();
   const config = await readProjectConfig(cwd);
 
@@ -258,13 +254,21 @@ async function addIntegration() {
   const category = (await p.select({
     message: "Integration category",
     options: [
-      { value: "analytics", label: "Analytics", hint: `current: ${config.integrations.analytics}` },
+      {
+        value: "analytics",
+        label: "Analytics",
+        hint: `current: ${config.integrations.analytics}`,
+      },
       {
         value: "errorTracking",
         label: "Error Tracking",
         hint: `current: ${config.integrations.errorTracking}`,
       },
-      { value: "email", label: "Email", hint: `current: ${config.integrations.email}` },
+      {
+        value: "email",
+        label: "Email",
+        hint: `current: ${config.integrations.email}`,
+      },
       {
         value: "rateLimit",
         label: "Rate Limiting",
@@ -277,12 +281,25 @@ async function addIntegration() {
 
   type IntegrationValue = string;
   let value: IntegrationValue;
+  const policy = userConfig?.policy;
+
+  // Policy filter applied per category
+  const filterFor = (
+    schemaOptions: readonly string[],
+    cat: Parameters<typeof filterOptions>[2],
+  ) => {
+    const allowed = filterOptions(schemaOptions, policy, cat);
+    return allowed.length > 0 ? allowed : [...schemaOptions];
+  };
 
   switch (category) {
     case "analytics": {
       value = (await p.select({
         message: "Analytics provider",
-        options: AnalyticsSchema.options.map((v) => ({ value: v, label: v })),
+        options: filterFor(AnalyticsSchema.options, "analytics").map((v) => ({
+          value: v,
+          label: v,
+        })),
         initialValue: config.integrations.analytics,
       })) as string;
       break;
@@ -290,7 +307,10 @@ async function addIntegration() {
     case "errorTracking": {
       value = (await p.select({
         message: "Error tracking provider",
-        options: ErrorTrackingSchema.options.map((v) => ({ value: v, label: v })),
+        options: filterFor(ErrorTrackingSchema.options, "errorTracking").map((v) => ({
+          value: v,
+          label: v,
+        })),
         initialValue: config.integrations.errorTracking,
       })) as string;
       break;
@@ -298,7 +318,10 @@ async function addIntegration() {
     case "email": {
       value = (await p.select({
         message: "Email provider",
-        options: EmailSchema.options.map((v) => ({ value: v, label: v })),
+        options: filterFor(EmailSchema.options, "email").map((v) => ({
+          value: v,
+          label: v,
+        })),
         initialValue: config.integrations.email,
       })) as string;
       break;
@@ -306,7 +329,10 @@ async function addIntegration() {
     case "rateLimit": {
       value = (await p.select({
         message: "Rate limiting provider",
-        options: RateLimitSchema.options.map((v) => ({ value: v, label: v })),
+        options: filterFor(RateLimitSchema.options, "rateLimit").map((v) => ({
+          value: v,
+          label: v,
+        })),
         initialValue: config.integrations.rateLimit,
       })) as string;
       break;
@@ -314,7 +340,10 @@ async function addIntegration() {
     case "ai": {
       value = (await p.select({
         message: "AI provider",
-        options: AiSchema.options.map((v) => ({ value: v, label: v })),
+        options: filterFor(AiSchema.options, "ai").map((v) => ({
+          value: v,
+          label: v,
+        })),
         initialValue: config.integrations.ai,
       })) as string;
       break;
@@ -325,7 +354,6 @@ async function addIntegration() {
 
   if (p.isCancel(value)) return process.exit(0);
 
-  // Update preset
   const updatedPreset: Preset = {
     ...config,
     integrations: {
@@ -334,7 +362,6 @@ async function addIntegration() {
     },
   };
 
-  // Validate
   const result = ValidatedPresetSchema.safeParse(updatedPreset);
   if (!result.success) {
     p.log.error("Validation failed:");
@@ -344,82 +371,9 @@ async function addIntegration() {
     process.exit(1);
   }
 
-  // Apply diff
-  await applyDiff(cwd, config as Preset, result.data);
+  exitIfPolicyViolated(result.data, userConfig?.policy);
+
+  await applyDiff(cwd, config as Preset, result.data, { dryRun: options.dryRun });
 
   p.outro(`${pc.green("Done!")} Integration ${pc.cyan(category)} set to ${pc.cyan(value)}.`);
-}
-
-// ---------------------------------------------------------------------------
-// Diff & Apply
-// ---------------------------------------------------------------------------
-
-async function applyDiff(cwd: string, _oldPreset: Preset, newPreset: Preset) {
-  const s = p.spinner();
-
-  // Generate old and new trees
-  s.start("Computing changes");
-  const newTree = resolveFileTree(newPreset);
-
-  // Read existing files that might be affected
-  const existingPaths = newTree.nodes.filter((n) => !n.isDirectory).map((n) => n.path);
-  const existingFiles = await readExistingFiles(cwd, existingPaths);
-
-  // Compute diff
-  const diff = diffTree(existingFiles, newTree.nodes);
-  s.stop(
-    `${pc.cyan(String(diff.create.length))} new, ${pc.yellow(String(diff.update.length))} updated, ${pc.dim(String(diff.unchanged.length))} unchanged`,
-  );
-
-  if (diff.create.length === 0 && diff.update.length === 0) {
-    p.log.info("No changes needed.");
-    return;
-  }
-
-  // Write new files
-  if (diff.create.length > 0) {
-    s.start("Creating new files");
-    await writeFiles(cwd, diff.create);
-    s.stop(`Created ${diff.create.length} files`);
-
-    for (const node of diff.create) {
-      p.log.info(`  ${pc.green("+")} ${node.path}`);
-    }
-  }
-
-  // Apply mutations to existing files
-  if (diff.update.length > 0) {
-    s.start("Updating existing files");
-    for (const update of diff.update) {
-      const existing = existingFiles.get(update.path) ?? "";
-      const updated = applyMutations(existing, update.mutations);
-      const fullPath = path.join(cwd, update.path);
-      await fs.mkdir(path.dirname(fullPath), { recursive: true });
-      await fs.writeFile(fullPath, updated, "utf-8");
-    }
-    s.stop(`Updated ${diff.update.length} files`);
-
-    for (const update of diff.update) {
-      p.log.info(`  ${pc.yellow("~")} ${update.path}`);
-    }
-  }
-
-  // Update .turbo-stack.json
-  s.start("Updating .turbo-stack.json");
-  const catalogEntries = computeCatalog(newPreset);
-  const catalogObj: Record<string, string> = {};
-  for (const entry of catalogEntries) {
-    catalogObj[entry.name] = entry.version;
-  }
-
-  const newConfig: TurboStackConfig = {
-    ...newPreset,
-    generatedAt: new Date().toISOString(),
-    cliVersion: CLI_VERSION,
-    catalog: catalogObj,
-    cssSourceMap: computeCssSourceMap(newPreset),
-    autoPackages: resolveAutoPackages(newPreset).map((p) => p.name),
-  };
-  await writeProjectConfig(cwd, newConfig);
-  s.stop("Config updated");
 }

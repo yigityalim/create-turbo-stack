@@ -1,0 +1,93 @@
+---
+title: Project Config
+description: Customize the CLI per-project with create-turbo-stack.json
+---
+
+Drop a `create-turbo-stack.json` at any level of your repo to set defaults, lock down choices, and load plugins. The CLI walks up from cwd to find it; the nearest match wins.
+
+Two files, two responsibilities:
+
+| File | Owner | Purpose |
+|---|---|---|
+| `.turbo-stack.json` | CLI (read/write) | Active state — the resolved preset, catalog, generated time |
+| `create-turbo-stack.json` | You (read-only from CLI) | Defaults, policy, plugins |
+
+Don't commit `.turbo-stack.json` updates by hand; let the CLI manage it. Commit `create-turbo-stack.json` to share team conventions.
+
+## Shape
+
+```json
+{
+  "$schema": "https://create-turbo-stack.dev/schema/user-config.json",
+  "defaults": { /* ... */ },
+  "policy":   { /* ... */ },
+  "plugins":  ["@scope/cts-plugin"]
+}
+```
+
+## defaults
+
+Pre-fill prompt initial values. Anything not set falls back to the schema default.
+
+```json
+{
+  "defaults": {
+    "basics": {
+      "scope": "@acme",
+      "packageManager": "pnpm",
+      "linter": "biome",
+      "typescript": "strict",
+      "gitInit": true
+    },
+    "database":   { "strategy": "drizzle" },
+    "api":        { "strategy": "trpc" },
+    "auth":       { "provider": "better-auth" },
+    "css":        { "framework": "tailwind4", "ui": "shadcn" },
+    "integrations": {
+      "errorTracking": "sentry",
+      "envValidation": true
+    }
+  }
+}
+```
+
+## policy
+
+Three-mode constraint: `allow` whitelists, `forbid` blacklists, `require` locks the value entirely (no prompt).
+
+```json
+{
+  "policy": {
+    "allow":   { "auth": ["clerk", "better-auth"] },
+    "forbid":  { "css":  ["vanilla", "tailwind3"] },
+    "require": {
+      "typescript": "strict",
+      "envValidation": true,
+      "packageManager": "pnpm",
+      "database": "drizzle"
+    }
+  }
+}
+```
+
+`allow` + `forbid` apply to the same enum at prompt time (forbid wins on overlap). `require` removes the prompt and forces the value — useful for compliance ("typescript strict everywhere", "we use Drizzle, period").
+
+After a preset is fully assembled — interactive, `--preset`, or `add`/`remove`/`switch` — it's checked against policy a second time. Violations abort the operation.
+
+## plugins
+
+npm package names whose default export contributes registry entries.
+
+```json
+{ "plugins": ["cts-plugin-nuxt", "@acme/cts-internal"] }
+```
+
+The CLI imports each plugin at startup and registers its default export. See [Plugins](./plugins).
+
+## Global config
+
+Optional. `~/.create-turbo-stack/config.json` has the same shape; project values override on overlap. Useful for "always use my org's scope" preferences without committing them to every repo.
+
+## Discovery
+
+`create-turbo-stack list` shows everything that's currently registered, including plugin-provided entries. Use it to confirm a plugin loaded after editing `create-turbo-stack.json`.

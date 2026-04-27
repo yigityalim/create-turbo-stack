@@ -1,4 +1,79 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "create-turbo-stack Registry"
+  "title": "create-turbo-stack Registry",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "homepage": {
+      "type": "string",
+      "format": "uri"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "const": "registry:preset"
+          },
+          "author": {
+            "type": "string"
+          },
+          "tags": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "preset": {
+            "type": "string",
+            "format": "uri"
+          },
+          "verified": {
+            "default": false,
+            "type": "boolean"
+          },
+          "github": {
+            "type": "string"
+          },
+          "addedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "title",
+          "description",
+          "type",
+          "tags",
+          "preset",
+          "verified"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "name",
+    "items"
+  ],
+  "additionalProperties": false
 }

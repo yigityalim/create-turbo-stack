@@ -1,5 +1,6 @@
 {
   "$schema": "https://create-turbo-stack.dev/schema/preset.json",
+  "schemaVersion": "1.0",
   "name": "saas-starter",
   "version": "1.0.0",
   "description": "Full-stack SaaS with Supabase, tRPC, shadcn/ui, and more",

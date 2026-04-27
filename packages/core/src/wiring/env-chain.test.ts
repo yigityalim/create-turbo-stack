@@ -10,9 +10,7 @@ function clientNames(preset: Parameters<typeof computeEnvChain>[0]) {
   return computeEnvChain(preset).base.client.map((v) => v.name);
 }
 
-// ---------------------------------------------------------------------------
 // database: none
-// ---------------------------------------------------------------------------
 
 describe("computeEnvChain — database: none", () => {
   it("base.server and base.client are empty for bare preset", () => {
@@ -22,9 +20,7 @@ describe("computeEnvChain — database: none", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // database: supabase
-// ---------------------------------------------------------------------------
 
 describe("computeEnvChain — database: supabase", () => {
   const p = makePreset({ database: { strategy: "supabase" } });
@@ -50,9 +46,7 @@ describe("computeEnvChain — database: supabase", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // database: drizzle / prisma
-// ---------------------------------------------------------------------------
 
 describe("computeEnvChain — database: drizzle", () => {
   it("server has DATABASE_URL", () => {
@@ -68,10 +62,6 @@ describe("computeEnvChain — database: prisma", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// auth
-// ---------------------------------------------------------------------------
-
 describe("computeEnvChain — auth: clerk", () => {
   const p = makePreset({
     auth: { provider: "clerk", rbac: false, entitlements: false },
@@ -85,10 +75,6 @@ describe("computeEnvChain — auth: clerk", () => {
     expect(clientNames(p)).toContain("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY");
   });
 });
-
-// ---------------------------------------------------------------------------
-// integrations
-// ---------------------------------------------------------------------------
 
 describe("computeEnvChain — integrations: sentry", () => {
   it("server has SENTRY_DSN", () => {
@@ -164,10 +150,6 @@ describe("computeEnvChain — integrations: vercel-ai-sdk", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Per-app env
-// ---------------------------------------------------------------------------
-
 describe("computeEnvChain — per-app env", () => {
   it("nextjs app gets NEXT_PUBLIC_APP_URL in client vars", () => {
     const p = makePreset({
@@ -240,9 +222,7 @@ describe("computeEnvChain — per-app env", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // globalEnv + allVars
-// ---------------------------------------------------------------------------
 
 describe("computeEnvChain — globalEnv + allVars", () => {
   it("globalEnv contains all var names", () => {

@@ -14,9 +14,7 @@ afterEach(async () => {
   if (tmp) await removeFixture(tmp);
 });
 
-// ---------------------------------------------------------------------------
 // MINIMAL fixture: bun, biome, Next.js, tailwind4, shadcn
-// ---------------------------------------------------------------------------
 
 describe("analyze() — MINIMAL fixture", () => {
   it("resolves without throwing", async () => {
@@ -117,10 +115,8 @@ describe("analyze() — MINIMAL fixture", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // SAAS_FULL fixture: pnpm, biome, Next.js + Expo, tRPC, Drizzle/postgres,
 // Clerk auth, shadcn, Sentry, PostHog, Resend, Upstash, Vercel AI SDK, T3 env
-// ---------------------------------------------------------------------------
 
 describe("analyze() — SAAS_FULL fixture", () => {
   it("resolves without throwing", async () => {
@@ -250,9 +246,7 @@ describe("analyze() — SAAS_FULL fixture", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // API_ONLY fixture: pnpm, biome, Hono standalone, Drizzle/sqlite, better-auth
-// ---------------------------------------------------------------------------
 
 describe("analyze() — API_ONLY fixture", () => {
   it("resolves without throwing", async () => {
@@ -326,9 +320,7 @@ describe("analyze() — API_ONLY fixture", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Degenerate inputs — analyze() must not throw
-// ---------------------------------------------------------------------------
 
 describe("analyze() — degenerate inputs", () => {
   it("handles completely empty directory without throwing", async () => {
@@ -394,9 +386,7 @@ describe("analyze() — degenerate inputs", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Concurrency / stress
-// ---------------------------------------------------------------------------
 
 describe("analyze() — concurrency stress", () => {
   it("handles 5 concurrent analyze() calls on the same fixture", async () => {

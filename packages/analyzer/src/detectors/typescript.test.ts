@@ -9,9 +9,7 @@ afterEach(async () => {
 });
 
 describe("detectTypescript", () => {
-  // ---------------------------------------------------------------------------
   // strict: true — certain
-  // ---------------------------------------------------------------------------
 
   it("detects strict mode when strict: true", async () => {
     tmp = await createFixture({
@@ -37,9 +35,7 @@ describe("detectTypescript", () => {
     expect(r.confidence).toBe("certain");
   });
 
-  // ---------------------------------------------------------------------------
   // strict: false — certain/relaxed
-  // ---------------------------------------------------------------------------
 
   it("detects relaxed when strict: false", async () => {
     tmp = await createFixture({
@@ -50,9 +46,7 @@ describe("detectTypescript", () => {
     expect(r.confidence).toBe("certain");
   });
 
-  // ---------------------------------------------------------------------------
   // strictNullChecks fallback — high
-  // ---------------------------------------------------------------------------
 
   it("infers strict from strictNullChecks: true when strict absent", async () => {
     tmp = await createFixture({
@@ -73,9 +67,7 @@ describe("detectTypescript", () => {
     expect(r.confidence).toBe("medium");
   });
 
-  // ---------------------------------------------------------------------------
   // No strict setting — medium
-  // ---------------------------------------------------------------------------
 
   it("returns relaxed/medium when tsconfig has no compilerOptions", async () => {
     tmp = await createFixture({ "tsconfig.json": { include: ["src"] } });
@@ -95,9 +87,7 @@ describe("detectTypescript", () => {
     expect(r.confidence).toBe("medium");
   });
 
-  // ---------------------------------------------------------------------------
   // No tsconfig — low
-  // ---------------------------------------------------------------------------
 
   it("defaults to strict/low when no tsconfig.json found", async () => {
     const { mkdtemp } = await import("node:fs/promises");
@@ -125,9 +115,7 @@ describe("detectTypescript", () => {
     expect(r.confidence).toBe("low");
   });
 
-  // ---------------------------------------------------------------------------
   // Edge cases
-  // ---------------------------------------------------------------------------
 
   it("ignores tsconfig in subdirectory — reads only root tsconfig.json", async () => {
     tmp = await createFixture({

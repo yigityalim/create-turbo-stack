@@ -7,9 +7,7 @@ function paths(preset: Parameters<typeof resolvePackageFiles>[0], pkg: Package) 
   return resolvePackageFiles(preset, pkg).map((n) => n.path);
 }
 
-// ---------------------------------------------------------------------------
 // typescript-config package
-// ---------------------------------------------------------------------------
 
 describe("resolvePackageFiles — typescript-config", () => {
   const TS_PKG: Package = {
@@ -56,10 +54,6 @@ describe("resolvePackageFiles — typescript-config", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Generic UI package
-// ---------------------------------------------------------------------------
-
 describe("resolvePackageFiles — ui package", () => {
   const UI_PKG: Package = {
     name: "ui",
@@ -83,10 +77,6 @@ describe("resolvePackageFiles — ui package", () => {
     expect(paths(p, UI_PKG)).toContain("packages/ui/src/index.ts");
   });
 });
-
-// ---------------------------------------------------------------------------
-// Generic library package
-// ---------------------------------------------------------------------------
 
 describe("resolvePackageFiles — library package", () => {
   const LIB_PKG: Package = {
@@ -112,9 +102,7 @@ describe("resolvePackageFiles — library package", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // db package — drizzle
-// ---------------------------------------------------------------------------
 
 describe("resolvePackageFiles — db (drizzle)", () => {
   const DB_PKG: Package = {
@@ -138,9 +126,7 @@ describe("resolvePackageFiles — db (drizzle)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // db package — prisma
-// ---------------------------------------------------------------------------
 
 describe("resolvePackageFiles — db (prisma)", () => {
   const DB_PKG: Package = {
@@ -158,9 +144,7 @@ describe("resolvePackageFiles — db (prisma)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // api package — trpc
-// ---------------------------------------------------------------------------
 
 describe("resolvePackageFiles — api (trpc)", () => {
   const API_PKG: Package = {
@@ -178,9 +162,7 @@ describe("resolvePackageFiles — api (trpc)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // auth package — clerk
-// ---------------------------------------------------------------------------
 
 describe("resolvePackageFiles — auth (clerk)", () => {
   const AUTH_PKG: Package = {
