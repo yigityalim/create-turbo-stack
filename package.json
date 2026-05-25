@@ -17,7 +17,8 @@
     "type-check": "turbo run type-check",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "check": "biome check ."
+    "check": "biome check .",
+    "e2e": "bun packages/cli/scripts/e2e-smoke.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.8",

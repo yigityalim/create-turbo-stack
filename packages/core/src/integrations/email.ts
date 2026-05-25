@@ -7,6 +7,11 @@ export const reactEmailResend = defineIntegration({
   catalogEntries: () => [
     { name: "resend", version: VERSIONS.resend },
     { name: "@react-email/components", version: VERSIONS.reactEmailComponents },
+    // React Email templates are .tsx; keep the React toolchain catalogued.
+    { name: "react", version: VERSIONS.react },
+    { name: "react-dom", version: VERSIONS.reactDom },
+    { name: "@types/react", version: VERSIONS.typesReact },
+    { name: "@types/react-dom", version: VERSIONS.typesReactDom },
   ],
   envVars: () => ({
     server: [

@@ -7,6 +7,12 @@ export const posthog = defineIntegration({
   catalogEntries: () => [
     { name: "posthog-js", version: VERSIONS.posthogJs },
     { name: "posthog-node", version: VERSIONS.posthogNode },
+    // PostHog ships a React provider; ensure the React toolchain is in
+    // the catalog even for presets without a React app.
+    { name: "react", version: VERSIONS.react },
+    { name: "react-dom", version: VERSIONS.reactDom },
+    { name: "@types/react", version: VERSIONS.typesReact },
+    { name: "@types/react-dom", version: VERSIONS.typesReactDom },
   ],
   envVars: () => ({
     client: [

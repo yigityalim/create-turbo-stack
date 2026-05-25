@@ -20,6 +20,8 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
 
   // Always
   add("typescript", VERSIONS.typescript);
+  // Node-side packages (env, db, rate-limit, ...) reference @types/node.
+  add("@types/node", VERSIONS.typesNode);
 
   if (preset.basics.linter === "biome") {
     add("@biomejs/biome", VERSIONS.biome);

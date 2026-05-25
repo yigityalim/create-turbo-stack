@@ -19,6 +19,20 @@ export function resolveRootFiles(preset: Preset): FileTreeNode[] {
     catalogObj[entry.name] = entry.version;
   }
 
+  const pm = preset.basics.packageManager;
+  const hasCatalog = Object.keys(catalogObj).length > 0;
+
+  // Catalog placement is package-manager specific:
+  //   - bun reads `workspaces.catalog` in package.json
+  //   - pnpm reads `catalog:` from pnpm-workspace.yaml (emitted below)
+  //   - npm / yarn have no catalog protocol; for now they get a plain
+  //     workspaces array (the `catalog:` refs in workspace package.json
+  //     files won't resolve under npm/yarn — tracked separately).
+  const workspacesField =
+    pm === "bun" && hasCatalog
+      ? { packages: ["apps/*", "packages/*"], catalog: catalogObj }
+      : ["apps/*", "packages/*"];
+
   const rootPkg = {
     name: preset.basics.projectName,
     private: true,
@@ -39,9 +53,8 @@ export function resolveRootFiles(preset: Preset): FileTreeNode[] {
       turbo: "^2.8.0",
       typescript: catalogObj.typescript ?? "^5.9.0",
     },
-    packageManager: `${preset.basics.packageManager}@${VERSIONS[preset.basics.packageManager as keyof typeof VERSIONS] ?? "latest"}`,
-    workspaces: ["apps/*", "packages/*"],
-    ...(Object.keys(catalogObj).length > 0 ? { catalog: catalogObj } : {}),
+    packageManager: `${pm}@${VERSIONS[pm as keyof typeof VERSIONS] ?? "latest"}`,
+    workspaces: workspacesField,
   };
 
   nodes.push({
@@ -49,6 +62,19 @@ export function resolveRootFiles(preset: Preset): FileTreeNode[] {
     content: JSON.stringify(rootPkg, null, 2),
     isDirectory: false,
   });
+
+  // pnpm keeps its catalog (and workspace globs) in pnpm-workspace.yaml,
+  // not package.json.
+  if (pm === "pnpm" && hasCatalog) {
+    const catalogYaml = Object.entries(catalogObj)
+      .map(([name, version]) => `  "${name}": "${version}"`)
+      .join("\n");
+    nodes.push({
+      path: "pnpm-workspace.yaml",
+      content: `packages:\n  - "apps/*"\n  - "packages/*"\ncatalog:\n${catalogYaml}\n`,
+      isDirectory: false,
+    });
+  }
 
   // turbo.json
   nodes.push({

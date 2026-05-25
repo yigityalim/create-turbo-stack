@@ -37,6 +37,11 @@ function build(templateCategory: "app/nextjs" | "app/nextjs-api-only") {
         devDeps.tailwindcss = "catalog:";
         devDeps["@tailwindcss/postcss"] = "catalog:";
       }
+      // globals.css does `@import "tw-animate-css"` when shadcn is on, so
+      // the package must be a dependency of the app, not just in the catalog.
+      if (preset.css.ui === "shadcn" && preset.css.framework === "tailwind4") {
+        devDeps["tw-animate-css"] = "catalog:";
+      }
 
       return {
         name: app.name,

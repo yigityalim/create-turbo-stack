@@ -1,0 +1,109 @@
+/**
+ * End-to-end smoke harness.
+ *
+ * For each built-in preset: scaffold into a temp dir, install, type-check,
+ * and build — the real `npx create-turbo-stack` path a user walks. Catches
+ * the class of bug unit tests can't: missing catalog deps, broken template
+ * output, unresolved imports, package-manager protocol mismatches.
+ *
+ * Run: `bun run e2e` (from repo root) or `bun packages/cli/scripts/e2e-smoke.ts`.
+ * Slow (network install + Next build), so it's intentionally out of the
+ * default `bun test` path. Exits non-zero if any preset fails any step.
+ *
+ * Filter to one preset: `bun run e2e minimal`.
+ */
+
+import { execSync } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+const CLI_BIN = path.join(REPO_ROOT, "packages/cli/bin/create-turbo-stack.ts");
+
+const PRESETS = ["minimal", "saas-starter", "api-only"] as const;
+
+interface StepResult {
+  step: string;
+  ok: boolean;
+  ms: number;
+  output?: string;
+}
+
+function run(cmd: string, cwd: string): { ok: boolean; output: string } {
+  try {
+    const output = execSync(cmd, {
+      cwd,
+      stdio: ["ignore", "pipe", "pipe"],
+      encoding: "utf-8",
+      env: { ...process.env, FORCE_COLOR: "0" },
+    });
+    return { ok: true, output };
+  } catch (err) {
+    const e = err as { stdout?: string; stderr?: string; message?: string };
+    return { ok: false, output: `${e.stdout ?? ""}\n${e.stderr ?? ""}\n${e.message ?? ""}` };
+  }
+}
+
+function timed(label: string, fn: () => { ok: boolean; output: string }): StepResult {
+  const start = Date.now();
+  const { ok, output } = fn();
+  return { step: label, ok, ms: Date.now() - start, output: ok ? undefined : output };
+}
+
+async function smokePreset(preset: string): Promise<StepResult[]> {
+  const dir = mkdtempSync(path.join(tmpdir(), `cts-e2e-${preset}-`));
+  const presetPath = path.join(REPO_ROOT, "presets", `${preset}.json`);
+  const results: StepResult[] = [];
+
+  try {
+    results.push(
+      timed("scaffold", () =>
+        run(`bunx tsx ${CLI_BIN} app --preset ${presetPath} --no-install`, dir),
+      ),
+    );
+    if (!results.at(-1)?.ok) return results;
+
+    const appDir = path.join(dir, "app");
+    results.push(timed("install", () => run("bun install", appDir)));
+    if (!results.at(-1)?.ok) return results;
+
+    results.push(timed("type-check", () => run("bun run type-check", appDir)));
+    results.push(timed("build", () => run("bun run build", appDir)));
+    return results;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+async function main() {
+  const filter = process.argv[2];
+  const presets = filter ? PRESETS.filter((p) => p === filter) : PRESETS;
+  if (presets.length === 0) {
+    console.error(`Unknown preset "${filter}". Available: ${PRESETS.join(", ")}`);
+    process.exit(1);
+  }
+
+  let anyFailed = false;
+  for (const preset of presets) {
+    console.log(`\n=== ${preset} ===`);
+    const results = await smokePreset(preset);
+    for (const r of results) {
+      const icon = r.ok ? "✓" : "✗";
+      console.log(`  ${icon} ${r.step.padEnd(12)} ${(r.ms / 1000).toFixed(1)}s`);
+      if (!r.ok) {
+        anyFailed = true;
+        console.log(`\n--- ${preset}:${r.step} output ---`);
+        console.log((r.output ?? "").split("\n").slice(-40).join("\n"));
+      }
+    }
+  }
+
+  console.log(
+    anyFailed ? "\nFAIL" : "\nAll presets scaffolded, installed, type-checked, and built.",
+  );
+  process.exit(anyFailed ? 1 : 0);
+}
+
+main();

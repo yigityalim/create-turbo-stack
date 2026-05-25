@@ -1,8 +1,5 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "./server";
-<% if (it.database && it.database.strategy !== 'none') { %>
-import { db } from "<%= it.scope %>/db";
-<% } %>
 
 export const appRouter = createTRPCRouter({
   hello: publicProcedure

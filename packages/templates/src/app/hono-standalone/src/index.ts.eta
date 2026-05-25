@@ -1,4 +1,4 @@
-deimport { serve } from "@hono/node-server";
+import { serve } from "@hono/node-server";
 <% if (it.api.strategy === 'hono') { %>import { app } from "<%= it.scope %>/api";
 <% } else { %>import { Hono } from "hono";
 <% } %>

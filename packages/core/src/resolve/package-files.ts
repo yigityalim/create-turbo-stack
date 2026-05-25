@@ -165,6 +165,10 @@ function resolveAuthPackage(preset: Preset, pkg: Package, base: string): FileTre
 
   if (auth.provider === "supabase-auth") {
     extraDeps[`${scope}/db`] = "workspace:*";
+    // server.ts / middleware.ts import @supabase/ssr and next/server.
+    extraDeps["@supabase/ssr"] = "catalog:";
+    extraDeps["@supabase/supabase-js"] = "catalog:";
+    extraDeps.next = "catalog:";
   } else if (auth.provider === "better-auth") {
     extraDeps["better-auth"] = "catalog:";
     if (preset.database.strategy !== "none") {
@@ -252,14 +256,19 @@ function resolveAnalyticsPackage(preset: Preset, pkg: Package, base: string): Fi
   const analytics = preset.integrations.analytics;
 
   const extraDeps: Record<string, string> = {};
+  // PostHog ships a React provider component (provider.tsx); the others
+  // are plain modules.
+  const needsReact = analytics === "posthog";
   if (analytics === "posthog") {
     extraDeps["posthog-js"] = "catalog:";
     extraDeps["posthog-node"] = "catalog:";
+    extraDeps.react = "catalog:";
+    extraDeps["react-dom"] = "catalog:";
   } else if (analytics === "vercel-analytics") {
     extraDeps["@vercel/analytics"] = "catalog:";
   }
 
-  nodes.push(...makeBasePackageFiles(preset, pkg, base, extraDeps));
+  nodes.push(...makeBasePackageFiles(preset, pkg, base, extraDeps, {}, { react: needsReact }));
 
   if (analytics === "posthog") {
     nodes.push(...renderSourceFiles("integration/analytics/posthog", base, {}));
@@ -295,15 +304,18 @@ function resolveEmailPackage(preset: Preset, pkg: Package, base: string): FileTr
   const email = preset.integrations.email;
 
   const extraDeps: Record<string, string> = {};
+  // React Email templates are .tsx (JSX); nodemailer is a plain module.
+  const needsReact = email === "react-email-resend";
   if (email === "react-email-resend") {
     extraDeps.resend = "catalog:";
     extraDeps["@react-email/components"] = "catalog:";
     extraDeps.react = "catalog:";
+    extraDeps["react-dom"] = "catalog:";
   } else if (email === "nodemailer") {
     extraDeps.nodemailer = "catalog:";
   }
 
-  nodes.push(...makeBasePackageFiles(preset, pkg, base, extraDeps));
+  nodes.push(...makeBasePackageFiles(preset, pkg, base, extraDeps, {}, { react: needsReact }));
 
   if (email === "react-email-resend") {
     nodes.push(...renderSourceFiles("integration/email/react-email-resend", base, {}));
@@ -368,6 +380,10 @@ function makeBasePackageFiles(
   base: string,
   extraDeps: Record<string, string> = {},
   extraDevDeps: Record<string, string> = {},
+  // `react` forces a JSX-capable tsconfig + React type deps for packages
+  // that ship .tsx (e.g. the PostHog provider) even when their declared
+  // type is a plain "library".
+  opts: { react?: boolean } = {},
 ): FileTreeNode[] {
   const nodes: FileTreeNode[] = [];
   const scope = preset.basics.scope;
@@ -393,6 +409,11 @@ function makeBasePackageFiles(
       [`${scope}/typescript-config`]: "workspace:*",
       ...(preset.basics.linter === "biome" ? { "@biomejs/biome": "catalog:" } : {}),
       typescript: "catalog:",
+      // Node-targeted packages (env, db, rate-limit, utils, ...) reference
+      // `process.env` and other Node globals. React packages get DOM libs
+      // from react.json instead and don't need this.
+      ...(pkg.type === "ui" || pkg.type === "react-library" ? {} : { "@types/node": "catalog:" }),
+      ...(opts.react ? { "@types/react": "catalog:", "@types/react-dom": "catalog:" } : {}),
       ...extraDevDeps,
     },
   };
@@ -404,7 +425,7 @@ function makeBasePackageFiles(
   });
 
   const tsconfigBase =
-    pkg.type === "ui" || pkg.type === "react-library"
+    opts.react || pkg.type === "ui" || pkg.type === "react-library"
       ? "react.json"
       : pkg.type === "config"
         ? "base.json"

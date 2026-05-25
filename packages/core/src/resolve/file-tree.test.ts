@@ -26,6 +26,21 @@ function parseJson<T = unknown>(
   return JSON.parse(node.content) as T;
 }
 
+/**
+ * Root catalog location is package-manager specific (bun nests it under
+ * `workspaces.catalog`). The built-in preset fixtures use bun, so read
+ * from there with a top-level fallback for safety.
+ */
+function rootCatalog(nodes: ReturnType<typeof resolveFileTree>["nodes"]): Record<string, string> {
+  const pkg = parseJson<{
+    workspaces?: { catalog?: Record<string, string> } | string[];
+    catalog?: Record<string, string>;
+  }>(nodes, "package.json");
+  const ws = pkg.workspaces;
+  if (ws && !Array.isArray(ws) && ws.catalog) return ws.catalog;
+  return pkg.catalog ?? {};
+}
+
 // minimal preset — file existence
 
 describe("resolveFileTree — minimal preset", () => {
@@ -64,28 +79,27 @@ describe("resolveFileTree — minimal preset", () => {
 
   it("root package.json contains a catalog with typescript", () => {
     const { nodes } = resolveFileTree(clone(minimalJson) as Preset);
-    const pkg = parseJson<Record<string, unknown>>(nodes, "package.json");
+    const catalog = rootCatalog(nodes);
 
-    expect(pkg).toHaveProperty("catalog");
-    const catalog = pkg.catalog as Record<string, string>;
     expect(catalog).toHaveProperty("typescript");
     expect(catalog.typescript).toMatch(/^\^5/);
   });
 
   it("root package.json catalog includes tailwindcss for tailwind4 preset", () => {
     const { nodes } = resolveFileTree(clone(minimalJson) as Preset);
-    const pkg = parseJson<{ catalog: Record<string, string> }>(nodes, "package.json");
+    const catalog = rootCatalog(nodes);
 
-    expect(pkg.catalog).toHaveProperty("tailwindcss");
-    expect(pkg.catalog.tailwindcss).toMatch(/^\^4/);
+    expect(catalog).toHaveProperty("tailwindcss");
+    expect(catalog.tailwindcss).toMatch(/^\^4/);
   });
 
-  it("root package.json sets workspaces to apps/* and packages/*", () => {
+  it("root package.json sets workspaces to apps/* and packages/* (bun nests as object)", () => {
     const { nodes } = resolveFileTree(clone(minimalJson) as Preset);
-    const pkg = parseJson<{ workspaces: string[] }>(nodes, "package.json");
+    const pkg = parseJson<{ workspaces: { packages: string[] } | string[] }>(nodes, "package.json");
 
-    expect(pkg.workspaces).toContain("apps/*");
-    expect(pkg.workspaces).toContain("packages/*");
+    const packages = Array.isArray(pkg.workspaces) ? pkg.workspaces : pkg.workspaces.packages;
+    expect(packages).toContain("apps/*");
+    expect(packages).toContain("packages/*");
   });
 
   // globals.css @source directives
@@ -247,12 +261,14 @@ describe("resolveFileTree — API scaffolding", () => {
     expect(apiPaths).toContain("packages/api/src/index.ts");
   });
 
-  it("trpc router imports db when database is set", () => {
+  it("trpc router does not hard-import db (the hello stub doesn't use it)", () => {
     const { nodes } = resolveFileTree(clone(saasJson) as Preset);
     const routerNode = nodes.find((n) => n.path === "packages/api/src/router.ts");
 
-    // saas-starter has database: supabase
-    expect(routerNode?.content).toContain("@my-saas/db");
+    // The router stub no longer imports `db`: supabase exports `createClient`,
+    // not `db`, so a hardcoded import broke the supabase+trpc combo. Users
+    // import what they need inside their own procedures.
+    expect(routerNode?.content).not.toContain("@my-saas/db");
   });
 
   it("trpc server has initTRPC and superjson", () => {
@@ -420,10 +436,10 @@ describe("resolveFileTree — Hono standalone app", () => {
 
   it("catalog includes @hono/node-server and tsx for hono apps", () => {
     const { nodes } = resolveFileTree(clone(apiOnlyJson) as Preset);
-    const rootPkg = JSON.parse(nodes.find((n) => n.path === "package.json")!.content!);
+    const catalog = rootCatalog(nodes);
 
-    expect(rootPkg.catalog).toHaveProperty("@hono/node-server");
-    expect(rootPkg.catalog).toHaveProperty("tsx");
+    expect(catalog).toHaveProperty("@hono/node-server");
+    expect(catalog).toHaveProperty("tsx");
   });
 });
 
@@ -432,9 +448,7 @@ describe("resolveFileTree — Hono standalone app", () => {
 describe("resolveFileTree — catalog driver dependencies", () => {
   it("includes postgres driver in catalog for drizzle+postgres", () => {
     const { nodes } = resolveFileTree(clone(apiOnlyJson) as Preset);
-    const rootPkg = JSON.parse(nodes.find((n) => n.path === "package.json")!.content!);
-
-    expect(rootPkg.catalog).toHaveProperty("postgres");
+    expect(rootCatalog(nodes)).toHaveProperty("postgres");
   });
 
   it("includes mysql2 for drizzle+mysql", () => {
@@ -442,9 +456,7 @@ describe("resolveFileTree — catalog driver dependencies", () => {
     preset.database = { strategy: "drizzle", driver: "mysql" };
 
     const { nodes } = resolveFileTree(preset);
-    const rootPkg = JSON.parse(nodes.find((n) => n.path === "package.json")!.content!);
-
-    expect(rootPkg.catalog).toHaveProperty("mysql2");
+    expect(rootCatalog(nodes)).toHaveProperty("mysql2");
   });
 
   it("includes @neondatabase/serverless for drizzle+neon", () => {
@@ -452,9 +464,7 @@ describe("resolveFileTree — catalog driver dependencies", () => {
     preset.database = { strategy: "drizzle", driver: "neon" };
 
     const { nodes } = resolveFileTree(preset);
-    const rootPkg = JSON.parse(nodes.find((n) => n.path === "package.json")!.content!);
-
-    expect(rootPkg.catalog).toHaveProperty("@neondatabase/serverless");
+    expect(rootCatalog(nodes)).toHaveProperty("@neondatabase/serverless");
   });
 });
 

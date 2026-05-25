@@ -57,6 +57,7 @@ async function main() {
     .option("--preset <url>", "Use a preset URL or file path")
     .option("--yes", "Accept all defaults")
     .option("--dry-run", "Print what would be done without writing")
+    .option("--no-install", "Skip dependency installation")
     .action((projectName, options) => createCommand(projectName, options, userConfig));
 
   program

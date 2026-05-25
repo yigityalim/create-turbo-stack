@@ -22,7 +22,7 @@ import { CLI_VERSION } from "../version";
 
 export async function createCommand(
   projectName: string | undefined,
-  options: { preset?: string; yes?: boolean; dryRun?: boolean },
+  options: { preset?: string; yes?: boolean; dryRun?: boolean; install?: boolean },
   userConfig?: UserConfig,
 ) {
   let preset: Preset;
@@ -153,12 +153,16 @@ export async function createCommand(
     s.stop("Git init skipped");
   }
 
-  s.start(`Installing dependencies with ${validated.basics.packageManager}`);
-  try {
-    installDependencies(outputDir, validated.basics.packageManager as PM);
-    s.stop("Dependencies installed");
-  } catch {
-    s.stop("Dependency install failed — run manually");
+  if (options.install === false) {
+    p.log.info("Skipped dependency install (--no-install)");
+  } else {
+    s.start(`Installing dependencies with ${validated.basics.packageManager}`);
+    try {
+      installDependencies(outputDir, validated.basics.packageManager as PM);
+      s.stop("Dependencies installed");
+    } catch {
+      s.stop("Dependency install failed — run manually");
+    }
   }
 
   const pm = validated.basics.packageManager;
