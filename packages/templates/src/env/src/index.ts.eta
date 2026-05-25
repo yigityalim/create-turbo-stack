@@ -26,4 +26,7 @@ export const env = createEnv({
 <% } else { -%>
   runtimeEnv: {},
 <% } -%>
+  // Set SKIP_ENV_VALIDATION=1 for builds without secrets (Docker, CI).
+  skipValidation: !!process.env.SKIP_ENV_VALIDATION,
+  emptyStringAsUndefined: true,
 });

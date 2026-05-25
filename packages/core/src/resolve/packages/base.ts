@@ -1,5 +1,5 @@
 import type { FileTreeNode, Package, Preset } from "@create-turbo-stack/schema";
-import type { PackageResolveContext } from "../../integrations/types";
+import type { EnvAccess, PackageResolveContext } from "../../integrations/types";
 import { computeExportsMap } from "../../wiring/exports-map";
 import {
   type PackageExports,
@@ -93,11 +93,31 @@ export function buildPackageContext(
   pkg: Package,
   base: string,
 ): PackageResolveContext {
+  const scope = preset.basics.scope;
   return {
     pkg,
     base,
-    scope: preset.basics.scope,
+    scope,
     makeBase: (o = {}) =>
       makeBasePackageFiles(preset, pkg, base, o.deps ?? {}, o.devDeps ?? {}, { react: o.react }),
+    env: buildEnvAccess(preset),
+  };
+}
+
+/**
+ * Resolve the env wiring for a package. Pure function of the preset's
+ * `envValidation` flag + scope — no per-provider knowledge.
+ */
+export function buildEnvAccess(preset: Preset): EnvAccess {
+  const enabled = preset.integrations.envValidation;
+  const scope = preset.basics.scope;
+  return {
+    enabled,
+    workspaceDep: enabled ? { [`${scope}/env`]: "workspace:*" } : {},
+    context: {
+      envImport: enabled ? `import { env } from "${scope}/env";` : "",
+      envRef: (name) => (enabled ? `env.${name}` : `process.env.${name}!`),
+      envRefOpt: (name) => (enabled ? `env.${name}` : `process.env.${name}`),
+    },
   };
 }

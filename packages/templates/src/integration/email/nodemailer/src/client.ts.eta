@@ -1,12 +1,15 @@
+<% if (it.envImport) { -%>
+<%= it.envImport %>
+<% } -%>
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT ?? 587),
-  secure: process.env.SMTP_SECURE === "true",
+  host: <%= it.envRefOpt("SMTP_HOST") %>,
+  port: Number(<%= it.envRefOpt("SMTP_PORT") %> ?? 587),
+  secure: <%= it.envRefOpt("SMTP_SECURE") %> === "true",
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: <%= it.envRefOpt("SMTP_USER") %>,
+    pass: <%= it.envRefOpt("SMTP_PASS") %>,
   },
 });
 
@@ -22,7 +25,7 @@ export async function sendEmail({
   text?: string;
 }) {
   return transporter.sendMail({
-    from: process.env.EMAIL_FROM ?? "noreply@example.com",
+    from: <%= it.envRefOpt("EMAIL_FROM") %> ?? "noreply@example.com",
     to: Array.isArray(to) ? to.join(", ") : to,
     subject,
     html,

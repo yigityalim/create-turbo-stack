@@ -1,7 +1,7 @@
 import type { DrizzleDriver } from "@create-turbo-stack/schema";
 import { renderSourceFiles } from "../render/render-source";
 import { VERSIONS } from "../wiring/versions";
-import { type CatalogEntrySpec, defineIntegration } from "./types";
+import { type CatalogEntrySpec, defineIntegration, type EnvVarSpec } from "./types";
 
 const SUPABASE_ENV = {
   server: [
@@ -50,9 +50,13 @@ export const supabase = defineIntegration({
   envVars: () => SUPABASE_ENV,
   resolvePackageFiles: (_preset, ctx) => [
     ...ctx.makeBase({
-      deps: { "@supabase/supabase-js": "catalog:", "@supabase/ssr": "catalog:" },
+      deps: {
+        "@supabase/supabase-js": "catalog:",
+        "@supabase/ssr": "catalog:",
+        ...ctx.env.workspaceDep,
+      },
     }),
-    ...renderSourceFiles("db/supabase", ctx.base, {}),
+    ...renderSourceFiles("db/supabase", ctx.base, { ...ctx.env.context }),
   ],
 });
 
@@ -79,29 +83,44 @@ export const drizzle = defineIntegration({
     }
     return entries;
   },
-  envVars: () => ({
-    server: [
+  envVars: (preset) => {
+    const server: EnvVarSpec[] = [
       {
         name: "DATABASE_URL",
         zodType: "z.string().url()",
         example: "postgresql://user:pass@localhost:5432/db",
         description: "Database connection URL",
       },
-    ],
-  }),
+    ];
+    // Turso needs an auth token alongside the libsql URL.
+    if (
+      preset.database.strategy === "drizzle" &&
+      "driver" in preset.database &&
+      preset.database.driver === "turso"
+    ) {
+      server.push({
+        name: "DATABASE_AUTH_TOKEN",
+        zodType: "z.string().optional()",
+        example: "eyJ...",
+        description: "Turso database auth token",
+      });
+    }
+    return { server };
+  },
   resolvePackageFiles: (preset, ctx) => {
     const driver =
       preset.database.strategy === "drizzle" && "driver" in preset.database
         ? preset.database.driver
         : "postgres";
 
-    const deps: Record<string, string> = { "drizzle-orm": "catalog:" };
+    const deps: Record<string, string> = { "drizzle-orm": "catalog:", ...ctx.env.workspaceDep };
     const driverDep = DRIZZLE_DRIVER_DEPS[driver];
     if (driverDep) deps[driverDep.name] = "catalog:";
 
     return [
       ...ctx.makeBase({ deps, devDeps: { "drizzle-kit": "catalog:" } }),
       ...renderSourceFiles("db/drizzle", ctx.base, {
+        ...ctx.env.context,
         scope: ctx.scope,
         driver,
         drizzleDialect: drizzleDialect(driver),

@@ -66,6 +66,32 @@ export interface PackageResolveContext {
     devDeps?: Record<string, string>;
     react?: boolean;
   }): FileTreeNode[];
+
+  /**
+   * Env wiring, gated on `preset.integrations.envValidation`. When on, the
+   * generated package reads validated, typed vars from the `env` package
+   * instead of raw `process.env`; when off, it falls back to `process.env`
+   * exactly as before. Spread `env.context` into a template's render
+   * context and add `env.workspaceDep` to the package deps.
+   */
+  env: EnvAccess;
+}
+
+export interface EnvAccess {
+  /** True when the stack opted into env validation. */
+  enabled: boolean;
+  /** `{ "@scope/env": "workspace:*" }` when enabled, else `{}`. */
+  workspaceDep: Record<string, string>;
+  /**
+   * Template context: `envImport` is the import line (or ""), `envRef`
+   * yields `env.NAME` / `process.env.NAME!` for required vars, and
+   * `envRefOpt` the same without the non-null assertion for optional vars.
+   */
+  context: {
+    envImport: string;
+    envRef: (name: string) => string;
+    envRefOpt: (name: string) => string;
+  };
 }
 
 /**

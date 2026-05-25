@@ -1,6 +1,9 @@
+<% if (it.envImport) { -%>
+<%= it.envImport %>
+<% } -%>
 import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
-  dsn: process.env.SENTRY_DSN,
+  dsn: <%= it.envRefOpt("SENTRY_DSN") %>,
   tracesSampleRate: 1.0,
 });

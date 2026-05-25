@@ -1,9 +1,12 @@
+<% if (it.envImport) { -%>
+<%= it.envImport %>
+<% } -%>
 <% if (it.driver === "neon") { -%>
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "./schema";
 
-const sql = neon(process.env.DATABASE_URL!);
+const sql = neon(<%= it.envRef("DATABASE_URL") %>);
 export const db = drizzle(sql, { schema });
 <% } else if (it.driver === "turso") { -%>
 import { createClient } from "@libsql/client";
@@ -11,8 +14,8 @@ import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "./schema";
 
 const client = createClient({
-  url: process.env.DATABASE_URL!,
-  authToken: process.env.DATABASE_AUTH_TOKEN,
+  url: <%= it.envRef("DATABASE_URL") %>,
+  authToken: <%= it.envRefOpt("DATABASE_AUTH_TOKEN") %>,
 });
 
 export const db = drizzle(client, { schema });
@@ -21,27 +24,27 @@ import { Client } from "@planetscale/database";
 import { drizzle } from "drizzle-orm/planetscale-serverless";
 import * as schema from "./schema";
 
-const client = new Client({ url: process.env.DATABASE_URL! });
+const client = new Client({ url: <%= it.envRef("DATABASE_URL") %> });
 export const db = drizzle(client, { schema });
 <% } else if (it.driver === "mysql") { -%>
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import * as schema from "./schema";
 
-const connection = await mysql.createConnection(process.env.DATABASE_URL!);
+const connection = await mysql.createConnection(<%= it.envRef("DATABASE_URL") %>);
 export const db = drizzle(connection, { schema });
 <% } else if (it.driver === "sqlite") { -%>
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema";
 
-const sqlite = new Database(process.env.DATABASE_URL ?? "sqlite.db");
+const sqlite = new Database(<%= it.envRefOpt("DATABASE_URL") %> ?? "sqlite.db");
 export const db = drizzle(sqlite, { schema });
 <% } else { -%>
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
-const client = postgres(process.env.DATABASE_URL!);
+const client = postgres(<%= it.envRef("DATABASE_URL") %>);
 export const db = drizzle(client, { schema });
 <% } -%>

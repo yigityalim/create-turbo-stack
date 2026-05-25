@@ -70,7 +70,9 @@ async function smokePreset(preset: string): Promise<StepResult[]> {
     if (!results.at(-1)?.ok) return results;
 
     results.push(timed("type-check", () => run("bun run type-check", appDir)));
-    results.push(timed("build", () => run("bun run build", appDir)));
+    // No real secrets in CI; the generated env package honors this flag and
+    // skips Zod validation at build time (the canonical t3-env pattern).
+    results.push(timed("build", () => run("SKIP_ENV_VALIDATION=1 bun run build", appDir)));
     return results;
   } finally {
     rmSync(dir, { recursive: true, force: true });

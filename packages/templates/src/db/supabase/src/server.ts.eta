@@ -1,3 +1,6 @@
+<% if (it.envImport) { -%>
+<%= it.envImport %>
+<% } -%>
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "./types";
 
@@ -6,8 +9,8 @@ export function createClient(cookieStore: {
   set: (name: string, value: string, options: Record<string, unknown>) => void;
 }) {
   return createServerClient<Database>(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
+    <%= it.envRef("SUPABASE_URL") %>,
+    <%= it.envRef("SUPABASE_ANON_KEY") %>,
     {
       cookies: {
         getAll() {

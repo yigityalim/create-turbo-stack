@@ -1,10 +1,13 @@
+<% if (it.envImport) { -%>
+<%= it.envImport %>
+<% } -%>
 import { createServerClient } from "@supabase/ssr";
 import type { NextRequest, NextResponse } from "next/server";
 
 export function updateSession(request: NextRequest, response: NextResponse) {
   const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
+    <%= it.envRef("SUPABASE_URL") %>,
+    <%= it.envRef("SUPABASE_ANON_KEY") %>,
     {
       cookies: {
         getAll() {

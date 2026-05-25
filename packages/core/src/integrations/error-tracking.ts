@@ -17,8 +17,8 @@ export const sentry = defineIntegration({
     ],
   }),
   resolvePackageFiles: (_preset, ctx) => [
-    ...ctx.makeBase({ deps: { "@sentry/nextjs": "catalog:" } }),
-    ...renderSourceFiles("integration/monitoring/sentry", ctx.base, {}),
+    ...ctx.makeBase({ deps: { "@sentry/nextjs": "catalog:", ...ctx.env.workspaceDep } }),
+    ...renderSourceFiles("integration/monitoring/sentry", ctx.base, { ...ctx.env.context }),
   ],
 });
 

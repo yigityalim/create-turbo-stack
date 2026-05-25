@@ -1,9 +1,12 @@
+<% if (it.envImport) { -%>
+<%= it.envImport %>
+<% } -%>
 import { createBrowserClient as createClient } from "@supabase/ssr";
 import type { Database } from "./types";
 
 export function createBrowserClient() {
   return createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    <%= it.envRef("NEXT_PUBLIC_SUPABASE_URL") %>,
+    <%= it.envRef("NEXT_PUBLIC_SUPABASE_ANON_KEY") %>,
   );
 }

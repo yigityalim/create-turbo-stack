@@ -161,9 +161,26 @@ export const lucia = defineIntegration({
 export const supabaseAuth = defineIntegration({
   category: "auth",
   provider: "supabase-auth",
-  // Env vars + catalog entries come from the Supabase database integration.
-  // Listing them here would duplicate (and risk drifting from) that record.
   catalogEntries: () => [],
+  // middleware.ts reads SUPABASE_URL / SUPABASE_ANON_KEY directly, so declare
+  // them here too. When db is also Supabase these overlap with the database
+  // integration's record; computeBaseEnvVars dedupes by name.
+  envVars: () => ({
+    server: [
+      {
+        name: "SUPABASE_URL",
+        zodType: "z.string().url()",
+        example: "https://xxx.supabase.co",
+        description: "Supabase project URL",
+      },
+      {
+        name: "SUPABASE_ANON_KEY",
+        zodType: "z.string().min(1)",
+        example: "eyJ...",
+        description: "Supabase anonymous key",
+      },
+    ],
+  }),
   resolvePackageFiles: (_preset, ctx) => [
     // server.ts / middleware.ts import @supabase/ssr and next/server.
     ...ctx.makeBase({
@@ -172,9 +189,10 @@ export const supabaseAuth = defineIntegration({
         "@supabase/ssr": "catalog:",
         "@supabase/supabase-js": "catalog:",
         next: "catalog:",
+        ...ctx.env.workspaceDep,
       },
     }),
-    ...renderSourceFiles("auth/supabase-auth", ctx.base, { scope: ctx.scope }),
+    ...renderSourceFiles("auth/supabase-auth", ctx.base, { ...ctx.env.context, scope: ctx.scope }),
   ],
 });
 

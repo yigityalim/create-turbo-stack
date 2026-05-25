@@ -1,11 +1,14 @@
+<% if (it.envImport) { -%>
+<%= it.envImport %>
+<% } -%>
 import { PostHog } from "posthog-node";
 
 let client: PostHog | null = null;
 
 function getClient(): PostHog {
   if (!client) {
-    client = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-      host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    client = new PostHog(<%= it.envRef("NEXT_PUBLIC_POSTHOG_KEY") %>, {
+      host: <%= it.envRefOpt("NEXT_PUBLIC_POSTHOG_HOST") %>,
     });
   }
   return client;

@@ -61,20 +61,25 @@ interface EnvVarDef {
  * Sourced from the integration registry rather than a local cascade.
  */
 function computeBaseEnvVars(preset: Preset): { server: EnvVarDef[]; client: EnvVarDef[] } {
-  const server: EnvVarDef[] = [];
-  const client: EnvVarDef[] = [];
+  const server = new Map<string, EnvVarDef>();
+  const client = new Map<string, EnvVarDef>();
 
+  // Two providers can legitimately declare the same var (e.g. Supabase as
+  // both database and auth). Dedupe by name — first declaration wins — so
+  // createEnv never emits a duplicate object key.
   for (const category of INTEGRATION_CATEGORIES) {
     const provider = activeProvider(preset, category);
     if (!provider) continue;
     const integration = getIntegration(category, provider);
     const vars = integration?.envVars?.(preset);
     if (!vars) continue;
-    for (const v of vars.server ?? []) server.push({ name: v.name, zodType: v.zodType });
-    for (const v of vars.client ?? []) client.push({ name: v.name, zodType: v.zodType });
+    for (const v of vars.server ?? [])
+      if (!server.has(v.name)) server.set(v.name, { name: v.name, zodType: v.zodType });
+    for (const v of vars.client ?? [])
+      if (!client.has(v.name)) client.set(v.name, { name: v.name, zodType: v.zodType });
   }
 
-  return { server, client };
+  return { server: [...server.values()], client: [...client.values()] };
 }
 
 export function resolveEnvPackage(

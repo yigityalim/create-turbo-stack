@@ -40,10 +40,11 @@ export const posthog = defineIntegration({
         "posthog-node": "catalog:",
         react: "catalog:",
         "react-dom": "catalog:",
+        ...ctx.env.workspaceDep,
       },
       react: true,
     }),
-    ...renderSourceFiles("integration/analytics/posthog", ctx.base, {}),
+    ...renderSourceFiles("integration/analytics/posthog", ctx.base, { ...ctx.env.context }),
   ],
 });
 

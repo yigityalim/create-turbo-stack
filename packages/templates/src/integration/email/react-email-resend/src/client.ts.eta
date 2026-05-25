@@ -1,6 +1,9 @@
+<% if (it.envImport) { -%>
+<%= it.envImport %>
+<% } -%>
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(<%= it.envRefOpt("RESEND_API_KEY") %>);
 
 export async function sendEmail({
   to,
@@ -12,7 +15,7 @@ export async function sendEmail({
   react: React.ReactElement;
 }) {
   const { data, error } = await resend.emails.send({
-    from: process.env.EMAIL_FROM ?? "noreply@example.com",
+    from: <%= it.envRefOpt("EMAIL_FROM") %> ?? "noreply@example.com",
     to,
     subject,
     react,

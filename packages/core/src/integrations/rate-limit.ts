@@ -26,8 +26,14 @@ export const upstash = defineIntegration({
     ],
   }),
   resolvePackageFiles: (_preset, ctx) => [
-    ...ctx.makeBase({ deps: { "@upstash/ratelimit": "catalog:", "@upstash/redis": "catalog:" } }),
-    ...renderSourceFiles("integration/rate-limit/upstash", ctx.base, {}),
+    ...ctx.makeBase({
+      deps: {
+        "@upstash/ratelimit": "catalog:",
+        "@upstash/redis": "catalog:",
+        ...ctx.env.workspaceDep,
+      },
+    }),
+    ...renderSourceFiles("integration/rate-limit/upstash", ctx.base, { ...ctx.env.context }),
   ],
 });
 

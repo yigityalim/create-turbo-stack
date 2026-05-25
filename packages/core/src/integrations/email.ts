@@ -38,10 +38,11 @@ export const reactEmailResend = defineIntegration({
         "@react-email/components": "catalog:",
         react: "catalog:",
         "react-dom": "catalog:",
+        ...ctx.env.workspaceDep,
       },
       react: true,
     }),
-    ...renderSourceFiles("integration/email/react-email-resend", ctx.base, {}),
+    ...renderSourceFiles("integration/email/react-email-resend", ctx.base, { ...ctx.env.context }),
   ],
 });
 
@@ -75,11 +76,23 @@ export const nodemailer = defineIntegration({
         example: "password",
         description: "SMTP password",
       },
+      {
+        name: "SMTP_SECURE",
+        zodType: "z.string().optional()",
+        example: "false",
+        description: 'Use TLS for SMTP ("true"/"false")',
+      },
+      {
+        name: "EMAIL_FROM",
+        zodType: "z.string().email().optional()",
+        example: "noreply@example.com",
+        description: "Default sender email address",
+      },
     ],
   }),
   resolvePackageFiles: (_preset, ctx) => [
-    ...ctx.makeBase({ deps: { nodemailer: "catalog:" } }),
-    ...renderSourceFiles("integration/email/nodemailer", ctx.base, {}),
+    ...ctx.makeBase({ deps: { nodemailer: "catalog:", ...ctx.env.workspaceDep } }),
+    ...renderSourceFiles("integration/email/nodemailer", ctx.base, { ...ctx.env.context }),
   ],
 });
 

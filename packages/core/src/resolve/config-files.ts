@@ -271,6 +271,9 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    # No secrets in CI: the env package skips Zod validation at build time.
+    env:
+      SKIP_ENV_VALIDATION: "1"
     steps:
       - uses: actions/checkout@v4
 ${setup}
