@@ -52,10 +52,10 @@ export async function analyze(rootPath: string): Promise<AnalysisResult> {
     description: `Analyzed from ${projectName}`,
     basics: {
       projectName,
-      packageManager: pm.value as Preset["basics"]["packageManager"],
+      packageManager: pm.value,
       scope,
-      typescript: ts.value as Preset["basics"]["typescript"],
-      linter: linter.value as Preset["basics"]["linter"],
+      typescript: ts.value,
+      linter: linter.value,
       gitInit: true,
     },
     database: db.value,

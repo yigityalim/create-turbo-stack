@@ -1,3 +1,4 @@
+import type { DrizzleDriver } from "@create-turbo-stack/schema";
 import { renderSourceFiles } from "../render/render-source";
 import { VERSIONS } from "../wiring/versions";
 import { type CatalogEntrySpec, defineIntegration } from "./types";
@@ -143,32 +144,32 @@ export const databaseIntegrations = [supabase, drizzle, prisma];
 // so those stay generic. The per-driver client lives in client.ts.eta, keyed
 // off `driver` directly.
 
-function drizzleDialect(driver: string): string {
+function drizzleDialect(driver: DrizzleDriver): string {
   if (driver === "mysql" || driver === "planetscale") return "mysql";
   if (driver === "sqlite" || driver === "turso") return "sqlite";
   return "postgresql";
 }
 
-function drizzleSchemaModule(driver: string): string {
+function drizzleSchemaModule(driver: DrizzleDriver): string {
   if (driver === "mysql" || driver === "planetscale") return "drizzle-orm/mysql-core";
   if (driver === "sqlite" || driver === "turso") return "drizzle-orm/sqlite-core";
   return "drizzle-orm/pg-core";
 }
 
-function drizzleSchemaImports(driver: string): string {
+function drizzleSchemaImports(driver: DrizzleDriver): string {
   if (driver === "mysql" || driver === "planetscale")
     return "mysqlTable, varchar, text, timestamp, serial";
   if (driver === "sqlite" || driver === "turso") return "sqliteTable, text, integer";
   return "pgTable, varchar, text, timestamp, serial";
 }
 
-function drizzleTableFn(driver: string): string {
+function drizzleTableFn(driver: DrizzleDriver): string {
   if (driver === "mysql" || driver === "planetscale") return "mysqlTable";
   if (driver === "sqlite" || driver === "turso") return "sqliteTable";
   return "pgTable";
 }
 
-function drizzleIdColumn(driver: string): string {
+function drizzleIdColumn(driver: DrizzleDriver): string {
   if (driver === "sqlite" || driver === "turso")
     return 'integer("id").primaryKey({ autoIncrement: true })';
   return 'serial("id").primaryKey()';

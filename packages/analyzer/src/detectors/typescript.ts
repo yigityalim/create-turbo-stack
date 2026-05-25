@@ -1,4 +1,5 @@
 import path from "node:path";
+import type { TypeScriptStrictness } from "@create-turbo-stack/schema";
 import type { Detection } from "../types";
 import { readJsonFile } from "../utils/file-scanner";
 
@@ -10,7 +11,7 @@ type TsConfig = {
   };
 };
 
-export async function detectTypescript(root: string): Promise<Detection<string>> {
+export async function detectTypescript(root: string): Promise<Detection<TypeScriptStrictness>> {
   const tsconfig = await readJsonFile<TsConfig>(path.join(root, "tsconfig.json"));
 
   if (!tsconfig) {

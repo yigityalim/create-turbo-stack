@@ -1,9 +1,10 @@
 import path from "node:path";
+import type { Linter } from "@create-turbo-stack/schema";
 import type { Detection } from "../types";
 import { hasDep, readPackageJson } from "../utils/dep-scanner";
 import { fileExists } from "../utils/file-scanner";
 
-export async function detectLinter(root: string): Promise<Detection<string>> {
+export async function detectLinter(root: string): Promise<Detection<Linter>> {
   for (const biomeFile of ["biome.json", "biome.jsonc"]) {
     if (await fileExists(path.join(root, biomeFile))) {
       return { value: "biome", confidence: "certain", reason: `${biomeFile} found` };

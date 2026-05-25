@@ -1,4 +1,4 @@
-import type { FileTreeNode, Preset } from "@create-turbo-stack/schema";
+import type { FileTreeNode, PackageManager, Preset } from "@create-turbo-stack/schema";
 import { computeCatalog } from "../wiring/catalog";
 import { computeEnvChain } from "../wiring/env-chain";
 import { computeTurboConfig } from "../wiring/turbo-tasks";
@@ -54,7 +54,7 @@ export function resolveRootFiles(preset: Preset): FileTreeNode[] {
       turbo: "^2.8.0",
       typescript: catalogObj.typescript ?? "^5.9.0",
     },
-    packageManager: `${pm}@${VERSIONS[pm as keyof typeof VERSIONS] ?? "latest"}`,
+    packageManager: `${pm}@${VERSIONS[pm]}`,
     workspaces: workspacesField,
   };
 
@@ -251,7 +251,7 @@ npx create-turbo-stack remove app <name>
  * manager, installs frozen, then lint + type-check + test + build.
  * Tasks are routed through Turborepo so caching works out of the box.
  */
-function buildCiWorkflow(pm: string): string {
+function buildCiWorkflow(pm: PackageManager): string {
   const setup =
     pm === "bun"
       ? `      - uses: oven-sh/setup-bun@v1\n        with:\n          bun-version: latest\n      - run: bun install --frozen-lockfile`

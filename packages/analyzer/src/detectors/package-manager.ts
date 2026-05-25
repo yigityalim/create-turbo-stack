@@ -1,8 +1,9 @@
 import path from "node:path";
+import type { PackageManager } from "@create-turbo-stack/schema";
 import type { Detection } from "../types";
 import { fileExists } from "../utils/file-scanner";
 
-export async function detectPackageManager(root: string): Promise<Detection<string>> {
+export async function detectPackageManager(root: string): Promise<Detection<PackageManager>> {
   if (await fileExists(path.join(root, "bun.lock"))) {
     return { value: "bun", confidence: "certain", reason: "bun.lock found" };
   }
