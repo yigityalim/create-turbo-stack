@@ -1,12 +1,14 @@
-import type { Preset } from "@create-turbo-stack/schema";
+import type { FileTreeNode, Package, Preset } from "@create-turbo-stack/schema";
 
 /**
- * Integration plugin contract — uniform shape for any provider that
- * contributes catalog deps and/or env vars to the generated project.
+ * Integration plugin contract — a provider owns everything about itself
+ * in one place: the catalog deps it adds, the env vars it needs, the
+ * inline templates it ships, and the workspace package it scaffolds.
  *
- * Adding a new provider (Polar billing, Loops email, Magic Link auth, ...)
- * means writing one entry in the matching category file. env-chain and
- * catalog query the registry — no hardcoded if-cascades to maintain.
+ * Adding a provider (Polar billing, Loops email, Magic Link auth, ...)
+ * means writing one entry in the matching category file. catalog,
+ * env-chain, and the package resolver all query the registry — there is
+ * no parallel switch to keep in sync.
  */
 export interface IntegrationDefinition {
   category: IntegrationCategory;
@@ -31,6 +33,39 @@ export interface IntegrationDefinition {
    * shouldn't require forking the templates package.
    */
   templates?: Record<string, string>;
+
+  /**
+   * Scaffold the workspace package for this provider (e.g.
+   * `packages/auth`, `packages/db`). The dispatcher calls this when the
+   * provider is the active selection for its category. Use
+   * `ctx.makeBase()` for the package.json + tsconfig boilerplate, then
+   * push templated source on top. Leave undefined for providers that
+   * contribute only deps/env and no package of their own.
+   */
+  resolvePackageFiles?(preset: Preset, ctx: PackageResolveContext): FileTreeNode[];
+}
+
+/**
+ * Shared helpers handed to `resolvePackageFiles`. Keeps the package.json
+ * + tsconfig boilerplate in one place (base.ts) so providers only
+ * describe what's different about them.
+ */
+export interface PackageResolveContext {
+  pkg: Package;
+  /** Output directory, e.g. "packages/db". */
+  base: string;
+  /** Preset scope, e.g. "@acme". */
+  scope: string;
+  /**
+   * Emit package.json + tsconfig.json for this package. `react: true`
+   * swaps in the JSX-capable tsconfig and adds React type deps for
+   * providers that ship .tsx (PostHog provider, React Email).
+   */
+  makeBase(opts?: {
+    deps?: Record<string, string>;
+    devDeps?: Record<string, string>;
+    react?: boolean;
+  }): FileTreeNode[];
 }
 
 /**

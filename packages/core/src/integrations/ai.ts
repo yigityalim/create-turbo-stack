@@ -1,3 +1,4 @@
+import { renderSourceFiles } from "../render/render-source";
 import { VERSIONS } from "../wiring/versions";
 import { defineIntegration } from "./types";
 
@@ -18,12 +19,20 @@ export const vercelAiSdk = defineIntegration({
       },
     ],
   }),
+  resolvePackageFiles: (_preset, ctx) => [
+    ...ctx.makeBase({ deps: { ai: "catalog:", "@ai-sdk/openai": "catalog:" } }),
+    ...renderSourceFiles("integration/ai/vercel-ai-sdk", ctx.base, {}),
+  ],
 });
 
 export const langchain = defineIntegration({
   category: "ai",
   provider: "langchain",
   catalogEntries: () => [],
+  resolvePackageFiles: (_preset, ctx) => [
+    ...ctx.makeBase(),
+    ...renderSourceFiles("integration/ai/langchain", ctx.base, {}),
+  ],
 });
 
 export const aiIntegrations = [vercelAiSdk, langchain];

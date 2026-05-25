@@ -1,3 +1,4 @@
+import { renderSourceFiles } from "../render/render-source";
 import { VERSIONS } from "../wiring/versions";
 import { defineIntegration } from "./types";
 
@@ -15,6 +16,10 @@ export const sentry = defineIntegration({
       },
     ],
   }),
+  resolvePackageFiles: (_preset, ctx) => [
+    ...ctx.makeBase({ deps: { "@sentry/nextjs": "catalog:" } }),
+    ...renderSourceFiles("integration/monitoring/sentry", ctx.base, {}),
+  ],
 });
 
 export const errorTrackingIntegrations = [sentry];

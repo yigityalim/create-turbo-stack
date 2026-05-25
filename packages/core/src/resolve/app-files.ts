@@ -3,6 +3,7 @@ import { renderSourceFiles } from "../render/render-source";
 import { computeCssSourceMap } from "../wiring/css-source";
 import { computeWorkspaceRefs } from "../wiring/workspace-refs";
 import { getAppTypeDefinition, listSupportedAppTypes } from "./app-types";
+import { toJsonFile } from "./manifest-types";
 
 /**
  * App types that have a registered scaffold implementation.
@@ -51,13 +52,13 @@ export function resolveAppFiles(preset: Preset, app: App): FileTreeNode[] {
 
   nodes.push({
     path: `${base}/package.json`,
-    content: JSON.stringify(def.buildPackageJson(preset, app, ctx), null, 2),
+    content: toJsonFile(def.buildPackageJson(preset, app, ctx)),
     isDirectory: false,
   });
 
   nodes.push({
     path: `${base}/tsconfig.json`,
-    content: JSON.stringify(def.buildTsconfig(preset, app, ctx), null, 2),
+    content: toJsonFile(def.buildTsconfig(preset, app, ctx)),
     isDirectory: false,
   });
 

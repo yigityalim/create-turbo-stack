@@ -3,6 +3,7 @@ import { computeCatalog } from "../wiring/catalog";
 import { computeEnvChain } from "../wiring/env-chain";
 import { computeTurboConfig } from "../wiring/turbo-tasks";
 import { VERSIONS } from "../wiring/versions";
+import type { PackageJson, WorkspacesField } from "./manifest-types";
 
 /**
  * Resolve root-level config files: package.json, turbo.json, biome.json, .gitignore, etc.
@@ -28,12 +29,12 @@ export function resolveRootFiles(preset: Preset): FileTreeNode[] {
   //   - npm / yarn have no catalog protocol; for now they get a plain
   //     workspaces array (the `catalog:` refs in workspace package.json
   //     files won't resolve under npm/yarn — tracked separately).
-  const workspacesField =
+  const workspacesField: WorkspacesField =
     pm === "bun" && hasCatalog
       ? { packages: ["apps/*", "packages/*"], catalog: catalogObj }
       : ["apps/*", "packages/*"];
 
-  const rootPkg = {
+  const rootPkg: PackageJson = {
     name: preset.basics.projectName,
     private: true,
     scripts: {

@@ -1,5 +1,12 @@
+import type { Preset } from "@create-turbo-stack/schema";
+import { renderSourceFiles } from "../render/render-source";
 import { VERSIONS } from "../wiring/versions";
 import { defineIntegration } from "./types";
+
+/** Workspace dep on the db package, if the preset has a database. */
+function dbDep(preset: Preset, scope: string): Record<string, string> {
+  return preset.database.strategy !== "none" ? { [`${scope}/db`]: "workspace:*" } : {};
+}
 
 export const clerk = defineIntegration({
   category: "auth",
@@ -23,6 +30,10 @@ export const clerk = defineIntegration({
       },
     ],
   }),
+  resolvePackageFiles: (_preset, ctx) => [
+    ...ctx.makeBase({ deps: { "@clerk/nextjs": "catalog:" } }),
+    ...renderSourceFiles("auth/clerk", ctx.base, {}),
+  ],
 });
 
 export const betterAuth = defineIntegration({
@@ -69,6 +80,10 @@ export const betterAuth = defineIntegration({
       },
     ],
   }),
+  resolvePackageFiles: (preset, ctx) => [
+    ...ctx.makeBase({ deps: { "better-auth": "catalog:", ...dbDep(preset, ctx.scope) } }),
+    ...renderSourceFiles("auth/better-auth", ctx.base, {}),
+  ],
 });
 
 export const nextAuth = defineIntegration({
@@ -115,6 +130,10 @@ export const nextAuth = defineIntegration({
       },
     ],
   }),
+  resolvePackageFiles: (preset, ctx) => [
+    ...ctx.makeBase({ deps: { "next-auth": "catalog:", ...dbDep(preset, ctx.scope) } }),
+    ...renderSourceFiles("auth/next-auth", ctx.base, {}),
+  ],
 });
 
 export const lucia = defineIntegration({
@@ -133,6 +152,10 @@ export const lucia = defineIntegration({
       },
     ],
   }),
+  resolvePackageFiles: (preset, ctx) => [
+    ...ctx.makeBase({ deps: { ...dbDep(preset, ctx.scope) } }),
+    ...renderSourceFiles("auth/lucia", ctx.base, {}),
+  ],
 });
 
 export const supabaseAuth = defineIntegration({
@@ -141,6 +164,18 @@ export const supabaseAuth = defineIntegration({
   // Env vars + catalog entries come from the Supabase database integration.
   // Listing them here would duplicate (and risk drifting from) that record.
   catalogEntries: () => [],
+  resolvePackageFiles: (_preset, ctx) => [
+    // server.ts / middleware.ts import @supabase/ssr and next/server.
+    ...ctx.makeBase({
+      deps: {
+        [`${ctx.scope}/db`]: "workspace:*",
+        "@supabase/ssr": "catalog:",
+        "@supabase/supabase-js": "catalog:",
+        next: "catalog:",
+      },
+    }),
+    ...renderSourceFiles("auth/supabase-auth", ctx.base, { scope: ctx.scope }),
+  ],
 });
 
 export const authIntegrations = [clerk, betterAuth, nextAuth, lucia, supabaseAuth];

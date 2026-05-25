@@ -2,7 +2,7 @@ import type { FileTree, FileTreeNode, Preset } from "@create-turbo-stack/schema"
 import { resolveAppFiles } from "./app-files";
 import { resolveAutoPackages } from "./auto-packages";
 import { resolveRootFiles } from "./config-files";
-import { resolvePackageFiles } from "./package-files";
+import { resolvePackageFiles } from "./packages";
 
 export interface ResolveOptions {
   /** If true, include file content. If false, only paths (for preview). */

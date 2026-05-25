@@ -1,7 +1,7 @@
 import type { Package } from "@create-turbo-stack/schema";
 import { describe, expect, it } from "vitest";
-import { resolvePackageFiles } from "../../src/resolve/package-files";
-import { makePreset } from "../preset-factory";
+import { makePreset } from "../../preset-factory";
+import { resolvePackageFiles } from "./index";
 
 function paths(preset: Parameters<typeof resolvePackageFiles>[0], pkg: Package) {
   return resolvePackageFiles(preset, pkg).map((n) => n.path);

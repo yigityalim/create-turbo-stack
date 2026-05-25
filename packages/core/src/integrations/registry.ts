@@ -1,7 +1,42 @@
+import type { Preset } from "@create-turbo-stack/schema";
 import { registerTemplates } from "../render/template-registry";
 import type { IntegrationCategory, IntegrationDefinition } from "./types";
 
 const registry = new Map<string, IntegrationDefinition>();
+
+/**
+ * The active provider selected for `category` on this preset, or null
+ * when the slot is "none". The three top-level slots (auth/database/api)
+ * are discriminated unions; the rest live under `integrations.*`. Single
+ * source of this mapping — catalog, env-chain, and the package resolver
+ * all call it instead of repeating the switch.
+ */
+export function activeProvider(preset: Preset, category: IntegrationCategory): string | null {
+  switch (category) {
+    case "auth":
+      return preset.auth.provider === "none" ? null : preset.auth.provider;
+    case "database":
+      return preset.database.strategy === "none" ? null : preset.database.strategy;
+    case "api":
+      return preset.api.strategy === "none" ? null : preset.api.strategy;
+    default: {
+      const value = preset.integrations[category];
+      return !value || value === "none" ? null : value;
+    }
+  }
+}
+
+/** Every integration category, in a stable order for iteration. */
+export const INTEGRATION_CATEGORIES: readonly IntegrationCategory[] = [
+  "auth",
+  "database",
+  "api",
+  "analytics",
+  "errorTracking",
+  "email",
+  "rateLimit",
+  "ai",
+];
 
 const key = (category: IntegrationCategory, provider: string) => `${category}:${provider}`;
 

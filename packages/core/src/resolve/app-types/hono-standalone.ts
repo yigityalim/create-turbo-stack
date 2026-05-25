@@ -16,7 +16,6 @@ export const honoStandaloneAppType = defineAppType({
       ...(preset.basics.linter === "biome" ? { "@biomejs/biome": "catalog:" } : {}),
       typescript: "catalog:",
       tsx: "catalog:",
-      // Hono runs on Node — console, process, etc. need @types/node.
       "@types/node": "catalog:",
     };
 

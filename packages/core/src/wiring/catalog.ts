@@ -1,5 +1,5 @@
 import type { Preset } from "@create-turbo-stack/schema";
-import { getIntegration, type IntegrationCategory } from "../integrations";
+import { activeProvider, getIntegration, INTEGRATION_CATEGORIES } from "../integrations";
 import { VERSIONS } from "./versions";
 
 export interface CatalogEntry {
@@ -104,7 +104,7 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
   // Provider-driven catalog entries (auth, database, api, analytics, ...)
   // come from the integration registry — no hardcoded if-cascade.
   for (const category of INTEGRATION_CATEGORIES) {
-    const provider = resolveCategorySelection(preset, category);
+    const provider = activeProvider(preset, category);
     if (!provider) continue;
     const integration = getIntegration(category, provider);
     if (!integration) continue;
@@ -114,30 +114,4 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
   }
 
   return Array.from(catalog.entries()).map(([name, version]) => ({ name, version }));
-}
-
-const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
-  "auth",
-  "database",
-  "api",
-  "analytics",
-  "errorTracking",
-  "email",
-  "rateLimit",
-  "ai",
-];
-
-function resolveCategorySelection(preset: Preset, category: IntegrationCategory): string | null {
-  switch (category) {
-    case "auth":
-      return preset.auth.provider === "none" ? null : preset.auth.provider;
-    case "database":
-      return preset.database.strategy === "none" ? null : preset.database.strategy;
-    case "api":
-      return preset.api.strategy === "none" ? null : preset.api.strategy;
-    default: {
-      const value = preset.integrations[category];
-      return !value || value === "none" ? null : value;
-    }
-  }
 }

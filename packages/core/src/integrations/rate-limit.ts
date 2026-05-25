@@ -1,3 +1,4 @@
+import { renderSourceFiles } from "../render/render-source";
 import { VERSIONS } from "../wiring/versions";
 import { defineIntegration } from "./types";
 
@@ -24,6 +25,10 @@ export const upstash = defineIntegration({
       },
     ],
   }),
+  resolvePackageFiles: (_preset, ctx) => [
+    ...ctx.makeBase({ deps: { "@upstash/ratelimit": "catalog:", "@upstash/redis": "catalog:" } }),
+    ...renderSourceFiles("integration/rate-limit/upstash", ctx.base, {}),
+  ],
 });
 
 export const rateLimitIntegrations = [upstash];

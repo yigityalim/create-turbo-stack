@@ -59,18 +59,24 @@ async function walkDir(dir: string): Promise<string[]> {
  *
  * Rules:
  * - "root/gitignore.eta" → key: "root", file: "gitignore.eta"
+ * - "env/src/index.ts.eta" → key: "env", file: "src/index.ts.eta"
  * - "app/nextjs/src/app/page.tsx.eta" → key: "app/nextjs", file: "src/app/page.tsx.eta"
  * - "db/drizzle/src/index.ts.eta" → key: "db/drizzle", file: "src/index.ts.eta"
  * - "auth/clerk/src/index.ts.eta" → key: "auth/clerk", file: "src/index.ts.eta"
  * - "integration/analytics/posthog/src/index.ts.eta" → key: "integration/analytics/posthog", file: "src/index.ts.eta"
  */
+// Built-in categories that own a single top-level segment. Everything
+// else is namespaced by framework/provider (2 segments) or by
+// integration/type/provider (3). These keep their nested `src/...` path
+// as the file so the resolver writes to the right subdirectory.
+const SINGLE_SEGMENT_CATEGORIES = new Set(["root", "env"]);
+
 function deriveKey(relPath: string): { key: string; file: string } {
   const parts = relPath.split(sep);
   const category = parts[0];
 
-  // "root" is a single-segment category
-  if (category === "root") {
-    return { key: "root", file: parts.slice(1).join("/") };
+  if (SINGLE_SEGMENT_CATEGORIES.has(category)) {
+    return { key: category, file: parts.slice(1).join("/") };
   }
 
   // "integration" has 3 segments: integration/type/provider

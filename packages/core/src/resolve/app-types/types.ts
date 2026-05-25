@@ -1,4 +1,5 @@
 import type { App, FileTreeNode, Preset } from "@create-turbo-stack/schema";
+import type { PackageJson, TsConfig } from "../manifest-types";
 
 /**
  * Shared context passed to every AppTypeDefinition hook.
@@ -41,10 +42,10 @@ export interface AppTypeDefinition {
   templates?: Record<string, string>;
 
   /** Build the app's package.json. */
-  buildPackageJson(preset: Preset, app: App, ctx: AppResolveContext): Record<string, unknown>;
+  buildPackageJson(preset: Preset, app: App, ctx: AppResolveContext): PackageJson;
 
   /** Build the app's tsconfig.json. */
-  buildTsconfig(preset: Preset, app: App, ctx: AppResolveContext): Record<string, unknown>;
+  buildTsconfig(preset: Preset, app: App, ctx: AppResolveContext): TsConfig;
 
   /** Variables available to .eta templates as `it.*`. */
   buildTemplateContext(preset: Preset, app: App, ctx: AppResolveContext): Record<string, unknown>;

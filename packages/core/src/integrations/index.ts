@@ -33,11 +33,18 @@ const ALL = [
 
 for (const def of ALL) registerIntegration(def);
 
-export { getIntegration, listIntegrations, registerIntegration } from "./registry";
+export {
+  activeProvider,
+  getIntegration,
+  INTEGRATION_CATEGORIES,
+  listIntegrations,
+  registerIntegration,
+} from "./registry";
 export {
   type CatalogEntrySpec,
   defineIntegration,
   type EnvVarSpec,
   type IntegrationCategory,
   type IntegrationDefinition,
+  type PackageResolveContext,
 } from "./types";

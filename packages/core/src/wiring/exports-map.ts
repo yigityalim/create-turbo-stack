@@ -2,7 +2,9 @@ import type { Package } from "@create-turbo-stack/schema";
 
 /**
  * Compute the `exports` field for a package's package.json.
- * Maps subpath exports to their source files.
+ * Maps subpath exports to their source files. Every entry is a
+ * conditions object; callers that also emit bare-string targets (e.g.
+ * "./globals.css") widen to PackageExports at the assignment site.
  */
 export function computeExportsMap(
   pkg: Package,

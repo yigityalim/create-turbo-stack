@@ -1,3 +1,4 @@
+import { renderSourceFiles } from "../render/render-source";
 import { VERSIONS } from "../wiring/versions";
 import { defineIntegration } from "./types";
 
@@ -29,6 +30,19 @@ export const reactEmailResend = defineIntegration({
       },
     ],
   }),
+  // welcome.tsx is JSX → JSX tsconfig + React deps.
+  resolvePackageFiles: (_preset, ctx) => [
+    ...ctx.makeBase({
+      deps: {
+        resend: "catalog:",
+        "@react-email/components": "catalog:",
+        react: "catalog:",
+        "react-dom": "catalog:",
+      },
+      react: true,
+    }),
+    ...renderSourceFiles("integration/email/react-email-resend", ctx.base, {}),
+  ],
 });
 
 export const nodemailer = defineIntegration({
@@ -63,6 +77,10 @@ export const nodemailer = defineIntegration({
       },
     ],
   }),
+  resolvePackageFiles: (_preset, ctx) => [
+    ...ctx.makeBase({ deps: { nodemailer: "catalog:" } }),
+    ...renderSourceFiles("integration/email/nodemailer", ctx.base, {}),
+  ],
 });
 
 export const emailIntegrations = [reactEmailResend, nodemailer];
