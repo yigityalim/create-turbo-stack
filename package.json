@@ -18,6 +18,7 @@
     "format": "biome format --write .",
     "format:check": "biome format .",
     "check": "biome check .",
+    "build:registry": "bun scripts/build-registry.ts",
     "e2e": "bun packages/cli/scripts/e2e-smoke.ts"
   },
   "devDependencies": {

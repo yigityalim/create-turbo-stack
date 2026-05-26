@@ -1,0 +1,153 @@
+{
+  "title": "create-turbo-stack Package Registry",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "homepage": {
+      "type": "string"
+    },
+    "items": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "$schema": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "type": {
+            "default": "registry:package",
+            "type": "string",
+            "const": "registry:package"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "dependencies": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "devDependencies": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "registryDependencies": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "envVars": {
+            "default": {},
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "exports": {
+            "default": [
+              "."
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "build": {
+            "default": "none",
+            "type": "string",
+            "enum": [
+              "none",
+              "tsup"
+            ]
+          },
+          "files": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "content": {
+                  "type": "string"
+                },
+                "target": {
+                  "type": "string"
+                },
+                "type": {
+                  "default": "registry:source",
+                  "type": "string",
+                  "enum": [
+                    "registry:source",
+                    "registry:file"
+                  ]
+                }
+              },
+              "required": [
+                "path",
+                "type"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "meta": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "description",
+          "dependencies",
+          "devDependencies",
+          "registryDependencies",
+          "envVars",
+          "exports",
+          "build",
+          "files"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "name",
+    "items"
+  ],
+  "additionalProperties": false
+}

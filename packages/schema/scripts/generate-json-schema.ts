@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import { TurboStackConfigSchema } from "../src/config";
+import { PackageRegistrySchema } from "../src/package-registry";
 import { PresetSchema } from "../src/preset";
 import { RegistrySchema } from "../src/registry";
 import { UserConfigSchema } from "../src/user-config";
@@ -29,6 +30,7 @@ console.log("Generating JSON schemas...\n");
 
 writeSchema("preset.json", "create-turbo-stack Preset", PresetSchema);
 writeSchema("registry.json", "create-turbo-stack Registry", RegistrySchema);
+writeSchema("package-registry.json", "create-turbo-stack Package Registry", PackageRegistrySchema);
 writeSchema("config.json", "create-turbo-stack State", TurboStackConfigSchema);
 writeSchema("user-config.json", "create-turbo-stack User Config", UserConfigSchema);
 

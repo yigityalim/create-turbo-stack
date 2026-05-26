@@ -1,0 +1,16 @@
+{
+  "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
+  "name": "create-turbo-stack",
+  "homepage": "https://create-turbo-stack.dev",
+  "items": [
+    {
+      "name": "security",
+      "type": "registry:package",
+      "title": "Security",
+      "description": "Security headers (CSP, HSTS, X-Frame-Options, …) plus an origin/CSRF guard for Next.js and Web-API handlers.",
+      "dependencies": [],
+      "registryDependencies": [],
+      "build": "none"
+    }
+  ]
+}
