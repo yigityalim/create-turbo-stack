@@ -44,6 +44,7 @@ export const VERSIONS = {
   sveltejsKit: "^2.0.0",
   sveltejsAdapterAuto: "^3.0.0",
   sveltejsVitePluginSvelte: "^4.0.0",
+  svelteCheck: "^4.0.0",
 
   // Astro
   astro: "^5.0.0",

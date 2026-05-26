@@ -69,6 +69,7 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
       add("svelte", VERSIONS.svelte);
       add("@sveltejs/adapter-auto", VERSIONS.sveltejsAdapterAuto);
       add("@sveltejs/vite-plugin-svelte", VERSIONS.sveltejsVitePluginSvelte);
+      add("svelte-check", VERSIONS.svelteCheck);
       add("vite", VERSIONS.vite);
     }
     if (app.type === "astro") {

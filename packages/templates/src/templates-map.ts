@@ -56,6 +56,7 @@ export const templates: Record<string, Record<string, string>> = {
     "vite.config.ts.eta": "import { vitePlugin as remix } from \"@remix-run/dev\";\nimport { defineConfig } from \"vite\";\n\nexport default defineConfig({\n  plugins: [remix()],\n});\n",
   },
   "app/sveltekit": {
+    "src/app.d.ts.eta": "// See https://svelte.dev/docs/kit/types#app.d.ts\n// for information about these interfaces\ndeclare global {\n  namespace App {\n    // interface Error {}\n    // interface Locals {}\n    // interface PageData {}\n    // interface PageState {}\n    // interface Platform {}\n  }\n}\n\nexport {};\n",
     "src/app.html.eta": "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n    <title><%= it.app.name %></title>\n    %sveltekit.head%\n  </head>\n  <body>\n    <div id=\"app\">\n      %sveltekit.body%\n    </div>\n  </body>\n</html>\n",
     "src/routes/+layout.svelte.eta": "<script>\n  let { children } = $props();\n</script>\n\n{@render children()}\n",
     "src/routes/+page.svelte.eta": "<h1><%= it.app.name %></h1>\n",

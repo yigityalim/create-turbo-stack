@@ -54,6 +54,9 @@ export interface TsCompilerOptions {
   declarationMap?: boolean;
   sourceMap?: boolean;
   strict?: boolean;
+  allowJs?: boolean;
+  checkJs?: boolean;
+  forceConsistentCasingInFileNames?: boolean;
   esModuleInterop?: boolean;
   skipLibCheck?: boolean;
   isolatedModules?: boolean;
