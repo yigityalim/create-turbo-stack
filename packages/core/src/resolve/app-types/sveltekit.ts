@@ -4,7 +4,7 @@ export const sveltekitAppType = defineAppType({
   type: "sveltekit",
   templateCategory: "app/sveltekit",
 
-  buildPackageJson(preset, app, { scope, appRefs }) {
+  buildPackageJson(_preset, app, { scope, appRefs }) {
     const deps: Record<string, string> = {
       ...appRefs,
       "@sveltejs/kit": "catalog:",
@@ -18,8 +18,6 @@ export const sveltekitAppType = defineAppType({
       vite: "catalog:",
       typescript: "catalog:",
     };
-    if (preset.basics.linter === "biome") devDeps["@biomejs/biome"] = "catalog:";
-
     return {
       name: app.name,
       version: "0.1.0",
@@ -29,7 +27,6 @@ export const sveltekitAppType = defineAppType({
         dev: `vite dev --port ${app.port}`,
         build: "vite build",
         preview: "vite preview",
-        lint: preset.basics.linter === "biome" ? "biome check" : "eslint .",
         "type-check": "tsc --noEmit",
       },
       dependencies: deps,

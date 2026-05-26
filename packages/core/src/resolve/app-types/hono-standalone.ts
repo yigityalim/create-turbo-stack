@@ -4,7 +4,7 @@ export const honoStandaloneAppType = defineAppType({
   type: "hono-standalone",
   templateCategory: "app/hono-standalone",
 
-  buildPackageJson(preset, app, { scope, appRefs }) {
+  buildPackageJson(_preset, app, { scope, appRefs }) {
     const deps: Record<string, string> = {
       ...appRefs,
       hono: "catalog:",
@@ -13,7 +13,6 @@ export const honoStandaloneAppType = defineAppType({
 
     const devDeps: Record<string, string> = {
       [`${scope}/typescript-config`]: "workspace:*",
-      ...(preset.basics.linter === "biome" ? { "@biomejs/biome": "catalog:" } : {}),
       typescript: "catalog:",
       tsx: "catalog:",
       "@types/node": "catalog:",
@@ -28,7 +27,6 @@ export const honoStandaloneAppType = defineAppType({
         dev: "tsx watch src/index.ts",
         build: "tsc",
         start: "node dist/index.js",
-        lint: preset.basics.linter === "biome" ? "biome check" : "eslint .",
         "type-check": "tsc --noEmit",
       },
       dependencies: deps,

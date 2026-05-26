@@ -56,6 +56,17 @@ describe("computeCatalog — linter", () => {
     });
     expect(names(p)).not.toContain("@biomejs/biome");
   });
+
+  it("oxlint linter → oxlint + prettier present, biome + eslint absent", () => {
+    const p = makePreset({
+      basics: { ...makePreset().basics, linter: "oxlint" },
+    });
+    const n = names(p);
+    expect(n).toContain("oxlint");
+    expect(n).toContain("prettier");
+    expect(n).not.toContain("@biomejs/biome");
+    expect(n).not.toContain("eslint");
+  });
 });
 
 describe("computeCatalog — CSS", () => {

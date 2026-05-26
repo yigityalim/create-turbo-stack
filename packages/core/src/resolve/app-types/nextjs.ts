@@ -32,7 +32,6 @@ function build(templateCategory: "app/nextjs" | "app/nextjs-api-only") {
         "@types/react-dom": "catalog:",
         typescript: "catalog:",
       };
-      if (preset.basics.linter === "biome") devDeps["@biomejs/biome"] = "catalog:";
       if (preset.css.framework === "tailwind4") {
         devDeps.tailwindcss = "catalog:";
         devDeps["@tailwindcss/postcss"] = "catalog:";
@@ -52,7 +51,6 @@ function build(templateCategory: "app/nextjs" | "app/nextjs-api-only") {
           dev: `next dev --turbopack -p ${app.port}`,
           build: "next build",
           start: `next start -p ${app.port}`,
-          lint: preset.basics.linter === "biome" ? "biome check" : "next lint",
           "type-check": "tsc --noEmit",
         },
         dependencies: deps,

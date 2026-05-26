@@ -1,4 +1,5 @@
-<% if (it.app.i18n) { %>import createNextIntlPlugin from "next-intl/plugin";
+<% if (it.app.i18n) { -%>
+import createNextIntlPlugin from "next-intl/plugin";
 import type { NextConfig } from "next";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
@@ -6,9 +7,10 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const nextConfig: NextConfig = {};
 
 export default withNextIntl(nextConfig);
-<% } else { %>import type { NextConfig } from "next";
+<% } else { -%>
+import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {};
 
 export default nextConfig;
-<% } %>
+<% } -%>

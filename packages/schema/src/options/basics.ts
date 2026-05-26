@@ -6,7 +6,7 @@ export type PackageManager = z.infer<typeof PackageManagerSchema>;
 export const TypeScriptStrictnessSchema = z.enum(["strict", "relaxed"]);
 export type TypeScriptStrictness = z.infer<typeof TypeScriptStrictnessSchema>;
 
-export const LinterSchema = z.enum(["biome", "eslint-prettier"]);
+export const LinterSchema = z.enum(["biome", "oxlint", "eslint-prettier"]);
 export type Linter = z.infer<typeof LinterSchema>;
 
 export const BasicsSchema = z.object({

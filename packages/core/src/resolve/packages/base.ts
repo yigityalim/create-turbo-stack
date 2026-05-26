@@ -1,6 +1,7 @@
 import type { FileTreeNode, Package, Preset } from "@create-turbo-stack/schema";
 import type { EnvAccess, PackageResolveContext } from "../../integrations/types";
 import { computeExportsMap } from "../../wiring/exports-map";
+import { getLinter } from "../../wiring/linters";
 import {
   type PackageExports,
   type PackageJson,
@@ -31,6 +32,7 @@ export function makeBasePackageFiles(
   }
 
   const isReact = opts.react || pkg.type === "ui" || pkg.type === "react-library";
+  const linter = getLinter(preset.basics.linter);
 
   const pkgJson: PackageJson = {
     name: `${scope}/${pkg.name}`,
@@ -39,13 +41,13 @@ export function makeBasePackageFiles(
     type: "module",
     exports: exportsMap,
     scripts: {
-      lint: preset.basics.linter === "biome" ? "biome check" : "eslint .",
+      lint: linter.lintScript,
       "type-check": "tsc --noEmit",
     },
     dependencies: { ...extraDeps },
     devDependencies: {
       [`${scope}/typescript-config`]: "workspace:*",
-      ...(preset.basics.linter === "biome" ? { "@biomejs/biome": "catalog:" } : {}),
+      ...linter.packageDevDeps,
       typescript: "catalog:",
       // Node-targeted packages reference `process` and friends; React
       // packages get DOM libs from react.json instead.
@@ -60,6 +62,8 @@ export function makeBasePackageFiles(
     content: toJsonFile(pkgJson),
     isDirectory: false,
   });
+
+  nodes.push(...linter.packageConfigFiles(base));
 
   const tsconfigBase = isReact
     ? "react.json"

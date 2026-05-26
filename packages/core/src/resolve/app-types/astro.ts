@@ -25,8 +25,6 @@ export const astroAppType = defineAppType({
       devDeps["@types/react"] = "catalog:";
       devDeps["@types/react-dom"] = "catalog:";
     }
-    if (preset.basics.linter === "biome") devDeps["@biomejs/biome"] = "catalog:";
-
     return {
       name: app.name,
       version: "0.1.0",
@@ -36,7 +34,6 @@ export const astroAppType = defineAppType({
         dev: `astro dev --port ${app.port}`,
         build: "astro build",
         preview: "astro preview",
-        lint: preset.basics.linter === "biome" ? "biome check" : "eslint .",
         "type-check": "tsc --noEmit",
       },
       dependencies: deps,

@@ -19,7 +19,6 @@ export const viteReactAppType = defineAppType({
       "@types/react": "catalog:",
       "@types/react-dom": "catalog:",
     };
-    if (preset.basics.linter === "biome") devDeps["@biomejs/biome"] = "catalog:";
     if (preset.css.framework === "tailwind4") {
       devDeps.tailwindcss = "catalog:";
       devDeps["@tailwindcss/postcss"] = "catalog:";
@@ -34,7 +33,6 @@ export const viteReactAppType = defineAppType({
         dev: `vite --port ${app.port}`,
         build: "vite build",
         preview: "vite preview",
-        lint: preset.basics.linter === "biome" ? "biome check" : "eslint .",
         "type-check": "tsc --noEmit",
       },
       dependencies: deps,

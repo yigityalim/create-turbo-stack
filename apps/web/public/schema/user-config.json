@@ -29,6 +29,7 @@
               "type": "string",
               "enum": [
                 "biome",
+                "oxlint",
                 "eslint-prettier"
               ]
             },
@@ -213,6 +214,7 @@
                 "type": "string",
                 "enum": [
                   "biome",
+                  "oxlint",
                   "eslint-prettier"
                 ]
               }
@@ -372,6 +374,7 @@
                 "type": "string",
                 "enum": [
                   "biome",
+                  "oxlint",
                   "eslint-prettier"
                 ]
               }
@@ -518,6 +521,7 @@
               "type": "string",
               "enum": [
                 "biome",
+                "oxlint",
                 "eslint-prettier"
               ]
             },

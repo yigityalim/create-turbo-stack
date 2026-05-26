@@ -1,6 +1,7 @@
 import type { App, FileTreeNode, Preset } from "@create-turbo-stack/schema";
 import { renderSourceFiles } from "../render/render-source";
 import { computeCssSourceMap } from "../wiring/css-source";
+import { getLinter } from "../wiring/linters";
 import { computeWorkspaceRefs } from "../wiring/workspace-refs";
 import { getAppTypeDefinition, listSupportedAppTypes } from "./app-types";
 import { toJsonFile } from "./manifest-types";
@@ -50,9 +51,17 @@ export function resolveAppFiles(preset: Preset, app: App): FileTreeNode[] {
   const ctx = { base, scope, appRefs, cssDirectives };
   const nodes: FileTreeNode[] = [];
 
+  // Linter wiring is centralized here, not in each app type: inject the
+  // lint script + linter devDep + per-package config so every framework
+  // stays consistent and app types describe only their own toolchain.
+  const linter = getLinter(preset.basics.linter);
+  const pkgJson = def.buildPackageJson(preset, app, ctx);
+  pkgJson.scripts = { ...pkgJson.scripts, lint: linter.lintScript };
+  pkgJson.devDependencies = { ...pkgJson.devDependencies, ...linter.packageDevDeps };
+
   nodes.push({
     path: `${base}/package.json`,
-    content: toJsonFile(def.buildPackageJson(preset, app, ctx)),
+    content: toJsonFile(pkgJson),
     isDirectory: false,
   });
 
@@ -61,6 +70,8 @@ export function resolveAppFiles(preset: Preset, app: App): FileTreeNode[] {
     content: toJsonFile(def.buildTsconfig(preset, app, ctx)),
     isDirectory: false,
   });
+
+  nodes.push(...linter.packageConfigFiles(base));
 
   // Templated source files
   nodes.push(

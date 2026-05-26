@@ -1,5 +1,6 @@
 import type { Preset } from "@create-turbo-stack/schema";
 import { activeProvider, getIntegration, INTEGRATION_CATEGORIES } from "../integrations";
+import { getLinter } from "./linters";
 import { VERSIONS } from "./versions";
 
 export interface CatalogEntry {
@@ -23,11 +24,8 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
   // Node-side packages (env, db, rate-limit, ...) reference @types/node.
   add("@types/node", VERSIONS.typesNode);
 
-  if (preset.basics.linter === "biome") {
-    add("@biomejs/biome", VERSIONS.biome);
-  } else {
-    add("eslint", VERSIONS.eslint);
-    add("prettier", VERSIONS.prettier);
+  for (const entry of getLinter(preset.basics.linter).catalogEntries) {
+    add(entry.name, entry.version);
   }
 
   if (preset.css.framework === "tailwind4") {

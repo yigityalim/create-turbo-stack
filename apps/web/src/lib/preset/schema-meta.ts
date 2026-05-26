@@ -94,6 +94,10 @@ const LABELS: Record<
   },
 
   "linter.biome": { label: "Biome", description: "Fast formatter & linter" },
+  "linter.oxlint": {
+    label: "oxlint + Prettier",
+    description: "Rust-fast linter, Prettier format",
+  },
   "linter.eslint-prettier": {
     label: "ESLint + Prettier",
     description: "Classic lint & format",

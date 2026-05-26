@@ -14,7 +14,7 @@
  */
 
 import { execSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,6 +23,10 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 const CLI_BIN = path.join(REPO_ROOT, "packages/cli/bin/create-turbo-stack.ts");
 
 const PRESETS = ["minimal", "saas-starter", "api-only"] as const;
+
+// Every linter must produce a project that installs and lints clean — the
+// proof that biome/oxlint/eslint-prettier are real, not schema lies.
+const LINTERS = ["biome", "oxlint", "eslint-prettier"] as const;
 
 interface StepResult {
   step: string;
@@ -79,32 +83,75 @@ async function smokePreset(preset: string): Promise<StepResult[]> {
   }
 }
 
+/**
+ * Scaffold the minimal preset with `linter` swapped in, then install and
+ * lint. Proves the generated linter config is valid and the output passes
+ * its own linter cleanly.
+ */
+async function smokeLinter(linter: string): Promise<StepResult[]> {
+  const dir = mkdtempSync(path.join(tmpdir(), `cts-e2e-lint-${linter}-`));
+  const results: StepResult[] = [];
+
+  try {
+    const minimal = JSON.parse(
+      readFileSync(path.join(REPO_ROOT, "presets", "minimal.json"), "utf-8"),
+    );
+    minimal.basics.linter = linter;
+    const presetPath = path.join(dir, "preset.json");
+    writeFileSync(presetPath, JSON.stringify(minimal));
+
+    results.push(
+      timed("scaffold", () =>
+        run(`bunx tsx ${CLI_BIN} app --preset ${presetPath} --no-install`, dir),
+      ),
+    );
+    if (!results.at(-1)?.ok) return results;
+
+    const appDir = path.join(dir, "app");
+    results.push(timed("install", () => run("bun install", appDir)));
+    if (!results.at(-1)?.ok) return results;
+
+    results.push(timed("lint", () => run("bun run lint", appDir)));
+    return results;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function report(label: string, results: StepResult[]): boolean {
+  console.log(`\n=== ${label} ===`);
+  let failed = false;
+  for (const r of results) {
+    console.log(`  ${r.ok ? "✓" : "✗"} ${r.step.padEnd(12)} ${(r.ms / 1000).toFixed(1)}s`);
+    if (!r.ok) {
+      failed = true;
+      console.log(`\n--- ${label}:${r.step} output ---`);
+      console.log((r.output ?? "").split("\n").slice(-40).join("\n"));
+    }
+  }
+  return failed;
+}
+
 async function main() {
   const filter = process.argv[2];
   const presets = filter ? PRESETS.filter((p) => p === filter) : PRESETS;
-  if (presets.length === 0) {
-    console.error(`Unknown preset "${filter}". Available: ${PRESETS.join(", ")}`);
+  const linters = filter ? LINTERS.filter((l) => l === filter) : LINTERS;
+  if (presets.length === 0 && linters.length === 0) {
+    console.error(
+      `Unknown target "${filter}". Presets: ${PRESETS.join(", ")}. Linters: ${LINTERS.join(", ")}.`,
+    );
     process.exit(1);
   }
 
   let anyFailed = false;
   for (const preset of presets) {
-    console.log(`\n=== ${preset} ===`);
-    const results = await smokePreset(preset);
-    for (const r of results) {
-      const icon = r.ok ? "✓" : "✗";
-      console.log(`  ${icon} ${r.step.padEnd(12)} ${(r.ms / 1000).toFixed(1)}s`);
-      if (!r.ok) {
-        anyFailed = true;
-        console.log(`\n--- ${preset}:${r.step} output ---`);
-        console.log((r.output ?? "").split("\n").slice(-40).join("\n"));
-      }
-    }
+    anyFailed = report(preset, await smokePreset(preset)) || anyFailed;
+  }
+  for (const linter of linters) {
+    anyFailed = report(`linter:${linter}`, await smokeLinter(linter)) || anyFailed;
   }
 
-  console.log(
-    anyFailed ? "\nFAIL" : "\nAll presets scaffolded, installed, type-checked, and built.",
-  );
+  console.log(anyFailed ? "\nFAIL" : "\nAll presets and linters scaffolded, installed, verified.");
   process.exit(anyFailed ? 1 : 0);
 }
 

@@ -42,7 +42,9 @@ export const templateAppType = defineAppType({
   templateCategory: "app/tauri", // ← matches packages/templates/src/<this>/
 
   // ── package.json ──────────────────────────────────────────────────
-  buildPackageJson(preset, app, { scope, appRefs }) {
+  // Note: the `lint` script, linter devDep, and any per-package linter
+  // config are injected centrally in app-files.ts — don't set them here.
+  buildPackageJson(_preset, app, { scope, appRefs }) {
     const deps: Record<string, string> = {
       ...appRefs, // workspace:* refs the app consumes
       // Add framework runtime deps here:
@@ -53,7 +55,6 @@ export const templateAppType = defineAppType({
       [`${scope}/typescript-config`]: "workspace:*",
       typescript: "catalog:",
     };
-    if (preset.basics.linter === "biome") devDeps["@biomejs/biome"] = "catalog:";
 
     return {
       name: app.name,
@@ -63,7 +64,6 @@ export const templateAppType = defineAppType({
       scripts: {
         dev: "echo TODO dev",
         build: "echo TODO build",
-        lint: preset.basics.linter === "biome" ? "biome check" : "eslint .",
         "type-check": "tsc --noEmit",
       },
       dependencies: deps,

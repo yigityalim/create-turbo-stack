@@ -13,7 +13,11 @@ export const VERSIONS = {
 
   // Linters
   biome: "^1.9.0",
+  oxlint: "^0.15.0",
   eslint: "^9.0.0",
+  eslintJs: "^9.0.0",
+  typescriptEslint: "^8.0.0",
+  eslintConfigPrettier: "^9.1.0",
   prettier: "^3.8.0",
 
   tailwind4: "^4.0.0",

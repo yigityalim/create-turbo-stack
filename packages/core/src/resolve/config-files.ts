@@ -1,6 +1,7 @@
 import type { FileTreeNode, PackageManager, Preset } from "@create-turbo-stack/schema";
 import { computeCatalog } from "../wiring/catalog";
 import { computeEnvChain } from "../wiring/env-chain";
+import { getLinter } from "../wiring/linters";
 import { computeTurboConfig } from "../wiring/turbo-tasks";
 import { VERSIONS } from "../wiring/versions";
 import type { PackageJson, WorkspacesField } from "./manifest-types";
@@ -34,6 +35,8 @@ export function resolveRootFiles(preset: Preset): FileTreeNode[] {
       ? { packages: ["apps/*", "packages/*"], catalog: catalogObj }
       : ["apps/*", "packages/*"];
 
+  const linter = getLinter(preset.basics.linter);
+
   const rootPkg: PackageJson = {
     name: preset.basics.projectName,
     private: true,
@@ -42,15 +45,10 @@ export function resolveRootFiles(preset: Preset): FileTreeNode[] {
       dev: "turbo run dev",
       lint: "turbo run lint",
       "type-check": "turbo run type-check",
-      format:
-        preset.basics.linter === "biome"
-          ? "biome format --write ."
-          : 'prettier --write "**/*.{ts,tsx,md}"',
+      format: linter.formatScript,
     },
     devDependencies: {
-      ...(preset.basics.linter === "biome"
-        ? { "@biomejs/biome": catalogObj["@biomejs/biome"] ?? "^1.9.0" }
-        : {}),
+      ...linter.rootDevDeps,
       turbo: "^2.8.0",
       typescript: catalogObj.typescript ?? "^5.9.0",
     },
@@ -110,28 +108,8 @@ coverage
     isDirectory: false,
   });
 
-  // Biome config
-  if (preset.basics.linter === "biome") {
-    nodes.push({
-      path: "biome.json",
-      content: JSON.stringify(
-        {
-          $schema: "https://biomejs.dev/schemas/1.9.0/schema.json",
-          vcs: { enabled: true, clientKind: "git", useIgnoreFile: true },
-          organizeImports: { enabled: true },
-          formatter: { enabled: true, indentStyle: "space", indentWidth: 2, lineWidth: 100 },
-          linter: { enabled: true, rules: { recommended: true } },
-          javascript: {
-            formatter: { quoteStyle: "double", semicolons: "always", trailingCommas: "all" },
-          },
-          files: { ignore: ["node_modules", ".next", ".turbo", "dist", "bun.lock", "*.json"] },
-        },
-        null,
-        2,
-      ),
-      isDirectory: false,
-    });
-  }
+  // Linter config files (biome.json | .oxlintrc.json + .prettierrc | eslint.config.mjs + .prettierrc)
+  nodes.push(...linter.rootConfigFiles(preset));
 
   // .env.example
   if (envChain.allVars.length > 0) {

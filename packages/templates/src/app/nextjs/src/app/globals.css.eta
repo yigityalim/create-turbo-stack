@@ -1,8 +1,16 @@
-<% if (it.css.framework === 'tailwind4') { %>@import "tailwindcss";
-<% if (it.css.ui === 'shadcn') { %>@import "tw-animate-css";
-<% } %><% for (const source of it.wiring.cssSourceDirectives) { %>@source "<%= source %>";
-<% } %><% const consumedUi = it.app.consumes.find(c => it.packages.find(p => p.name === c && p.producesCSS)); %><% if (consumedUi) { %>@import "<%= it.scope %>/<%= consumedUi %>/globals.css";
-<% } %>
+<% if (it.css.framework === 'tailwind4') { -%>
+@import "tailwindcss";
+<% if (it.css.ui === 'shadcn') { -%>
+@import "tw-animate-css";
+<% } -%>
+<% const consumedUi = it.app.consumes.find(c => it.packages.find(p => p.name === c && p.producesCSS)); -%>
+<% if (consumedUi) { -%>
+@import "<%= it.scope %>/<%= consumedUi %>/globals.css";
+<% } -%>
+<% for (const source of it.wiring.cssSourceDirectives) { -%>
+@source "<%= source %>";
+<% } -%>
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -40,9 +48,10 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
-<% } else { %>/* Global styles */
+<% } else { -%>
+/* Global styles */
 body {
   margin: 0;
   font-family: system-ui, sans-serif;
 }
-<% } %>
+<% } -%>

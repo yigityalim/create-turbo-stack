@@ -247,6 +247,7 @@ export async function runCreatePrompts(
         options: filtered(
           [
             { value: "biome", label: "Biome", hint: "fast, single tool" },
+            { value: "oxlint", label: "oxlint + Prettier", hint: "Rust-fast linting" },
             { value: "eslint-prettier", label: "ESLint + Prettier" },
           ] as const,
           policy,

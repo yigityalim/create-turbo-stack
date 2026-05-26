@@ -59,6 +59,7 @@
           "type": "string",
           "enum": [
             "biome",
+            "oxlint",
             "eslint-prettier"
           ]
         },
