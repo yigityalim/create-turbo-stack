@@ -14,6 +14,7 @@ export function baseOptions(): BaseLayoutProps {
     links: [
       { text: "Builder", url: "/builder" },
       { text: "Presets", url: "/presets" },
+      { text: "Registry", url: "/registry" },
       { text: "Docs", url: "/docs" },
     ],
     githubUrl: "https://github.com/yigityalim/create-turbo-stack",
