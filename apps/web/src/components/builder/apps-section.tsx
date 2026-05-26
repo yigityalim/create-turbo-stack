@@ -207,32 +207,6 @@ function AppCard({
             </button>
           </div>
 
-          {/* CMS (only for nextjs) */}
-          {app.type === "nextjs" && (
-            <div>
-              <p className="mb-2 font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wide">
-                CMS
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                {APP_FIELDS.cms.options?.map((opt) => (
-                  <OptionCard
-                    key={opt.value}
-                    label={opt.label}
-                    description={opt.description}
-                    selected={app.cms === opt.value}
-                    onClick={() =>
-                      dispatch({
-                        type: "UPDATE_APP",
-                        index,
-                        payload: { cms: opt.value as App["cms"] },
-                      })
-                    }
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Consumes (package dependencies) */}
           <ConsumesField app={app} index={index} />
         </div>
@@ -426,7 +400,6 @@ function AddAppForm({
               type,
               port,
               i18n: false,
-              cms: "none",
               consumes: [],
             })
           }

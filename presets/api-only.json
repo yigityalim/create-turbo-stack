@@ -25,7 +25,7 @@
     "envValidation": true
   },
   "apps": [
-    { "name": "api", "type": "hono-standalone", "port": 3000, "i18n": false, "cms": "none", "consumes": [] }
+    { "name": "api", "type": "hono-standalone", "port": 3000, "i18n": false, "consumes": [] }
   ],
   "packages": [
     { "name": "utils", "type": "utils", "producesCSS": false, "exports": ["."] }

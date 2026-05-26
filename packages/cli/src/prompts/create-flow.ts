@@ -319,7 +319,6 @@ export async function runCreatePrompts(
       type: appType as Preset["apps"][number]["type"],
       port,
       i18n,
-      cms: "none",
       consumes: [],
     });
 

@@ -34,7 +34,6 @@
       "type": "nextjs",
       "port": 3000,
       "i18n": true,
-      "cms": "none",
       "consumes": ["ui", "api", "auth"]
     },
     {
@@ -42,7 +41,6 @@
       "type": "nextjs-api-only",
       "port": 3001,
       "i18n": false,
-      "cms": "none",
       "consumes": ["api", "auth"]
     }
   ],

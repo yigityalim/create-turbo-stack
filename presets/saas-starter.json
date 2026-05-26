@@ -25,8 +25,8 @@
     "envValidation": true
   },
   "apps": [
-    { "name": "web", "type": "nextjs", "port": 3000, "i18n": true, "cms": "none", "consumes": ["ui", "api", "auth"] },
-    { "name": "api", "type": "nextjs-api-only", "port": 3001, "i18n": false, "cms": "none", "consumes": ["api", "auth"] }
+    { "name": "web", "type": "nextjs", "port": 3000, "i18n": true, "consumes": ["ui", "api", "auth"] },
+    { "name": "api", "type": "nextjs-api-only", "port": 3001, "i18n": false, "consumes": ["api", "auth"] }
   ],
   "packages": [
     { "name": "ui", "type": "react-library", "producesCSS": true, "exports": ["."] },

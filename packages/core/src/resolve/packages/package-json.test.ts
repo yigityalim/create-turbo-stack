@@ -28,7 +28,7 @@ function comprehensivePreset(): Preset {
       ai: "vercel-ai-sdk",
       envValidation: true,
     },
-    apps: [{ name: "web", type: "nextjs", port: 3000, i18n: true, cms: "none", consumes: ["ui"] }],
+    apps: [{ name: "web", type: "nextjs", port: 3000, i18n: true, consumes: ["ui"] }],
     packages: [
       { name: "ui", type: "ui", producesCSS: true, exports: ["."] },
       { name: "utils", type: "utils", producesCSS: false, exports: ["."] },
@@ -156,7 +156,7 @@ describe("env wiring — validated vs process.env fallback", () => {
 describe("emitted package.json — every registered app type", () => {
   for (const type of SUPPORTED_APP_TYPES) {
     it(`${type} app emits a valid package.json with module fields`, () => {
-      const app: App = { name: "app", type, port: 3000, i18n: false, cms: "none", consumes: [] };
+      const app: App = { name: "app", type, port: 3000, i18n: false, consumes: [] };
       const preset = makePreset({ apps: [app] });
       const node = resolveFileTree(preset).nodes.find((n) => n.path === "apps/app/package.json");
       expect(node, `${type} produced no package.json`).toBeTruthy();

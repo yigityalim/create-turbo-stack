@@ -15,7 +15,6 @@ import {
   ApiStrategySchema,
   AppTypeSchema,
   AuthProviderSchema,
-  CmsSchema,
   CssFrameworkSchema,
   DatabaseStrategySchema,
   DrizzleDriverSchema,
@@ -305,11 +304,6 @@ const LABELS: Record<
     description: "Native desktop apps with web tech",
   },
 
-  // CMS
-  "cms.sanity": { label: "Sanity", description: "Structured content platform" },
-  "cms.keystatic": { label: "Keystatic", description: "Git-based CMS" },
-  "cms.none": { label: "None", description: "No CMS" },
-
   // Package type
   "packageType.ui": { label: "UI", description: "Shared React components" },
   "packageType.utils": { label: "Utils", description: "Shared utilities" },
@@ -523,7 +517,6 @@ export const CATEGORIES: CategoryMeta[] = [
 /** Metadata for app/package forms (not category cards, but dialog fields) */
 export const APP_FIELDS = {
   type: makeEnumField("type", "App Type", "appType", AppTypeSchema.options),
-  cms: makeEnumField("cms", "CMS", "cms", CmsSchema.options, "none"),
 };
 
 export const PACKAGE_FIELDS = {

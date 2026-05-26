@@ -30,7 +30,6 @@ export async function detectApps(
       type: type.value as App["type"],
       port,
       i18n,
-      cms: "none",
       consumes,
     });
 

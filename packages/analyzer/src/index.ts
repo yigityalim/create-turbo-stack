@@ -72,7 +72,6 @@ export async function analyze(rootPath: string): Promise<AnalysisResult> {
               type: "nextjs" as const,
               port: 3000,
               i18n: false,
-              cms: "none" as const,
               consumes: [],
             },
           ],

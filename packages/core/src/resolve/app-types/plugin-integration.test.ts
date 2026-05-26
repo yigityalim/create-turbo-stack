@@ -92,7 +92,6 @@ describe("AppType plugin integration", () => {
           type: "vite-vue",
           port: 5173,
           i18n: false,
-          cms: "none",
           consumes: [],
         },
       ],

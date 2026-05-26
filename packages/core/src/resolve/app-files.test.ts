@@ -12,7 +12,6 @@ const NEXTJS_APP: App = {
   type: "nextjs",
   port: 3000,
   i18n: false,
-  cms: "none",
   consumes: [],
 };
 
@@ -21,7 +20,6 @@ const HONO_APP: App = {
   type: "hono-standalone",
   port: 3001,
   i18n: false,
-  cms: "none",
   consumes: [],
 };
 
@@ -159,7 +157,6 @@ describe("resolveAppFiles — unimplemented type", () => {
       type: appType as App["type"],
       port: 4321,
       i18n: false,
-      cms: "none",
       consumes: [],
     };
     const p = makePreset({ apps: [app] });

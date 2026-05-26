@@ -34,7 +34,6 @@
       "type": "nextjs",
       "port": 3000,
       "i18n": false,
-      "cms": "none",
       "consumes": ["ui"]
     }
   ],

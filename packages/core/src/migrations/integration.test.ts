@@ -77,7 +77,6 @@ describe("preset migration — full validation flow", () => {
           type: "nextjs",
           port: 3000,
           // intentionally no i18n — should pick up i18nDefault
-          cms: "none",
           consumes: [],
         },
       ],

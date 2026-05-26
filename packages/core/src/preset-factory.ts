@@ -36,7 +36,6 @@ export const WEB_APP: App = {
   type: "nextjs",
   port: 3000,
   i18n: false,
-  cms: "none",
   consumes: [],
 };
 
@@ -83,7 +82,6 @@ export function makeFullPreset(): Preset {
         type: "nextjs",
         port: 3000,
         i18n: true,
-        cms: "none",
         consumes: ["ui"],
       },
       {
@@ -91,7 +89,6 @@ export function makeFullPreset(): Preset {
         type: "expo",
         port: 8081,
         i18n: false,
-        cms: "none",
         consumes: [],
       },
     ],

@@ -211,14 +211,6 @@ describe("detectApps", () => {
     expect(r.apps[0].type).toBe("hono-standalone");
   });
 
-  it("cms is always none", async () => {
-    tmp = await createFixture({
-      "apps/web/package.json": { dependencies: { next: "15.0.0" } },
-    });
-    const r = await detectApps(tmp, "@scope");
-    expect(r.apps[0].cms).toBe("none");
-  });
-
   it("app name matches directory name", async () => {
     tmp = await createFixture({
       "apps/my-cool-web/package.json": { dependencies: { next: "15.0.0" } },

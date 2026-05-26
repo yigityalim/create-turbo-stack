@@ -381,15 +381,6 @@
             "default": false,
             "type": "boolean"
           },
-          "cms": {
-            "default": "none",
-            "type": "string",
-            "enum": [
-              "sanity",
-              "keystatic",
-              "none"
-            ]
-          },
           "consumes": {
             "default": [],
             "type": "array",
@@ -403,7 +394,6 @@
           "type",
           "port",
           "i18n",
-          "cms",
           "consumes"
         ],
         "additionalProperties": false

@@ -25,7 +25,7 @@
     "envValidation": true
   },
   "apps": [
-    { "name": "web", "type": "nextjs", "port": 3000, "i18n": false, "cms": "none", "consumes": ["ui"] }
+    { "name": "web", "type": "nextjs", "port": 3000, "i18n": false, "consumes": ["ui"] }
   ],
   "packages": [
     { "name": "ui", "type": "react-library", "producesCSS": true, "exports": ["."] }

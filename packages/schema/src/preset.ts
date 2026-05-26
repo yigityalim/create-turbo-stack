@@ -131,16 +131,6 @@ export const ValidatedPresetSchema = PresetSchema.superRefine((data, ctx) => {
       path: ["apps"],
     });
   }
-
-  for (const [i, app] of data.apps.entries()) {
-    if (app.cms !== "none" && app.type !== "nextjs") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "CMS field is only meaningful for nextjs apps (and is currently unimplemented).",
-        path: ["apps", i, "cms"],
-      });
-    }
-  }
 });
 
 export type ValidatedPreset = z.infer<typeof ValidatedPresetSchema>;

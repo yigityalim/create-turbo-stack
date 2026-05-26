@@ -113,9 +113,6 @@ async function addApp(userConfig?: UserConfig, options: { dryRun?: boolean } = {
     if (p.isCancel(i18n)) return process.exit(0);
   }
 
-  // CMS field is deprecated; default to "none" without prompting.
-  const cms: App["cms"] = "none";
-
   const allPackages = [
     ...config.packages.map((p) => p.name),
     ...resolveAutoPackages(config as Preset).map((p) => p.name),
@@ -137,7 +134,6 @@ async function addApp(userConfig?: UserConfig, options: { dryRun?: boolean } = {
     type: appType,
     port: Number(port),
     i18n,
-    cms,
     consumes,
   };
 

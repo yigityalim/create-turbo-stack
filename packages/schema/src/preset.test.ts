@@ -45,7 +45,6 @@ describe("ValidatedPresetSchema — valid presets", () => {
       type: "hono-standalone",
       port: 3001,
       i18n: false,
-      cms: "none",
       consumes: [],
     });
 
@@ -81,7 +80,6 @@ describe("ValidatedPresetSchema — rejected presets", () => {
       type: "nextjs",
       port: 3000,
       i18n: false,
-      cms: "none",
       consumes: ["ui"],
     });
 
@@ -97,7 +95,6 @@ describe("ValidatedPresetSchema — rejected presets", () => {
       type: "hono-standalone",
       port: 3001,
       i18n: true,
-      cms: "none",
       consumes: [],
     });
 
@@ -112,20 +109,5 @@ describe("ValidatedPresetSchema — rejected presets", () => {
 
     const message = firstIssueMessage(preset);
     expect(message).toMatch(/consumes unknown package 'nonexistent-pkg'/);
-  });
-
-  it("rejects CMS on a non-nextjs app", () => {
-    const preset = fixture();
-    fixtureApps(preset).push({
-      name: "docs",
-      type: "vite-react",
-      port: 3001,
-      i18n: false,
-      cms: "sanity",
-      consumes: [],
-    });
-
-    const message = firstIssueMessage(preset);
-    expect(message).toMatch(/CMS field is only meaningful for nextjs apps/);
   });
 });

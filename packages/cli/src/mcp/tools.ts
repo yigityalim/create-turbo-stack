@@ -51,7 +51,6 @@ export function registerTools(server: McpServer, ctx: McpContext): void {
           type,
           port,
           i18n: i18n ?? false,
-          cms: "none",
           consumes: consumes ?? [],
         };
         return {
