@@ -63,6 +63,11 @@ export const PackageRegistryItemSchema = z.object({
   envVars: z.record(z.string(), z.string()).default({}),
   /** Subpath exports the generated package.json declares. */
   exports: z.array(z.string()).default(["."]),
+  /**
+   * TypeScript `lib` for this package, e.g. ["ES2022", "DOM"] for code that
+   * uses Web APIs (fetch/Request/Response). Defaults to the tsconfig base.
+   */
+  lib: z.array(z.string()).optional(),
   /** Internal (source export) by default; "tsup" for publishable packages. */
   build: PackageBuildModeSchema.default("none"),
   files: z.array(RegistryFileSchema).default([]),

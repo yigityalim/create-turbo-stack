@@ -55,6 +55,7 @@ export { type CatalogEntry, computeCatalog } from "./wiring/catalog";
 export { type CssSourceMap, computeCssSourceMap } from "./wiring/css-source";
 export { computeEnvChain, type EnvChain, type EnvVar } from "./wiring/env-chain";
 export { computeExportsMap } from "./wiring/exports-map";
+export { getLinter, type LinterDef } from "./wiring/linters";
 export { computeTsconfigChain, type TsconfigTarget } from "./wiring/tsconfig-chain";
 export { computeTurboConfig, type TurboConfig } from "./wiring/turbo-tasks";
 export { computeWorkspaceRefs } from "./wiring/workspace-refs";

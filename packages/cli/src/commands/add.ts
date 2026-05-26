@@ -15,11 +15,19 @@ import { applyDiff } from "../io/apply-diff";
 import { filterOptions, validatePresetAgainstPolicy } from "../io/policy";
 import { readProjectConfig } from "../io/reader";
 import { addDependencyCommand } from "./add-dependency";
+import { addRegistryCommand } from "./add-registry";
 
 export async function addCommand(
   type: string,
   userConfig?: UserConfig,
-  options: { dryRun?: boolean; to?: string; dev?: boolean; version?: string } = {},
+  options: {
+    dryRun?: boolean;
+    to?: string;
+    dev?: boolean;
+    version?: string;
+    registry?: string;
+    yes?: boolean;
+  } = {},
   extra?: string,
 ) {
   switch (type) {
@@ -40,10 +48,13 @@ export async function addCommand(
       }
       return addDependencyCommand(extra, options);
     default:
-      p.log.error(
-        `Unknown add type: ${pc.cyan(type)}. Use ${pc.cyan("app")}, ${pc.cyan("package")}, ${pc.cyan("integration")}, or ${pc.cyan("dependency")}.`,
-      );
-      process.exit(1);
+      // Not a reserved keyword → treat as a registry package name
+      // (shadcn-style `cts add <name>`).
+      return addRegistryCommand(type, {
+        registry: options.registry,
+        dryRun: options.dryRun,
+        yes: options.yes,
+      });
   }
 }
 

@@ -81,6 +81,12 @@
               "type": "string"
             }
           },
+          "lib": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "build": {
             "default": "none",
             "type": "string",

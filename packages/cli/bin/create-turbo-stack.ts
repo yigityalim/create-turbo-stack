@@ -63,8 +63,8 @@ async function main() {
   program
     .command("add <type> [name]")
     .description(
-      "Add app, package, integration, or dependency. " +
-        "For `dependency`, [name] is the npm package; pass --to=<workspace>.",
+      "Add app, package, integration, dependency — or a registry package by name " +
+        "(e.g. `add security`). For `dependency`, [name] is the npm package; pass --to=<workspace>.",
     )
     .option("--dry-run", "Print what would be done without writing")
     .option(
@@ -73,7 +73,12 @@ async function main() {
     )
     .option("--dev", "Add as a devDependency — for dependency")
     .option("--version <semver>", "Pin a specific version — for dependency (default: latest)")
-    .action((type, name, options) => addCommand(type, userConfig, options, name));
+    .option("--registry <url|path>", "Registry URL or local path — for registry packages")
+    .option("-y, --yes", "Skip the confirmation prompt — for registry packages")
+    .action((type, name, options) =>
+      // `--yes` may land on the global program option; merge it in.
+      addCommand(type, userConfig, { ...options, yes: options.yes || program.opts().yes }, name),
+    );
 
   program
     .command("remove <type> [name]")
