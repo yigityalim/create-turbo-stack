@@ -1,0 +1,17 @@
+{
+  "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
+  "name": "security",
+  "type": "registry:package",
+  "title": "Security",
+  "description": "Security headers (CSP, HSTS, X-Frame-Options, …) plus an origin/CSRF guard for Next.js and Web-API handlers.",
+  "dependencies": [],
+  "exports": [".", "./headers", "./middleware"],
+  "lib": ["ES2022", "DOM"],
+  "environment": "universal",
+  "categories": ["security"],
+  "files": [
+    { "path": "src/index.ts", "type": "registry:source", "target": "src/index.ts" },
+    { "path": "src/headers.ts", "type": "registry:source", "target": "src/headers.ts" },
+    { "path": "src/middleware.ts", "type": "registry:source", "target": "src/middleware.ts" }
+  ]
+}

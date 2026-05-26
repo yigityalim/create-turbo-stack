@@ -158,6 +158,12 @@
               "type": "string"
             },
             "additionalProperties": {}
+          },
+          "checksum": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
           }
         },
         "required": [

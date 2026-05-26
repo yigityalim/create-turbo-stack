@@ -22,6 +22,13 @@ export {
   type PresetMigration,
   registerPresetMigration,
 } from "./migrations";
+// Registry supply-chain integrity
+export {
+  canonicalizeItem,
+  computeChecksum,
+  signChecksum,
+  verifySignature,
+} from "./registry/integrity";
 // Template rendering
 export { buildTemplateContext, type TemplateContext } from "./render/template-context";
 export { renderTemplate } from "./render/template-engine";

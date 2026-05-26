@@ -88,6 +88,16 @@ export const PackageRegistryItemSchema = z.object({
   files: z.array(RegistryFileSchema).default([]),
   /** Arbitrary author metadata (version, links, …). */
   meta: z.record(z.string(), z.unknown()).optional(),
+  /**
+   * `sha256-<hex>` over the item's security-relevant fields, stamped by
+   * `build:registry`. `cts add` recomputes and compares — a mismatch aborts.
+   */
+  checksum: z.string().optional(),
+  /**
+   * Base64 Ed25519 signature over `checksum`. Verified by `cts add` only when
+   * the registry has a `publicKey` configured (private/paid registries).
+   */
+  signature: z.string().optional(),
 });
 export type PackageRegistryItem = z.infer<typeof PackageRegistryItemSchema>;
 

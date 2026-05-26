@@ -1,11 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import * as p from "@clack/prompts";
-import { getLinter } from "@create-turbo-stack/core";
+import { computeChecksum, getLinter, verifySignature } from "@create-turbo-stack/core";
 import type {
   FileTreeNode,
   Linter,
-  Package,
   PackageRegistryItem,
   RegistryConfigEntry,
 } from "@create-turbo-stack/schema";
@@ -60,6 +59,42 @@ function namespaceRequest(entry: RegistryConfigEntry, resource: string) {
   return { url: url.toString(), headers };
 }
 
+/** The configured Ed25519 public key for a namespace, if any. */
+function namespacePublicKey(opts: ResolveOptions, base: string): string | undefined {
+  if (!base.startsWith("@")) return undefined;
+  const entry = opts.registries?.[base];
+  return typeof entry === "object" ? entry.publicKey : undefined;
+}
+
+/**
+ * Supply-chain gate before any file is written. The checksum (always present on
+ * built items) catches tampering/corruption between build and install. The
+ * signature — verified only when the registry has a `publicKey` configured —
+ * is the out-of-band trust anchor that a self-embedded checksum cannot provide.
+ */
+async function verifyIntegrity(item: PackageRegistryItem, publicKey?: string): Promise<void> {
+  if (item.checksum) {
+    const actual = await computeChecksum(item);
+    if (actual !== item.checksum) {
+      throw new Error(
+        `checksum mismatch for "${item.name}" — content does not match its stamp ` +
+          `(expected ${item.checksum}, got ${actual}). Refusing to install.`,
+      );
+    }
+  }
+  if (publicKey) {
+    if (!item.signature) {
+      throw new Error(`"${item.name}" is unsigned but its registry requires a signature`);
+    }
+    if (!item.checksum) {
+      throw new Error(`"${item.name}" carries a signature but no checksum to verify against`);
+    }
+    if (!(await verifySignature(item.checksum, item.signature, publicKey))) {
+      throw new Error(`invalid signature for "${item.name}" — check the registry publicKey`);
+    }
+  }
+}
+
 /**
  * Load one item + the `base` to resolve ITS bare `registryDependencies`.
  * A ref can be a URL, `@ns/name`, or a bare name; a bare name resolves
@@ -111,24 +146,34 @@ async function loadItem(
   return { item: parse(await fs.readFile(file, "utf-8")), base: dir };
 }
 
+interface ResolvedItem {
+  item: PackageRegistryItem;
+  /** How this item was resolved — recorded for drift detection / reconcile. */
+  ref: string;
+}
+
 /**
  * Resolve the full install set: the item plus its `registryDependencies`,
  * recursively. Deps come before dependents (topological), deduped by name,
- * cycle-safe.
+ * cycle-safe, and each is integrity-verified as it loads.
  */
-async function resolveTree(rootRef: string, opts: ResolveOptions): Promise<PackageRegistryItem[]> {
-  const ordered: PackageRegistryItem[] = [];
+async function resolveTree(rootRef: string, opts: ResolveOptions): Promise<ResolvedItem[]> {
+  const ordered: ResolvedItem[] = [];
   const done = new Set<string>();
   const onStack = new Set<string>();
 
   async function visit(ref: string, base: string): Promise<void> {
     const { item, base: childBase } = await loadItem(ref, opts, base);
+    await verifyIntegrity(item, namespacePublicKey(opts, childBase));
     if (done.has(item.name) || onStack.has(item.name)) return;
     onStack.add(item.name);
     for (const dep of item.registryDependencies) await visit(dep, childBase);
     onStack.delete(item.name);
     done.add(item.name);
-    ordered.push(item);
+    ordered.push({
+      item,
+      ref: childBase.startsWith("@") ? `${childBase}/${item.name}` : item.name,
+    });
   }
 
   await visit(rootRef, "");
@@ -260,7 +305,7 @@ export async function addRegistryCommand(
     process.exit(1);
   }
 
-  let items: PackageRegistryItem[];
+  let items: ResolvedItem[];
   try {
     items = await resolveTree(name, { registry: options.registry, registries: options.registries });
   } catch (err) {
@@ -268,11 +313,11 @@ export async function addRegistryCommand(
     process.exit(1);
   }
 
-  const root = items[items.length - 1];
+  const rootItem = items[items.length - 1].item;
   const deps = items.slice(0, -1);
-  p.intro(`${pc.bgCyan(pc.black(` add ${root.name} `))} ${pc.dim(root.description)}`);
+  p.intro(`${pc.bgCyan(pc.black(` add ${rootItem.name} `))} ${pc.dim(rootItem.description)}`);
   if (deps.length > 0) {
-    p.log.info(`Registry dependencies: ${deps.map((d) => pc.cyan(d.name)).join(", ")}`);
+    p.log.info(`Registry dependencies: ${deps.map((d) => pc.cyan(d.item.name)).join(", ")}`);
   }
 
   const scope = config.basics.scope;
@@ -281,7 +326,7 @@ export async function addRegistryCommand(
   const npmDeps: string[] = [];
   const envVars: Record<string, string> = {};
 
-  for (const item of items) {
+  for (const { item } of items) {
     nodes.push(...materializeItem(item, scope, linter));
     npmDeps.push(...item.dependencies, ...item.devDependencies, ...implicitDevDeps(item));
     Object.assign(envVars, item.envVars);
@@ -323,7 +368,7 @@ export async function addRegistryCommand(
   }
 
   if (!options.yes) {
-    const ok = await p.confirm({ message: `Add ${pc.cyan(`${scope}/${root.name}`)}?` });
+    const ok = await p.confirm({ message: `Add ${pc.cyan(`${scope}/${rootItem.name}`)}?` });
     if (p.isCancel(ok) || !ok) {
       p.cancel("Aborted.");
       return;
@@ -332,31 +377,43 @@ export async function addRegistryCommand(
 
   await writeFiles(cwd, nodes);
 
-  // Record the packages in .turbo-stack.json so state stays accurate for
-  // remove / reconcile.
-  const known = new Set(config.packages.map((pkg) => pkg.name));
+  // Record packages in .turbo-stack.json (provenance + verified checksum) so
+  // state stays accurate for remove / reconcile and so a later re-add can
+  // detect drift — content that changed under a name already installed.
+  const existing = new Map(config.packages.map((pkg) => [pkg.name, pkg]));
   let stateChanged = false;
-  for (const item of items) {
-    if (!known.has(item.name)) {
-      const pkg: Package = {
-        name: item.name,
-        type: "library",
-        producesCSS: false,
-        exports: item.exports,
-      };
-      config.packages.push(pkg);
-      stateChanged = true;
+  for (const { item, ref } of items) {
+    const source = item.checksum ? { ref, checksum: item.checksum } : undefined;
+    const prior = existing.get(item.name);
+    if (prior) {
+      if (prior.registry && source && prior.registry.checksum !== source.checksum) {
+        p.log.warn(
+          `${pc.yellow(item.name)} changed since it was added ` +
+            `(${prior.registry.checksum.slice(0, 19)}… → ${source.checksum.slice(0, 19)}…).`,
+        );
+        prior.registry = source;
+        stateChanged = true;
+      }
+      continue;
     }
+    config.packages.push({
+      name: item.name,
+      type: "library",
+      producesCSS: false,
+      exports: item.exports,
+      ...(source ? { registry: source } : {}),
+    });
+    stateChanged = true;
   }
   if (stateChanged) await writeProjectConfig(cwd, config);
 
   // Usage notes — root item last so it's the final thing on screen.
-  for (const item of items) {
+  for (const { item } of items) {
     if (item.docs) p.note(item.docs, `${scope}/${item.name}`);
   }
 
   p.outro(
-    `${pc.green("✓")} Added ${pc.cyan(`${scope}/${root.name}`)}${
+    `${pc.green("✓")} Added ${pc.cyan(`${scope}/${rootItem.name}`)}${
       deps.length ? ` (+${deps.length} dep${deps.length > 1 ? "s" : ""})` : ""
     } — run ${pc.cyan(`${config.basics.packageManager} install`)}.`,
   );

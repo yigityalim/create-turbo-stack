@@ -24,22 +24,23 @@
   ],
   "files": [
     {
-      "path": "security/src/index.ts",
+      "path": "src/index.ts",
       "target": "src/index.ts",
       "type": "registry:source",
       "content": "export {\n  contentSecurityPolicy,\n  securityHeaders,\n  securityHeadersConfig,\n} from \"./headers\";\nexport { assertTrustedOrigin, isTrustedOrigin } from \"./middleware\";\n"
     },
     {
-      "path": "security/src/headers.ts",
+      "path": "src/headers.ts",
       "target": "src/headers.ts",
       "type": "registry:source",
       "content": "/**\n * Security response headers applied to every route. Wire these into your\n * Next.js `next.config.ts` via `securityHeadersConfig()`, or set them in a\n * middleware / edge function for other frameworks.\n */\nexport const securityHeaders = [\n  { key: \"X-Content-Type-Options\", value: \"nosniff\" },\n  { key: \"X-Frame-Options\", value: \"DENY\" },\n  { key: \"Referrer-Policy\", value: \"strict-origin-when-cross-origin\" },\n  {\n    key: \"Strict-Transport-Security\",\n    value: \"max-age=63072000; includeSubDomains; preload\",\n  },\n  { key: \"Permissions-Policy\", value: \"camera=(), microphone=(), geolocation=()\" },\n] as const;\n\n/**\n * Content-Security-Policy. This is a sensible strict default — tighten\n * `connect-src` / `img-src` / `script-src` to match the origins your app\n * actually talks to.\n */\nexport function contentSecurityPolicy(): string {\n  return [\n    \"default-src 'self'\",\n    \"script-src 'self' 'unsafe-inline'\",\n    \"style-src 'self' 'unsafe-inline'\",\n    \"img-src 'self' data: https:\",\n    \"font-src 'self'\",\n    \"connect-src 'self'\",\n    \"frame-ancestors 'none'\",\n    \"base-uri 'self'\",\n    \"form-action 'self'\",\n  ].join(\"; \");\n}\n\n/**\n * Next.js `headers()` entry: applies the security headers (plus CSP) to\n * every path.\n *\n * ```ts\n * // next.config.ts\n * import { securityHeadersConfig } from \"@scope/security\";\n * export default { async headers() { return securityHeadersConfig(); } };\n * ```\n */\nexport function securityHeadersConfig() {\n  return [\n    {\n      source: \"/:path*\",\n      headers: [\n        ...securityHeaders,\n        { key: \"Content-Security-Policy\", value: contentSecurityPolicy() },\n      ],\n    },\n  ];\n}\n"
     },
     {
-      "path": "security/src/middleware.ts",
+      "path": "src/middleware.ts",
       "target": "src/middleware.ts",
       "type": "registry:source",
       "content": "/**\n * Lightweight CSRF guard: reject cross-origin state-changing requests.\n * Same-origin (and any explicitly allowed origins) pass; everything else is\n * blocked on POST / PUT / PATCH / DELETE. Works with the Web `Request` /\n * `Response` API (Next.js middleware, route handlers, edge functions).\n */\nconst MUTATING_METHODS = new Set([\"POST\", \"PUT\", \"PATCH\", \"DELETE\"]);\n\nexport function isTrustedOrigin(request: Request, allowedOrigins: string[] = []): boolean {\n  if (!MUTATING_METHODS.has(request.method)) return true;\n\n  const origin = request.headers.get(\"origin\");\n  if (!origin) return false;\n\n  const host = request.headers.get(\"host\");\n  const allowList = [\n    host ? `https://${host}` : null,\n    host ? `http://${host}` : null,\n    ...allowedOrigins,\n  ].filter((o): o is string => Boolean(o));\n\n  return allowList.includes(origin);\n}\n\n/**\n * Returns a 403 `Response` for untrusted cross-origin mutations, or `null`\n * when the request is allowed — call it at the top of a handler/middleware:\n *\n * ```ts\n * const blocked = assertTrustedOrigin(request);\n * if (blocked) return blocked;\n * ```\n */\nexport function assertTrustedOrigin(\n  request: Request,\n  allowedOrigins: string[] = [],\n): Response | null {\n  if (isTrustedOrigin(request, allowedOrigins)) return null;\n  return new Response(\"Forbidden: untrusted origin\", { status: 403 });\n}\n"
     }
-  ]
+  ],
+  "checksum": "sha256-b8ee78c7b7d186160c2a662b74c3436cbbf6f68564d42977c06c299b443155a3"
 }

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
+  "name": "crypto",
+  "type": "registry:package",
+  "title": "Crypto",
+  "description": "Web Crypto helpers: SHA-256 / HMAC hashing and secure random tokens.",
+  "dependencies": [],
+  "exports": [".", "./hash", "./random"],
+  "lib": ["ES2022", "DOM"],
+  "environment": "universal",
+  "categories": ["security", "crypto"],
+  "files": [
+    { "path": "src/index.ts", "type": "registry:source", "target": "src/index.ts" },
+    { "path": "src/hash.ts", "type": "registry:source", "target": "src/hash.ts" },
+    { "path": "src/random.ts", "type": "registry:source", "target": "src/random.ts" }
+  ]
+}

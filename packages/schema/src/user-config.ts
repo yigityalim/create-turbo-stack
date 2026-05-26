@@ -132,6 +132,12 @@ export const RegistryConfigEntrySchema = z.union([
     url: z.string(),
     headers: z.record(z.string(), z.string()).optional(),
     params: z.record(z.string(), z.string()).optional(),
+    /**
+     * Base64 Ed25519 public key (SPKI). When set, `cts add` requires every
+     * item from this registry to carry a valid `signature` over its checksum —
+     * the out-of-band trust anchor that protects against a compromised host.
+     */
+    publicKey: z.string().optional(),
   }),
 ]);
 export type RegistryConfigEntry = z.infer<typeof RegistryConfigEntrySchema>;

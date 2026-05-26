@@ -15,7 +15,8 @@
         "crypto"
       ],
       "environment": "universal",
-      "build": "none"
+      "build": "none",
+      "checksum": "sha256-b4969baaf283b114f7f8d163c3c1e2c938f6437a7608855a2360240b73b8fab2"
     },
     {
       "name": "security",
@@ -28,7 +29,8 @@
         "security"
       ],
       "environment": "universal",
-      "build": "none"
+      "build": "none",
+      "checksum": "sha256-b8ee78c7b7d186160c2a662b74c3436cbbf6f68564d42977c06c299b443155a3"
     },
     {
       "name": "session",
@@ -44,7 +46,8 @@
         "auth"
       ],
       "environment": "universal",
-      "build": "none"
+      "build": "none",
+      "checksum": "sha256-ccc252d479052768a0e338f96f4f00915aa37604e1770d2a32d854d3b9d60163"
     }
   ]
 }
