@@ -1,0 +1,41 @@
+{
+  "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
+  "name": "crypto",
+  "type": "registry:package",
+  "title": "Crypto",
+  "description": "Web Crypto helpers: SHA-256 / HMAC hashing and secure random tokens.",
+  "dependencies": [],
+  "devDependencies": [],
+  "registryDependencies": [],
+  "envVars": {},
+  "exports": [
+    ".",
+    "./hash",
+    "./random"
+  ],
+  "lib": [
+    "ES2022",
+    "DOM"
+  ],
+  "build": "none",
+  "files": [
+    {
+      "path": "crypto/src/index.ts",
+      "target": "src/index.ts",
+      "type": "registry:source",
+      "content": "export { hmacSha256, sha256 } from \"./hash\";\nexport { randomId, randomToken } from \"./random\";\n"
+    },
+    {
+      "path": "crypto/src/hash.ts",
+      "target": "src/hash.ts",
+      "type": "registry:source",
+      "content": "/**\n * SHA-256 hash of a string, hex-encoded. Uses the Web Crypto API\n * (`crypto.subtle`), available in Node 20+, edge runtimes, and browsers.\n */\nexport async function sha256(text: string): Promise<string> {\n  const data = new TextEncoder().encode(text);\n  const digest = await crypto.subtle.digest(\"SHA-256\", data);\n  return toHex(new Uint8Array(digest));\n}\n\n/**\n * HMAC-SHA-256 of `message` with `secret`, hex-encoded. Use for signing\n * tokens, verifying webhooks, etc.\n */\nexport async function hmacSha256(secret: string, message: string): Promise<string> {\n  const key = await crypto.subtle.importKey(\n    \"raw\",\n    new TextEncoder().encode(secret),\n    { name: \"HMAC\", hash: \"SHA-256\" },\n    false,\n    [\"sign\"],\n  );\n  const signature = await crypto.subtle.sign(\"HMAC\", key, new TextEncoder().encode(message));\n  return toHex(new Uint8Array(signature));\n}\n\nfunction toHex(bytes: Uint8Array): string {\n  return Array.from(bytes)\n    .map((b) => b.toString(16).padStart(2, \"0\"))\n    .join(\"\");\n}\n"
+    },
+    {
+      "path": "crypto/src/random.ts",
+      "target": "src/random.ts",
+      "type": "registry:source",
+      "content": "/**\n * A cryptographically-secure random token, hex-encoded. Uses\n * `crypto.getRandomValues` (Web Crypto). Default 32 bytes → 64 hex chars.\n * Good for session ids, CSRF tokens, API keys.\n */\nexport function randomToken(bytes = 32): string {\n  const buf = crypto.getRandomValues(new Uint8Array(bytes));\n  return Array.from(buf)\n    .map((b) => b.toString(16).padStart(2, \"0\"))\n    .join(\"\");\n}\n\n/** A random URL-safe base64 string (no padding). */\nexport function randomId(bytes = 16): string {\n  const buf = crypto.getRandomValues(new Uint8Array(bytes));\n  return btoa(String.fromCharCode(...buf))\n    .replace(/\\+/g, \"-\")\n    .replace(/\\//g, \"_\")\n    .replace(/=+$/, \"\");\n}\n"
+    }
+  ]
+}

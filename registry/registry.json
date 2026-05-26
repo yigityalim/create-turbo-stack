@@ -21,6 +21,21 @@
           "target": "src/middleware.ts"
         }
       ]
+    },
+    {
+      "name": "crypto",
+      "type": "registry:package",
+      "title": "Crypto",
+      "description": "Web Crypto helpers: SHA-256 / HMAC hashing and secure random tokens.",
+      "dependencies": [],
+      "exports": [".", "./hash", "./random"],
+      "lib": ["ES2022", "DOM"],
+      "build": "none",
+      "files": [
+        { "path": "crypto/src/index.ts", "type": "registry:source", "target": "src/index.ts" },
+        { "path": "crypto/src/hash.ts", "type": "registry:source", "target": "src/hash.ts" },
+        { "path": "crypto/src/random.ts", "type": "registry:source", "target": "src/random.ts" }
+      ]
     }
   ]
 }
