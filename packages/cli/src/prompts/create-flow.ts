@@ -292,7 +292,6 @@ export async function runCreatePrompts(
             { value: "vite-react" as const, label: "Vite + React" },
             { value: "sveltekit" as const, label: "SvelteKit" },
             { value: "astro" as const, label: "Astro" },
-            { value: "remix" as const, label: "Remix" },
           ],
           policy,
           "appType",
@@ -305,7 +304,7 @@ export async function runCreatePrompts(
     nextPort += 1;
 
     let i18n = false;
-    if (["nextjs", "sveltekit", "astro", "remix"].includes(appType as string)) {
+    if (["nextjs", "sveltekit", "astro"].includes(appType as string)) {
       i18n = onCancel(
         await p.confirm({
           message: `Enable i18n for ${pc.cyan(appName)}?`,

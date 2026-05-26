@@ -50,11 +50,6 @@ export const templates: Record<string, Record<string, string>> = {
     "src/app/api/health/route.ts.eta": "export function GET() {\n  return Response.json({ status: \"ok\" });\n}\n",
     "src/app/layout.tsx.eta": "export default function RootLayout({ children }: { children: React.ReactNode }) {\n  return (\n    <html lang=\"en\">\n      <body>{children}</body>\n    </html>\n  );\n}\n",
   },
-  "app/remix": {
-    "app/root.tsx.eta": "import {\n  Links,\n  Meta,\n  Outlet,\n  Scripts,\n  ScrollRestoration,\n} from \"@remix-run/react\";\n\nexport default function App() {\n  return (\n    <html lang=\"en\">\n      <head>\n        <meta charSet=\"utf-8\" />\n        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n        <Meta />\n        <Links />\n      </head>\n      <body>\n        <Outlet />\n        <ScrollRestoration />\n        <Scripts />\n      </body>\n    </html>\n  );\n}\n",
-    "app/routes/_index.tsx.eta": "import type { MetaFunction } from \"@remix-run/node\";\n\nexport const meta: MetaFunction = () => {\n  return [\n    { title: \"<%= it.app.name %>\" },\n    { name: \"description\", content: \"<%= it.app.name %> app\" },\n  ];\n};\n\nexport default function Index() {\n  return (\n    <main>\n      <h1><%= it.app.name %></h1>\n    </main>\n  );\n}\n",
-    "vite.config.ts.eta": "import { vitePlugin as remix } from \"@remix-run/dev\";\nimport { defineConfig } from \"vite\";\n\nexport default defineConfig({\n  plugins: [remix()],\n});\n",
-  },
   "app/sveltekit": {
     "src/app.d.ts.eta": "// See https://svelte.dev/docs/kit/types#app.d.ts\n// for information about these interfaces\ndeclare global {\n  namespace App {\n    // interface Error {}\n    // interface Locals {}\n    // interface PageData {}\n    // interface PageState {}\n    // interface Platform {}\n  }\n}\n\nexport {};\n",
     "src/app.html.eta": "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n    <title><%= it.app.name %></title>\n    %sveltekit.head%\n  </head>\n  <body>\n    <div id=\"app\">\n      %sveltekit.body%\n    </div>\n  </body>\n</html>\n",

@@ -105,7 +105,7 @@ async function addApp(userConfig?: UserConfig, options: { dryRun?: boolean } = {
   if (p.isCancel(port)) return process.exit(0);
 
   let i18n = false;
-  if (["nextjs", "sveltekit", "astro", "remix"].includes(appType)) {
+  if (["nextjs", "sveltekit", "astro"].includes(appType)) {
     i18n = ((await p.confirm({
       message: "Enable i18n?",
       initialValue: false,

@@ -191,7 +191,6 @@
                   "vite-vue",
                   "sveltekit",
                   "astro",
-                  "remix",
                   "tauri"
                 ]
               }
@@ -351,7 +350,6 @@
                   "vite-vue",
                   "sveltekit",
                   "astro",
-                  "remix",
                   "tauri"
                 ]
               }

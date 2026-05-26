@@ -73,7 +73,7 @@ export const ValidatedPresetSchema = PresetSchema.superRefine((data, ctx) => {
   }
 
   for (const [i, app] of data.apps.entries()) {
-    if (app.i18n && !["nextjs", "sveltekit", "astro", "remix"].includes(app.type)) {
+    if (app.i18n && !["nextjs", "sveltekit", "astro"].includes(app.type)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: `i18n is not supported for app type '${app.type}'`,

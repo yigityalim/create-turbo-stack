@@ -32,7 +32,6 @@ export function registerTools(server: McpServer, ctx: McpContext): void {
           "vite-vue",
           "sveltekit",
           "astro",
-          "remix",
           "expo",
           "tauri",
         ])

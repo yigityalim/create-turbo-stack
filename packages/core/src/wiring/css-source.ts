@@ -5,14 +5,7 @@ export interface CssSourceMap {
   [appName: string]: string[];
 }
 
-const CSS_CAPABLE_APPS = new Set([
-  "nextjs",
-  "vite-react",
-  "vite-vue",
-  "sveltekit",
-  "astro",
-  "remix",
-]);
+const CSS_CAPABLE_APPS = new Set(["nextjs", "vite-react", "vite-vue", "sveltekit", "astro"]);
 
 /**
  * Compute @source directives for each app's globals.css.

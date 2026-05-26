@@ -51,13 +51,6 @@ export const VERSIONS = {
   astrojsReact: "^4.0.0",
   astrojsCheck: "^0.9.0",
 
-  // Remix
-  remixRunNode: "^2.0.0",
-  remixRunReact: "^2.0.0",
-  remixRunServe: "^2.0.0",
-  remixRunDev: "^2.0.0",
-  isbot: "^5.0.0",
-
   // Hono
   hono: "^4.0.0",
   honoNodeServer: "^1.0.0",

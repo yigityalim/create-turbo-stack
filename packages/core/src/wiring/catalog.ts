@@ -83,18 +83,6 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
       add("@types/react", VERSIONS.typesReact);
       add("@types/react-dom", VERSIONS.typesReactDom);
     }
-    if (app.type === "remix") {
-      add("@remix-run/node", VERSIONS.remixRunNode);
-      add("@remix-run/react", VERSIONS.remixRunReact);
-      add("@remix-run/serve", VERSIONS.remixRunServe);
-      add("@remix-run/dev", VERSIONS.remixRunDev);
-      add("react", VERSIONS.react);
-      add("react-dom", VERSIONS.reactDom);
-      add("isbot", VERSIONS.isbot);
-      add("@types/react", VERSIONS.typesReact);
-      add("@types/react-dom", VERSIONS.typesReactDom);
-      add("vite", VERSIONS.vite);
-    }
     if (app.i18n) {
       add("next-intl", VERSIONS.nextIntl);
     }

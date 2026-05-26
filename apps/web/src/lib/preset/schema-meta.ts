@@ -295,10 +295,6 @@ const LABELS: Record<
     label: "Astro",
     description: "Content-driven web framework",
   },
-  "appType.remix": {
-    label: "Remix",
-    description: "Full-stack React framework",
-  },
   "appType.tauri": {
     label: "Tauri",
     description: "Native desktop apps with web tech",

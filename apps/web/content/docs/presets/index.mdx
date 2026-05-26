@@ -82,6 +82,6 @@ Presets must conform to the [preset JSON schema](https://create-turbo-stack.dev/
 Presets are validated with [Zod](https://zod.dev). Invalid combinations are rejected:
 
 - `supabase-auth` requires `database.strategy: "supabase"`
-- `i18n` only works with web-facing apps (Next.js, SvelteKit, Astro, Remix)
+- `i18n` only works with web-facing apps (Next.js, SvelteKit, Astro)
 - App names and ports must be unique
 - `consumes` must reference existing packages

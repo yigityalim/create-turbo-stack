@@ -25,7 +25,7 @@ export function computeTurboConfig(preset: Preset, globalEnv: string[] = []): Tu
   }
   if (
     preset.apps.some((a) =>
-      ["vite-react", "vite-vue", "astro", "sveltekit", "remix", "hono-standalone"].includes(a.type),
+      ["vite-react", "vite-vue", "astro", "sveltekit", "hono-standalone"].includes(a.type),
     )
   ) {
     buildOutputs.push("dist/**");

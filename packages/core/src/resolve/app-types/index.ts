@@ -8,7 +8,6 @@ import { astroAppType } from "./astro";
 import { honoStandaloneAppType } from "./hono-standalone";
 import { nextjsApiOnlyAppType, nextjsAppType } from "./nextjs";
 import { registerAppType } from "./registry";
-import { remixAppType } from "./remix";
 import { sveltekitAppType } from "./sveltekit";
 import { viteReactAppType } from "./vite-react";
 
@@ -19,7 +18,6 @@ const BUILT_IN_APP_TYPES = [
   viteReactAppType,
   sveltekitAppType,
   astroAppType,
-  remixAppType,
 ];
 
 for (const def of BUILT_IN_APP_TYPES) {

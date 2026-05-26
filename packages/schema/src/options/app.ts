@@ -9,7 +9,6 @@ export const AppTypeSchema = z.enum([
   "vite-vue",
   "sveltekit",
   "astro",
-  "remix",
   "tauri",
 ]);
 export type AppType = z.infer<typeof AppTypeSchema>;

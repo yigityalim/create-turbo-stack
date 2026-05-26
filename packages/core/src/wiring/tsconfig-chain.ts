@@ -29,7 +29,6 @@ function mapAppTypeToTsconfig(type: string): string {
     case "nextjs-api-only":
       return "nextjs.json";
     case "vite-react":
-    case "remix":
     case "expo":
       return "react.json";
     case "sveltekit":
