@@ -210,16 +210,25 @@ behind an npm dep. The user owns and implements on top. The real value-add:
 CTS ships batteries, the registry community-extends them.
 
 - [x] `PackageRegistryItemSchema`: name, deps/devDeps, registryDependencies,
-      envVars, exports, lib, `build` (none|tsup), files[{path,target,content}]
+      envVars, exports, lib, `environment`, `build` (none|tsup), `categories`,
+      `docs`, files[{path,target,content}]
 - [x] `registry/` authoring dir + `build:registry` → `apps/web/public/r/*.json`
-      + `/r/registry.json` index (mirrors the `.eta → templates-map` build)
+      + `/r/registry.json` index (mirrors the `.eta → templates-map` build).
+      `include` composes per-package files → one item per file, scales to 100+
 - [x] `cts add <name>`: resolve manifest (`--registry <url|path>`), materialize
       `packages/<name>` (deps → catalog, env → .env.example, files → disk),
       `--yes` for CI; write preview
-- [x] Reference package: `registry/security` (headers + origin/CSRF guard)
+- [x] `registryDependencies`: recursive, topological, cycle-safe tree resolve;
+      sibling deps wired `workspace:*` + `@scope/` import rewrite
+- [x] `.turbo-stack.json` state: installed packages recorded for remove/reconcile
+- [x] Namespaces + auth: `registries` in `create-turbo-stack.json` (`@ns` → URL
+      template / `{url,headers,params}`); `${VAR}` env-expanded; 401/403 surfaced
+- [x] Reference packages: `registry/{security,crypto,session}`
+- [x] Web browse page (`/registry`) with category tags
 - [x] Supply-chain: write preview before applying
 - [ ] Author more packages (cache, …) and host the registry publicly
-- [ ] Remote registry: checksum/lockfile + signature; namespace support
+- [ ] Remote registry: checksum/lockfile + signature
+- [ ] `apps/store`: gated server (Bearer/license → JSON or 401) for paid registries
 - [ ] Use `cts add` packages in a demo app (prove real usage)
 
 ---

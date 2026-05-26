@@ -13,6 +13,13 @@
     "homepage": {
       "type": "string"
     },
+    "include": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "items": {
       "default": [],
       "type": "array",
@@ -87,6 +94,14 @@
               "type": "string"
             }
           },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "node",
+              "browser",
+              "universal"
+            ]
+          },
           "build": {
             "default": "none",
             "type": "string",
@@ -94,6 +109,16 @@
               "none",
               "tsup"
             ]
+          },
+          "categories": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "docs": {
+            "type": "string"
           },
           "files": {
             "default": [],
@@ -145,6 +170,7 @@
           "envVars",
           "exports",
           "build",
+          "categories",
           "files"
         ],
         "additionalProperties": false
@@ -153,6 +179,7 @@
   },
   "required": [
     "name",
+    "include",
     "items"
   ],
   "additionalProperties": false

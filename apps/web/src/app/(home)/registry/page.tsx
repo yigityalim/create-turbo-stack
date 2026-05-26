@@ -14,6 +14,7 @@ type RegistryItem = {
   description: string;
   build: "none" | "tsup";
   dependencies: string[];
+  categories?: string[];
 };
 
 type Registry = { name: string; items: RegistryItem[] };
@@ -60,6 +61,18 @@ export default async function RegistryPage() {
             <p className="mt-1 text-sm text-fd-muted-foreground">
               {item.description}
             </p>
+            {item.categories && item.categories.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {item.categories.map((category) => (
+                  <span
+                    key={category}
+                    className="rounded-full border border-fd-border px-2 py-0.5 font-mono text-[10px] text-fd-muted-foreground"
+                  >
+                    {category}
+                  </span>
+                ))}
+              </div>
+            )}
             <code className="mt-3 block overflow-x-auto rounded bg-fd-muted px-3 py-2 font-mono text-xs text-fd-foreground">
               npx create-turbo-stack add {item.name}
             </code>

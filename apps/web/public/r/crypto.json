@@ -17,7 +17,12 @@
     "ES2022",
     "DOM"
   ],
+  "environment": "universal",
   "build": "none",
+  "categories": [
+    "security",
+    "crypto"
+  ],
   "files": [
     {
       "path": "crypto/src/index.ts",

@@ -135,6 +135,11 @@ async function resolveTree(rootRef: string, opts: ResolveOptions): Promise<Packa
   return ordered;
 }
 
+/** Extra npm devDeps an item needs implicitly from its `environment` hint. */
+function implicitDevDeps(item: PackageRegistryItem): string[] {
+  return item.environment === "node" ? ["@types/node"] : [];
+}
+
 function exportsMap(item: PackageRegistryItem): Record<string, unknown> {
   const map: Record<string, unknown> = {};
   for (const exp of item.exports) {
@@ -170,6 +175,7 @@ function materializeItem(
     ...(item.build === "tsup" ? { tsup: "catalog:" } : {}),
   };
   for (const dep of item.devDependencies) devDependencies[parseDep(dep)[0]] = "catalog:";
+  for (const dep of implicitDevDeps(item)) devDependencies[parseDep(dep)[0]] = "catalog:";
 
   const pkgJson = {
     name: `${scope}/${item.name}`,
@@ -200,6 +206,7 @@ function materializeItem(
           outDir: "./dist",
           rootDir: "./src",
           ...(item.lib ? { lib: item.lib } : {}),
+          ...(item.environment === "node" ? { types: ["node"] } : {}),
         },
         include: ["src/**/*"],
         exclude: ["node_modules", "dist"],
@@ -276,7 +283,7 @@ export async function addRegistryCommand(
 
   for (const item of items) {
     nodes.push(...materializeItem(item, scope, linter));
-    npmDeps.push(...item.dependencies, ...item.devDependencies);
+    npmDeps.push(...item.dependencies, ...item.devDependencies, ...implicitDevDeps(item));
     Object.assign(envVars, item.envVars);
   }
 
@@ -342,6 +349,11 @@ export async function addRegistryCommand(
     }
   }
   if (stateChanged) await writeProjectConfig(cwd, config);
+
+  // Usage notes — root item last so it's the final thing on screen.
+  for (const item of items) {
+    if (item.docs) p.note(item.docs, `${scope}/${item.name}`);
+  }
 
   p.outro(
     `${pc.green("✓")} Added ${pc.cyan(`${scope}/${root.name}`)}${

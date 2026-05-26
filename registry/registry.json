@@ -2,6 +2,7 @@
   "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
   "name": "create-turbo-stack",
   "homepage": "https://create-turbo-stack.dev",
+  "include": ["session/registry-item.json"],
   "items": [
     {
       "name": "security",
@@ -11,7 +12,8 @@
       "dependencies": [],
       "exports": [".", "./headers", "./middleware"],
       "lib": ["ES2022", "DOM"],
-      "build": "none",
+      "environment": "universal",
+      "categories": ["security"],
       "files": [
         { "path": "security/src/index.ts", "type": "registry:source", "target": "src/index.ts" },
         { "path": "security/src/headers.ts", "type": "registry:source", "target": "src/headers.ts" },
@@ -30,23 +32,12 @@
       "dependencies": [],
       "exports": [".", "./hash", "./random"],
       "lib": ["ES2022", "DOM"],
-      "build": "none",
+      "environment": "universal",
+      "categories": ["security", "crypto"],
       "files": [
         { "path": "crypto/src/index.ts", "type": "registry:source", "target": "src/index.ts" },
         { "path": "crypto/src/hash.ts", "type": "registry:source", "target": "src/hash.ts" },
         { "path": "crypto/src/random.ts", "type": "registry:source", "target": "src/random.ts" }
-      ]
-    },
-    {
-      "name": "session",
-      "type": "registry:package",
-      "title": "Session",
-      "description": "Secure session id helpers — composes the crypto package.",
-      "registryDependencies": ["crypto"],
-      "exports": ["."],
-      "lib": ["ES2022", "DOM"],
-      "files": [
-        { "path": "session/src/index.ts", "type": "registry:source", "target": "src/index.ts" }
       ]
     }
   ]

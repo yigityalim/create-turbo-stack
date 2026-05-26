@@ -4,21 +4,30 @@
   "homepage": "https://create-turbo-stack.dev",
   "items": [
     {
-      "name": "security",
-      "type": "registry:package",
-      "title": "Security",
-      "description": "Security headers (CSP, HSTS, X-Frame-Options, …) plus an origin/CSRF guard for Next.js and Web-API handlers.",
-      "dependencies": [],
-      "registryDependencies": [],
-      "build": "none"
-    },
-    {
       "name": "crypto",
       "type": "registry:package",
       "title": "Crypto",
       "description": "Web Crypto helpers: SHA-256 / HMAC hashing and secure random tokens.",
       "dependencies": [],
       "registryDependencies": [],
+      "categories": [
+        "security",
+        "crypto"
+      ],
+      "environment": "universal",
+      "build": "none"
+    },
+    {
+      "name": "security",
+      "type": "registry:package",
+      "title": "Security",
+      "description": "Security headers (CSP, HSTS, X-Frame-Options, …) plus an origin/CSRF guard for Next.js and Web-API handlers.",
+      "dependencies": [],
+      "registryDependencies": [],
+      "categories": [
+        "security"
+      ],
+      "environment": "universal",
       "build": "none"
     },
     {
@@ -30,6 +39,11 @@
       "registryDependencies": [
         "crypto"
       ],
+      "categories": [
+        "security",
+        "auth"
+      ],
+      "environment": "universal",
       "build": "none"
     }
   ]

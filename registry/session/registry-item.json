@@ -1,0 +1,14 @@
+{
+  "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
+  "name": "session",
+  "type": "registry:package",
+  "title": "Session",
+  "description": "Secure session id helpers — composes the crypto package.",
+  "registryDependencies": ["crypto"],
+  "exports": ["."],
+  "lib": ["ES2022", "DOM"],
+  "environment": "universal",
+  "categories": ["security", "auth"],
+  "docs": "Store `hashSessionId(id)`, never the raw id. Compare incoming ids by\nre-hashing and matching the stored hash, so a leaked database never\nexposes usable session tokens.",
+  "files": [{ "path": "src/index.ts", "type": "registry:source", "target": "src/index.ts" }]
+}

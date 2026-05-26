@@ -17,7 +17,11 @@
     "ES2022",
     "DOM"
   ],
+  "environment": "universal",
   "build": "none",
+  "categories": [
+    "security"
+  ],
   "files": [
     {
       "path": "security/src/index.ts",

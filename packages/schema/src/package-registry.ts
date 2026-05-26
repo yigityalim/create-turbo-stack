@@ -43,6 +43,15 @@ export const PackageBuildModeSchema = z.enum([
 ]);
 export type PackageBuildMode = z.infer<typeof PackageBuildModeSchema>;
 
+/**
+ * Runtime the package targets. A hint that tunes the generated tsconfig:
+ * `node` adds `@types/node` + `types: ["node"]`; `browser` / `universal`
+ * leave types to `lib`. An explicit `lib` always wins. Optional — omit it
+ * for plain ECMAScript with no platform globals.
+ */
+export const PackageEnvironmentSchema = z.enum(["node", "browser", "universal"]);
+export type PackageEnvironment = z.infer<typeof PackageEnvironmentSchema>;
+
 export const PackageRegistryItemSchema = z.object({
   $schema: z.string().optional(),
   name: z
@@ -68,10 +77,16 @@ export const PackageRegistryItemSchema = z.object({
    * uses Web APIs (fetch/Request/Response). Defaults to the tsconfig base.
    */
   lib: z.array(z.string()).optional(),
+  /** Target runtime; tunes generated tsconfig (`node` → @types/node). */
+  environment: PackageEnvironmentSchema.optional(),
   /** Internal (source export) by default; "tsup" for publishable packages. */
   build: PackageBuildModeSchema.default("none"),
+  /** Browse-page grouping labels, e.g. ["security", "auth"]. */
+  categories: z.array(z.string()).default([]),
+  /** Markdown usage note printed after `cts add` and shown on the browse page. */
+  docs: z.string().optional(),
   files: z.array(RegistryFileSchema).default([]),
-  /** Arbitrary author metadata (category, version, …). */
+  /** Arbitrary author metadata (version, links, …). */
   meta: z.record(z.string(), z.unknown()).optional(),
 });
 export type PackageRegistryItem = z.infer<typeof PackageRegistryItemSchema>;
@@ -81,6 +96,12 @@ export const PackageRegistrySchema = z.object({
   $schema: z.string().optional(),
   name: z.string().min(1),
   homepage: z.string().optional(),
+  /**
+   * Paths (relative to this file) to other registry or single-item JSON files
+   * whose items are merged in at build time. Lets a registry with 100+
+   * packages keep one item per file instead of one giant `items` array.
+   */
+  include: z.array(z.string()).default([]),
   items: z.array(PackageRegistryItemSchema).default([]),
 });
 export type PackageRegistry = z.infer<typeof PackageRegistrySchema>;
