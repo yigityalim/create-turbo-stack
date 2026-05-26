@@ -30,24 +30,15 @@ describe("detectCss", () => {
     expect(r.value.framework).toBe("tailwind4");
   });
 
-  // Tailwind v3 detection (tailwind.config present)
+  // Any Tailwind install maps to tailwind4 (the only Tailwind the schema models).
 
-  it("detects tailwind3 when tailwind.config.ts exists in app", async () => {
+  it("maps a v3-style tailwind install (tailwind.config present) to tailwind4", async () => {
     tmp = await createFixture({
       "apps/web/package.json": { dependencies: { tailwindcss: "^3.4.0" } },
       "apps/web/tailwind.config.ts": "export default {}",
     });
     const r = await detectCss(tmp);
-    expect(r.value.framework).toBe("tailwind3");
-  });
-
-  it("detects tailwind3 when tailwind.config.js exists in app", async () => {
-    tmp = await createFixture({
-      "apps/web/package.json": { dependencies: { tailwindcss: "^3.4.0" } },
-      "apps/web/tailwind.config.js": "module.exports = {}",
-    });
-    const r = await detectCss(tmp);
-    expect(r.value.framework).toBe("tailwind3");
+    expect(r.value.framework).toBe("tailwind4");
   });
 
   // shadcn UI detection via components.json

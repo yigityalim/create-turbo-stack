@@ -1,5 +1,7 @@
+<% if (it.css.framework === "tailwind4") { -%>
 export default {
   plugins: {
     "@tailwindcss/postcss": {},
   },
 };
+<% } -%>

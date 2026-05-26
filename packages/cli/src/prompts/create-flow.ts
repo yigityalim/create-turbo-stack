@@ -204,7 +204,6 @@ export async function runCreatePrompts(
       options: filtered(
         [
           { value: "tailwind4", label: "Tailwind CSS 4", hint: "recommended" },
-          { value: "tailwind3", label: "Tailwind CSS 3" },
           { value: "vanilla", label: "Vanilla CSS" },
           { value: "css-modules", label: "CSS Modules" },
         ] as const,
@@ -216,7 +215,7 @@ export async function runCreatePrompts(
   );
 
   let uiLib: Preset["css"]["ui"] = defaults?.css?.ui ?? "none";
-  if (cssFramework === "tailwind4" || cssFramework === "tailwind3") {
+  if (cssFramework === "tailwind4") {
     uiLib = onCancel(
       await p.select({
         message: "UI library",

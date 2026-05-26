@@ -23,6 +23,33 @@ const HONO_APP: App = {
   consumes: [],
 };
 
+// CSS framework honesty: postcss.config + the tailwind import only exist
+// for tailwind4; vanilla/css-modules must not reference uninstalled tooling.
+
+describe("resolveAppFiles — css framework", () => {
+  const nodesFor = (framework: "tailwind4" | "vanilla" | "css-modules") => {
+    const p = makePreset({
+      apps: [NEXTJS_APP],
+      css: { framework, ui: "none", styling: "css-variables" },
+    });
+    return resolveAppFiles(p, NEXTJS_APP);
+  };
+  const content = (framework: "tailwind4" | "vanilla" | "css-modules", path: string) =>
+    nodesFor(framework).find((n) => n.path === path)?.content ?? null;
+
+  it("tailwind4 emits postcss.config.mjs and imports tailwind in globals.css", () => {
+    expect(content("tailwind4", "apps/web/postcss.config.mjs")).toContain("@tailwindcss/postcss");
+    expect(content("tailwind4", "apps/web/src/app/globals.css")).toContain('@import "tailwindcss"');
+  });
+
+  for (const fw of ["vanilla", "css-modules"] as const) {
+    it(`${fw} emits no postcss.config and no tailwind import`, () => {
+      expect(content(fw, "apps/web/postcss.config.mjs")).toBeNull();
+      expect(content(fw, "apps/web/src/app/globals.css")).not.toContain("tailwindcss");
+    });
+  }
+});
+
 // Next.js app
 
 describe("resolveAppFiles — nextjs", () => {

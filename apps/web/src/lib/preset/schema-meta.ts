@@ -186,10 +186,6 @@ const LABELS: Record<
     label: "Tailwind CSS 4",
     description: "Utility-first CSS, latest version",
   },
-  "css.tailwind3": {
-    label: "Tailwind CSS 3",
-    description: "Utility-first CSS, stable",
-  },
   "css.vanilla": {
     label: "Vanilla CSS",
     description: "Plain CSS, no framework",

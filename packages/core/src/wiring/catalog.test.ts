@@ -70,17 +70,6 @@ describe("computeCatalog — CSS", () => {
     expect(n).not.toContain("autoprefixer");
   });
 
-  it("tailwind3 → tailwindcss + postcss + autoprefixer", () => {
-    const p = makePreset({
-      css: { framework: "tailwind3", ui: "none", styling: "css-variables" },
-    });
-    const n = names(p);
-    expect(n).toContain("tailwindcss");
-    expect(n).toContain("postcss");
-    expect(n).toContain("autoprefixer");
-    expect(n).not.toContain("@tailwindcss/postcss");
-  });
-
   it("shadcn ui → tw-animate-css added", () => {
     const p = makePreset({
       css: { framework: "tailwind4", ui: "shadcn", styling: "css-variables" },

@@ -255,7 +255,6 @@
           "type": "string",
           "enum": [
             "tailwind4",
-            "tailwind3",
             "vanilla",
             "css-modules"
           ]

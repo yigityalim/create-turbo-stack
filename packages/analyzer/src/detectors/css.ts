@@ -7,9 +7,9 @@ import { fileExists } from "../utils/file-scanner";
 export async function detectCss(root: string): Promise<Detection<Css>> {
   const rootPkg = await readPackageJson(root);
 
-  // Check for Tailwind CSS
+  // Check for Tailwind CSS. The schema only models Tailwind 4, so any
+  // Tailwind install maps to "tailwind4".
   let hasTailwind = false;
-  let tailwindVersion: "tailwind4" | "tailwind3" = "tailwind4";
 
   // Check apps for tailwind
   const { listDirs } = await import("../utils/file-scanner");
@@ -19,13 +19,6 @@ export async function detectCss(root: string): Promise<Detection<Css>> {
     const appPkg = await readPackageJson(path.join(root, "apps", name));
     if (appPkg && (hasDep(appPkg, "tailwindcss") || hasDep(appPkg, "@tailwindcss/postcss"))) {
       hasTailwind = true;
-      // Check if tailwind.config exists → v3
-      if (
-        (await fileExists(path.join(root, "apps", name, "tailwind.config.ts"))) ||
-        (await fileExists(path.join(root, "apps", name, "tailwind.config.js")))
-      ) {
-        tailwindVersion = "tailwind3";
-      }
       break;
     }
   }
@@ -58,8 +51,8 @@ export async function detectCss(root: string): Promise<Detection<Css>> {
   }
 
   return {
-    value: { framework: tailwindVersion, ui, styling: "css-variables" },
+    value: { framework: "tailwind4", ui, styling: "css-variables" },
     confidence: "certain",
-    reason: `Tailwind CSS detected (${tailwindVersion})${ui !== "none" ? ` with ${ui}` : ""}`,
+    reason: `Tailwind CSS detected${ui !== "none" ? ` with ${ui}` : ""}`,
   };
 }

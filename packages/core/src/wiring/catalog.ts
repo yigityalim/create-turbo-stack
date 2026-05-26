@@ -33,11 +33,8 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
   if (preset.css.framework === "tailwind4") {
     add("tailwindcss", VERSIONS.tailwind4);
     add("@tailwindcss/postcss", VERSIONS.tailwindPostcss);
-  } else if (preset.css.framework === "tailwind3") {
-    add("tailwindcss", VERSIONS.tailwind3);
-    add("postcss", VERSIONS.postcss);
-    add("autoprefixer", VERSIONS.autoprefixer);
   }
+  // vanilla / css-modules pull no CSS tooling — plain stylesheets only.
 
   if (preset.css.ui === "shadcn") {
     add("tw-animate-css", VERSIONS.twAnimateCss);
