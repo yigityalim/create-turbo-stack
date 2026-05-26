@@ -113,8 +113,8 @@ bun run build:registry     # inlines files, stamps a sha256 checksum per item
 Every built item gets a `checksum` over its code + dependency graph. `cts add`
 recomputes it after download and **refuses to install on a mismatch** — so
 authoring carelessly can't ship corrupted content. Private/paid registries
-(see `apps/store`) additionally **sign** the checksum; consumers verify with a
-configured public key.
+additionally **sign** the checksum (Ed25519); consumers verify with a public
+key configured per registry in `create-turbo-stack.json`.
 
 To sanity-check your package actually compiles in a real project:
 
@@ -153,4 +153,6 @@ bun install && bun run type-check
 - `security/` — Web-API (`lib: DOM`), multiple exports, no deps.
 - `crypto/` — Web Crypto helpers, multiple exports.
 - `session/` — composes `crypto` via `registryDependencies` + `@scope/` import.
-- `apps/store/registry/feature-flags/` — `environment: "node"`, signed/private.
+
+For a `node`-environment package and the private/signed flow, the same manifest
+shape applies — set `"environment": "node"` and serve it from a gated registry.

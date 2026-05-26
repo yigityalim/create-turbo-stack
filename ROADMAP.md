@@ -225,10 +225,17 @@ CTS ships batteries, the registry community-extends them.
       template / `{url,headers,params}`); `${VAR}` env-expanded; 401/403 surfaced
 - [x] Reference packages: `registry/{security,crypto,session}`
 - [x] Web browse page (`/registry`) with category tags
-- [x] Supply-chain: write preview before applying
+- [x] Supply-chain: write preview; SHA-256 `checksum` per item (recomputed on
+      add, aborts on mismatch); Ed25519 `signature` verified against a per-
+      registry `publicKey`; verified checksum pinned in `.turbo-stack.json`
+      (drift detection on re-add)
+- [x] Gated/signed private registry server — built and validated (Next 16:
+      `GET /r/[name]`, Bearer/entitlement auth → 401/403, serves signed items).
+      Lives in a **separate private repo** so paid package sources stay closed;
+      it imports the published `@create-turbo-stack/core` for signing/verify.
+      This public repo keeps only the open protocol + free packages.
 - [ ] Author more packages (cache, …) and host the registry publicly
-- [ ] Remote registry: checksum/lockfile + signature
-- [ ] `apps/store`: gated server (Bearer/license → JSON or 401) for paid registries
+- [ ] `build: "tsup"` + type-check `dependsOn: ^build` (compiled cross-pkg path)
 - [ ] Use `cts add` packages in a demo app (prove real usage)
 
 ---

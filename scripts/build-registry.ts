@@ -13,8 +13,9 @@
  * Includes resolve recursively and merge (name conflicts error out).
  *
  * `cts add <name>` consumes the per-item JSON and re-verifies the checksum.
- * Same producer/consumer split as `.eta → templates-map`. Reused by the store
- * server (`apps/store`) to build its private, signed registry.
+ * Same producer/consumer split as `.eta → templates-map`. `buildRegistry` is
+ * exported so a private registry server can reuse it (via the published
+ * `@create-turbo-stack/core`) to build its own signed registry.
  *
  * Run: `bun run build:registry`.
  */
