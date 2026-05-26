@@ -20,6 +20,17 @@
       "dependencies": [],
       "registryDependencies": [],
       "build": "none"
+    },
+    {
+      "name": "session",
+      "type": "registry:package",
+      "title": "Session",
+      "description": "Secure session id helpers — composes the crypto package.",
+      "dependencies": [],
+      "registryDependencies": [
+        "crypto"
+      ],
+      "build": "none"
     }
   ]
 }

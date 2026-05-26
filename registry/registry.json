@@ -36,6 +36,18 @@
         { "path": "crypto/src/hash.ts", "type": "registry:source", "target": "src/hash.ts" },
         { "path": "crypto/src/random.ts", "type": "registry:source", "target": "src/random.ts" }
       ]
+    },
+    {
+      "name": "session",
+      "type": "registry:package",
+      "title": "Session",
+      "description": "Secure session id helpers — composes the crypto package.",
+      "registryDependencies": ["crypto"],
+      "exports": ["."],
+      "lib": ["ES2022", "DOM"],
+      "files": [
+        { "path": "session/src/index.ts", "type": "registry:source", "target": "src/index.ts" }
+      ]
     }
   ]
 }

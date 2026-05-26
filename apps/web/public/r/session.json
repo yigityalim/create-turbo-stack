@@ -1,0 +1,29 @@
+{
+  "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
+  "name": "session",
+  "type": "registry:package",
+  "title": "Session",
+  "description": "Secure session id helpers — composes the crypto package.",
+  "dependencies": [],
+  "devDependencies": [],
+  "registryDependencies": [
+    "crypto"
+  ],
+  "envVars": {},
+  "exports": [
+    "."
+  ],
+  "lib": [
+    "ES2022",
+    "DOM"
+  ],
+  "build": "none",
+  "files": [
+    {
+      "path": "session/src/index.ts",
+      "target": "src/index.ts",
+      "type": "registry:source",
+      "content": "import { randomToken, sha256 } from \"@scope/crypto\";\n\n/** A new opaque, secure session id (256 bits of entropy, hex). */\nexport function createSessionId(): string {\n  return randomToken(32);\n}\n\n/**\n * Hash a session id for storage — store the hash, compare against it, so a\n * leaked database never exposes usable session tokens.\n */\nexport function hashSessionId(id: string): Promise<string> {\n  return sha256(id);\n}\n"
+    }
+  ]
+}
