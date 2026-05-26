@@ -209,16 +209,18 @@ existing monorepo — code is copied (and shown via diff preview), not hidden
 behind an npm dep. The user owns and implements on top. The real value-add:
 CTS ships batteries, the registry community-extends them.
 
-- [ ] `PackageManifestSchema`: name, description, deps/devDeps, env[], exports[],
-      files[{path, content}] — shadcn registry item + monorepo wiring metadata
-- [ ] `registry/` authoring dir + build script → `apps/web/public/r/*.json` +
-      `/r/registry.json` index (mirrors the `.eta → templates-map` build)
-- [ ] `cts add <name>`: resolve manifest (built-in or `--registry <url>`),
-      materialize via the diff/apply engine (deps → catalog, env → env package,
-      files → disk, atomic + rollback)
-- [ ] One reference package as the authoring template
-- [ ] Supply-chain: diff preview before write (you see the code); later a
-      checksum/lockfile + signature for remote registries
+- [x] `PackageRegistryItemSchema`: name, deps/devDeps, registryDependencies,
+      envVars, exports, lib, `build` (none|tsup), files[{path,target,content}]
+- [x] `registry/` authoring dir + `build:registry` → `apps/web/public/r/*.json`
+      + `/r/registry.json` index (mirrors the `.eta → templates-map` build)
+- [x] `cts add <name>`: resolve manifest (`--registry <url|path>`), materialize
+      `packages/<name>` (deps → catalog, env → .env.example, files → disk),
+      `--yes` for CI; write preview
+- [x] Reference package: `registry/security` (headers + origin/CSRF guard)
+- [x] Supply-chain: write preview before applying
+- [ ] Author more packages (cache, …) and host the registry publicly
+- [ ] Remote registry: checksum/lockfile + signature; namespace support
+- [ ] Use `cts add` packages in a demo app (prove real usage)
 
 ---
 
