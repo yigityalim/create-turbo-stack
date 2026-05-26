@@ -61,6 +61,8 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
       add("vite", VERSIONS.vite);
       add("@types/react", VERSIONS.typesReact);
       add("@types/react-dom", VERSIONS.typesReactDom);
+      // Tailwind 4 in Vite uses the first-party Vite plugin.
+      if (preset.css.framework === "tailwind4") add("@tailwindcss/vite", VERSIONS.tailwindVite);
     }
     if (app.type === "sveltekit") {
       add("@sveltejs/kit", VERSIONS.sveltejsKit);

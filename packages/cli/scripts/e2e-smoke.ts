@@ -28,6 +28,11 @@ const PRESETS = ["minimal", "saas-starter", "api-only"] as const;
 // proof that biome/oxlint/eslint-prettier are real, not schema lies.
 const LINTERS = ["biome", "oxlint", "eslint-prettier"] as const;
 
+// App types not exercised by a built-in preset. Each is scaffolded as the
+// only app in a minimal preset and proven to install, type-check, and build.
+// nextjs / nextjs-api-only / hono-standalone are already covered by presets.
+const APP_TYPES = ["vite-react"] as const;
+
 interface StepResult {
   step: string;
   ok: boolean;
@@ -118,6 +123,42 @@ async function smokeLinter(linter: string): Promise<StepResult[]> {
   }
 }
 
+/**
+ * Scaffold the minimal preset with its single app swapped to `appType`,
+ * then install, type-check, and build — proves the app type's templates
+ * and wiring produce a project that actually compiles.
+ */
+async function smokeAppType(appType: string): Promise<StepResult[]> {
+  const dir = mkdtempSync(path.join(tmpdir(), `cts-e2e-app-${appType}-`));
+  const results: StepResult[] = [];
+
+  try {
+    const minimal = JSON.parse(
+      readFileSync(path.join(REPO_ROOT, "presets", "minimal.json"), "utf-8"),
+    );
+    minimal.apps = [{ name: "web", type: appType, port: 3000, i18n: false, consumes: ["ui"] }];
+    const presetPath = path.join(dir, "preset.json");
+    writeFileSync(presetPath, JSON.stringify(minimal));
+
+    results.push(
+      timed("scaffold", () =>
+        run(`bunx tsx ${CLI_BIN} app --preset ${presetPath} --no-install`, dir),
+      ),
+    );
+    if (!results.at(-1)?.ok) return results;
+
+    const appDir = path.join(dir, "app");
+    results.push(timed("install", () => run("bun install", appDir)));
+    if (!results.at(-1)?.ok) return results;
+
+    results.push(timed("type-check", () => run("bun run type-check", appDir)));
+    results.push(timed("build", () => run("SKIP_ENV_VALIDATION=1 bun run build", appDir)));
+    return results;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 function report(label: string, results: StepResult[]): boolean {
   console.log(`\n=== ${label} ===`);
   let failed = false;
@@ -136,9 +177,11 @@ async function main() {
   const filter = process.argv[2];
   const presets = filter ? PRESETS.filter((p) => p === filter) : PRESETS;
   const linters = filter ? LINTERS.filter((l) => l === filter) : LINTERS;
-  if (presets.length === 0 && linters.length === 0) {
+  const appTypes = filter ? APP_TYPES.filter((a) => a === filter) : APP_TYPES;
+  if (presets.length === 0 && linters.length === 0 && appTypes.length === 0) {
     console.error(
-      `Unknown target "${filter}". Presets: ${PRESETS.join(", ")}. Linters: ${LINTERS.join(", ")}.`,
+      `Unknown target "${filter}". Presets: ${PRESETS.join(", ")}. ` +
+        `Linters: ${LINTERS.join(", ")}. App types: ${APP_TYPES.join(", ")}.`,
     );
     process.exit(1);
   }
@@ -147,11 +190,14 @@ async function main() {
   for (const preset of presets) {
     anyFailed = report(preset, await smokePreset(preset)) || anyFailed;
   }
+  for (const appType of appTypes) {
+    anyFailed = report(`app:${appType}`, await smokeAppType(appType)) || anyFailed;
+  }
   for (const linter of linters) {
     anyFailed = report(`linter:${linter}`, await smokeLinter(linter)) || anyFailed;
   }
 
-  console.log(anyFailed ? "\nFAIL" : "\nAll presets and linters scaffolded, installed, verified.");
+  console.log(anyFailed ? "\nFAIL" : "\nAll presets, app types, and linters verified.");
   process.exit(anyFailed ? 1 : 0);
 }
 

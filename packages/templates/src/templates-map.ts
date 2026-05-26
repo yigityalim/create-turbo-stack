@@ -63,10 +63,11 @@ export const templates: Record<string, Record<string, string>> = {
     "vite.config.ts.eta": "import { sveltekit } from \"@sveltejs/kit/vite\";\nimport { defineConfig } from \"vite\";\n\nexport default defineConfig({\n  plugins: [sveltekit()],\n});\n",
   },
   "app/vite-react": {
+    "index.html.eta": "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title><%= it.app.name %></title>\n  </head>\n  <body>\n    <div id=\"root\"></div>\n    <script type=\"module\" src=\"/src/main.tsx\"></script>\n  </body>\n</html>\n",
     "src/App.tsx.eta": "export default function App() {\n  return (\n    <main>\n      <h1><%= it.app.name %></h1>\n    </main>\n  );\n}\n",
     "src/index.css.eta": "<% if (it.css.framework === 'tailwind4') { -%>\n@import \"tailwindcss\";\n<% if (it.css.ui === 'shadcn') { -%>\n@import \"tw-animate-css\";\n<% } -%>\n<% for (const source of it.wiring.cssSourceDirectives) { -%>\n@source \"<%= source %>\";\n<% } -%>\n\n@custom-variant dark (&:is(.dark *));\n<% } else { -%>\n/* Global styles */\n<% } -%>\n",
     "src/main.tsx.eta": "import React from \"react\";\nimport ReactDOM from \"react-dom/client\";\nimport App from \"./App\";\nimport \"./index.css\";\n\nReactDOM.createRoot(document.getElementById(\"root\")!).render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>,\n);\n",
-    "vite.config.ts.eta": "import react from \"@vitejs/plugin-react\";\nimport { defineConfig } from \"vite\";\n\nexport default defineConfig({\n  plugins: [react()],\n});\n",
+    "vite.config.ts.eta": "<% if (it.css.framework === \"tailwind4\") { -%>\nimport tailwindcss from \"@tailwindcss/vite\";\n<% } -%>\nimport react from \"@vitejs/plugin-react\";\nimport { defineConfig } from \"vite\";\n\nexport default defineConfig({\n  plugins: [react()<% if (it.css.framework === \"tailwind4\") { %>, tailwindcss()<% } %>],\n});\n",
   },
   "auth/better-auth": {
     "src/client.ts.eta": "import { createAuthClient } from \"better-auth/client\";\n\nexport const authClient = createAuthClient();\n",

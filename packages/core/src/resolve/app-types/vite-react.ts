@@ -21,7 +21,10 @@ export const viteReactAppType = defineAppType({
     };
     if (preset.css.framework === "tailwind4") {
       devDeps.tailwindcss = "catalog:";
-      devDeps["@tailwindcss/postcss"] = "catalog:";
+      // Vite uses the first-party Tailwind plugin, not the PostCSS one.
+      devDeps["@tailwindcss/vite"] = "catalog:";
+      // index.css `@import "tw-animate-css"` when shadcn is on — must be a dep.
+      if (preset.css.ui === "shadcn") devDeps["tw-animate-css"] = "catalog:";
     }
 
     return {
@@ -43,7 +46,13 @@ export const viteReactAppType = defineAppType({
   buildTsconfig(_preset, _app, { scope }) {
     return {
       extends: `${scope}/typescript-config/react.json`,
-      compilerOptions: { paths: { "@/*": ["./src/*"] } },
+      compilerOptions: {
+        // Vite owns the build; tsc is type-check only. vite/client adds
+        // import.meta.env + asset module types.
+        noEmit: true,
+        types: ["vite/client"],
+        paths: { "@/*": ["./src/*"] },
+      },
       include: ["src/**/*"],
       exclude: ["node_modules", "dist"],
     };

@@ -48,6 +48,7 @@ export interface TsCompilerOptions {
   module?: string;
   moduleResolution?: string;
   lib?: string[];
+  types?: string[];
   jsx?: string;
   declaration?: boolean;
   declarationMap?: boolean;

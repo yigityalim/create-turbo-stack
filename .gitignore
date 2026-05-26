@@ -44,3 +44,6 @@ yarn-error.log*
 # OS
 Thumbs.db
 .claude
+
+# Reference scaffolds (dev-only source of truth for .eta templates)
+temp/

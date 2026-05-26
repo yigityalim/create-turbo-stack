@@ -22,6 +22,7 @@ export const VERSIONS = {
 
   tailwind4: "^4.0.0",
   tailwindPostcss: "^4.0.0",
+  tailwindVite: "^4.0.0",
   twAnimateCss: "^1.0.0",
   clsx: "^2.1.1",
   tailwindMerge: "^2.5.0",
