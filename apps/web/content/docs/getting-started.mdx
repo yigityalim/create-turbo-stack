@@ -16,11 +16,12 @@ The CLI will guide you through:
 3. **Database** — Supabase, Drizzle, Prisma, or none
 4. **API layer** — tRPC v11, Hono, Next.js Routes, or none
 5. **Authentication** — Supabase Auth, Better Auth, Clerk, NextAuth, Lucia, or none
-6. **CSS framework** — Tailwind 4, Tailwind 3, vanilla, CSS Modules
-7. **UI library** — shadcn/ui, Radix, or none
-8. **Apps** — Add one or more apps (Next.js, Hono, Vite, etc.)
-9. **Packages** — Add shared packages (UI, utils, etc.)
-10. **Integrations** — Sentry, PostHog, React Email, Vercel AI SDK
+6. **CSS framework** — Tailwind 4, vanilla, or CSS Modules
+7. **UI library** — shadcn/ui or none
+8. **Linter** — Biome, oxlint + Prettier, or ESLint + Prettier
+9. **Apps** — Add one or more apps (Next.js, Hono, Vite, etc.)
+10. **Packages** — Add shared packages (UI, utils, etc.)
+11. **Integrations** — Sentry, PostHog, React Email, Vercel AI SDK
 
 After confirmation, the CLI generates all files, initializes git, and installs dependencies.
 
@@ -62,7 +63,7 @@ my-project/
 │       └── package.json
 ├── package.json                # Root with catalog + workspaces
 ├── turbo.json                  # Task pipeline
-├── biome.json                  # Linter config
+├── biome.json                  # Linter config (or .oxlintrc.json / eslint.config.mjs)
 └── .turbo-stack.json           # CLI config (tracks selections)
 ```
 

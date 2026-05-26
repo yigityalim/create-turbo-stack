@@ -9,17 +9,49 @@ It covers architectural decisions, implementation backlog, and post-launch scope
 
 v1.0 ships when every item below is true — no exceptions.
 
-- `npx create-turbo-stack` resolves to our package
-- Every option the CLI prompts for produces correct output (no schema lies)
-- All mutating commands (`add`, `remove`, `switch`, `upgrade`) are implemented and idempotent
-- Multi-app scoping is explicit: the user always knows which apps are affected
-- State reconciliation exists: `.turbo-stack.json` can be resynced from disk
-- Conflict resolution policy is configurable in `create-turbo-stack.json`
-- Web builder has working export (ZIP or CLI command copy)
-- MCP server is smoke-tested with at least basic tool coverage
-- One published plugin example exists in `examples/`
-- `bun run test`, `bun run type-check`, and `bun run lint` all exit 0
-- Atomic rollback works: no partial disk state survives a failed `applyDiff`
+- [ ] `npx create-turbo-stack` resolves to our package
+- [x] Every option the CLI prompts for produces correct output (no schema lies)
+- [ ] All mutating commands (`add`, `remove`, `switch`, `upgrade`) are implemented and idempotent
+- [ ] Multi-app scoping is explicit: the user always knows which apps are affected
+- [ ] State reconciliation exists: `.turbo-stack.json` can be resynced from disk
+- [ ] Conflict resolution policy is configurable in `create-turbo-stack.json`
+- [ ] Web builder has working export (ZIP or CLI command copy)
+- [x] MCP server is smoke-tested with at least basic tool coverage
+- [ ] One *published* plugin example exists in `examples/` (example written, not published)
+- [x] `bun run test`, `bun run type-check`, and `bun run lint` all exit 0
+- [x] Atomic rollback works: no partial disk state survives a failed `applyDiff`
+
+---
+
+## Shipped
+
+The engine and the generated output are real and verified. Current capabilities:
+
+- **Resolver engine** — `Preset` → full `FileTree`. Platform-agnostic (runs in the
+  browser builder too). Package resolution is distributed into the integration
+  registry: a provider owns its catalog deps, env vars, source templates, and the
+  workspace package it scaffolds. No central switch statements.
+- **Typed manifests** — `package.json` and `tsconfig.json` are built from real
+  `PackageJson` / `TsConfig` interfaces, not `Record<string, unknown>`. App-type
+  contracts return these typed shapes.
+- **Schema-typed everywhere** — stack choices (package manager, linter, db driver,
+  detection report) use the `schema` enums, not bare `string`.
+- **Load-bearing env** — when `envValidation` is on, generated code imports validated,
+  typed values from the `env` package (`env.X`, no `!`) instead of raw `process.env`;
+  `skipValidation` keeps secret-less builds green. Falls back to `process.env` when off.
+- **Linter registry** — `biome`, `oxlint` (+ Prettier), and `eslint-prettier` (flat
+  config + typescript-eslint) all produce working, lint-clean output.
+- **Cross-package wiring** — CSS `@source`, catalog deps, workspace refs, tsconfig
+  inheritance, env chain, turbo tasks, exports map.
+- **Diff engine + atomic apply** — `create`/`update`/`unchanged`/`delete`/`conflict`
+  mutations; leaf-level JSON merge; snapshot + rollback on failure; cross-process lock.
+- **Schema versioning** — `schemaVersion` + migration registry.
+- **Plugin architecture** — `defineAppType` / `defineIntegration` registries; one file
+  adds a framework or provider. Third-party plugins via `create-turbo-stack.json`.
+- **Analyzer** — reverse-engineers an existing Turborepo into a `Preset` with confidence.
+- **E2E harness** — `bun run e2e` scaffolds → installs → type-checks → builds all three
+  built-in presets, and lints the minimal preset under each linter. The generated
+  projects compile and pass their own linter.
 
 ---
 
@@ -58,16 +90,19 @@ Default remains `"abort"` (safest). Wire into `applyDiff` options.
 
 ## Backlog
 
-### P0 — Schema integrity
+### P0 — Schema integrity (done)
 
-Every option the prompt offers must produce correct output.
-If an option cannot be implemented before v1.0, remove it from the schema.
+Every option the prompt offers must produce correct output. Resolved by removing the
+dead options and implementing the rest:
 
-- [ ] `cms: sanity | keystatic` — resolver never reads this field; remove or implement
-- [ ] `linter: eslint-prettier` — prompt accepts it, biome scaffold is produced (wrong); remove or implement real eslintrc + prettierrc
-- [ ] `css: tailwind3 | vanilla | css-modules` — all three produce the tailwind4 template; remove or fork templates
-- [ ] `ui: shadcn` — dep is added, `components.json` and sample components are not generated
-- [ ] `ui: radix-raw` — dep is added, zero components generated
+- [x] `cms: sanity | keystatic` — removed from the schema (was never read)
+- [x] `linter` — `biome`, `oxlint`, and `eslint-prettier` all produce working configs,
+      via the linter registry; e2e proves each lints clean
+- [x] `css: tailwind3` — removed; `vanilla` / `css-modules` made honest (no tailwind
+      postcss/import when not tailwind4)
+- [x] `ui: shadcn` — generates `components.json`, the `cn()` helper, theme variables,
+      and deps (ready for `npx shadcn add`). Sample components tracked under P4.
+- [x] `ui: radix-raw` — never existed in the schema; the enum is `shadcn | none`
 
 ### P1 — CLI completeness
 
@@ -93,7 +128,7 @@ Implement the three architectural decisions above.
 
 ### P3 — Core correctness
 
-- [ ] Atomic rollback: snapshot pre-state before any write; restore on any failure in `applyDiff`
+- [x] Atomic rollback: snapshot pre-state before any write; restore on any failure in `applyDiff`
 - [ ] `add integration` idempotency: detect if provider is already active, skip silently or warn
 - [ ] Incremental workspace refs: when a new package is added, wire existing apps that match `consumes`
 
@@ -113,24 +148,24 @@ The output of `create` must be a working project, not a skeleton that requires m
 - [ ] Sample tRPC mutation and server action generated
 
 **Observability:**
-- [ ] PostHog provider injected into `app/layout.tsx` when `analytics: posthog`
-- [ ] Sentry wired in `instrumentation.ts` + layout import when `errorTracking: sentry`
+- [ ] PostHog provider injected into `app/layout.tsx` when `analytics: posthog` (package generated, not auto-imported)
+- [x] Sentry wired in `instrumentation.ts` when `errorTracking: sentry` (layout import still manual)
 
 **UI:**
-- [ ] shadcn: generate `components.json` + sample Button and Card components
-- [ ] Tailwind `globals.css` with CSS variable theme scaffold (not just an import)
+- [ ] shadcn: sample Button and Card components (`components.json` + `cn()` already generated)
+- [x] Tailwind `globals.css` with CSS variable theme scaffold (not just an import)
 
 **Routing:**
-- [ ] `app/error.tsx`, `app/not-found.tsx`, `app/loading.tsx` generated for Next.js
-- [ ] next-intl: `[locale]/layout.tsx` + `messages/` + `middleware.ts` when `i18n: true`
+- [x] `app/error.tsx`, `app/not-found.tsx`, `app/loading.tsx` generated for Next.js
+- [x] next-intl: `messages/` + `i18n/` + `middleware.ts` when `i18n: true`
 
 **Local development:**
-- [ ] `docker-compose.yml` generated when `dbSetup: docker`
+- [x] `docker-compose.yml` generated from the db strategy (postgres/mysql/supabase services)
 - [ ] `db/seed.ts` stub + `db:seed` turbo task wired
-- [ ] Root `README.md` generated with stack summary and setup steps
+- [x] Root `README.md` generated with stack summary and setup steps
 
 **CI:**
-- [ ] `.github/workflows/ci.yml` generated (lint, type-check, test, build)
+- [x] `.github/workflows/ci.yml` generated (lint, type-check, test, build; sets `SKIP_ENV_VALIDATION`)
 
 ### P5 — Web builder
 
@@ -145,10 +180,13 @@ The output of `create` must be a working project, not a skeleton that requires m
 ### P6 — Testing
 
 - [ ] CLI command unit tests: argument parsing, flag validation, error paths
-- [ ] E2E: `create --preset minimal` → install → `bun run build` → `bun run type-check` (exits 0)
-- [ ] E2E: one full cycle per supported app type (nextjs, hono-standalone, vite-react, sveltekit, astro, remix)
+- [x] E2E: `create --preset` → install → type-check → build for minimal, saas-starter, api-only
+- [x] E2E linter matrix: minimal scaffolded under each linter → install → lint clean
+- [ ] E2E: one full cycle per supported app type — only `nextjs`, `nextjs-api-only`, and
+      `hono-standalone` are exercised by presets; `vite-react`, `sveltekit`, `astro`, and
+      `remix` resolve a file tree (unit-tested) but are not yet install+build proven. **Next up.**
 - [ ] Template snapshot tests: render each `.eta` file with a fixture context, assert output is stable
-- [ ] MCP server smoke test: start server, call each tool, assert response shape
+- [x] MCP server smoke test: basic tool coverage (`mcp/server.test.ts`)
 
 ### P7 — npm publish
 
@@ -243,8 +281,8 @@ better-t-stack only ships Cloudflare. Missing options:
 
 ### Auth
 
-- **Supabase Auth** — huge omission in better-t-stack; works with RLS without any ORM (v1 candidate)
-- **Auth.js / NextAuth v5** — still the most widely used in the Next.js ecosystem
+Shipped: Supabase Auth, Better Auth, Clerk, NextAuth (Auth.js v5), Lucia. Remaining gaps:
+
 - **Kinde** — Clerk alternative, more affordable
 - **WorkOS** — enterprise SSO, B2B use cases
 
@@ -283,7 +321,7 @@ No other Turborepo scaffolding tool covers this market.
 | **Upstash Redis** | Caching + rate limiting beyond the current rate-limit integration |
 | **Meilisearch / Typesense / Algolia** | Full-text search — not offered anywhere in better-t-stack |
 | **Pusher / PartyKit / Ably / Soketi** | Realtime + WebSocket — absent |
-| **Payload CMS / Sanity / Keystatic** | Headless CMS as a first-class option, not dead schema field |
+| **Payload CMS / Sanity / Keystatic** | Headless CMS as a real integration (the dead `cms` schema field was removed) |
 | **OpenTelemetry / Axiom / Logtail** | Structured logging + distributed tracing beyond Sentry |
 | **Changesets** | Monorepo package versioning — essential for Turborepo-first projects |
 | **Playwright** | E2E testing scaffold with `playwright.config.ts` + example spec |

@@ -12,11 +12,11 @@ When a Next.js app consumes a UI package that produces CSS, Tailwind needs to sc
 ```css
 /* apps/web/src/app/globals.css */
 @import "tailwindcss";
-@source "../../packages/ui/src/**/*.tsx";
 @import "@myorg/ui/globals.css";
+@source "../../packages/ui/src/**/*.tsx";
 ```
 
-The `@source` paths are computed by `computeCssSourceMap()`, which looks at each app's `consumes` list and finds packages with `producesCSS: true`.
+All `@import` rules are emitted before any `@source` (CSS requires `@import` to come first), and the `@source` paths are computed by `computeCssSourceMap()`, which looks at each app's `consumes` list and finds packages with `producesCSS: true`.
 
 ## Catalog Dependencies
 
@@ -78,8 +78,22 @@ Every generated project uses a shared `typescript-config` package. create-turbo-
 When you select integrations that need environment variables, create-turbo-stack:
 
 1. Generates a `.env.example` at root with all required variables
-2. Creates an `env` package (if `envValidation` is enabled) with Zod schemas using `@t3-oss/env-nextjs`
+2. Creates an `env` package (when `envValidation` is on) with Zod schemas via `@t3-oss/env-nextjs`
 3. Adds `globalEnv` to `turbo.json` so Turbo knows about them
+
+The `env` package is **load-bearing**, not decoration. With validation on, generated
+provider code imports the typed, validated values instead of reading raw `process.env`:
+
+```ts
+// packages/db/src/client.ts
+import { env } from "@myorg/env";
+
+const client = postgres(env.DATABASE_URL); // typed, validated — no `!`
+```
+
+The package sets `skipValidation: !!process.env.SKIP_ENV_VALIDATION`, so builds without
+secrets (CI, Docker) don't throw — the generated CI workflow sets that flag. When
+`envValidation` is off, code falls back to `process.env` and no `env` package is created.
 
 Each integration contributes its variables:
 
@@ -119,3 +133,19 @@ Every package gets a proper `exports` field in `package.json`:
 ```
 
 The exports are determined by the package type and what the integration requires (e.g., auth packages always export `./server`, `./client`, `./middleware`).
+
+## Linters
+
+The `linter` choice drives a small registry (`getLinter()`), so every package's lint
+script, the root format script, the config files, and the dependencies all come from one
+place. Each option produces a real, working setup — and the generated project passes its
+own linter (the e2e harness scaffolds the minimal preset under all three and runs `lint`).
+
+| Linter | Lint | Format | Config files |
+|---|---|---|---|
+| `biome` | `biome check` | Biome | `biome.json` |
+| `oxlint` | `oxlint` | Prettier | `.oxlintrc.json`, `.prettierrc` |
+| `eslint-prettier` | `eslint .` | Prettier | `eslint.config.mjs` (flat, typescript-eslint), `.prettierrc` |
+
+For ESLint, each package re-exports the root flat config so `eslint .` resolves the same
+rules everywhere.
