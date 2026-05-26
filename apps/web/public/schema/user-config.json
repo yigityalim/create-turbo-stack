@@ -564,6 +564,50 @@
         "type": "string",
         "minLength": 1
       }
+    },
+    "registries": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^@[a-zA-Z0-9][\\w-]*$"
+      },
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "headers": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "params": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "url"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
     }
   },
   "additionalProperties": false

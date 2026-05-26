@@ -2,13 +2,18 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import * as p from "@clack/prompts";
 import { getLinter } from "@create-turbo-stack/core";
-import type { FileTreeNode, PackageRegistryItem } from "@create-turbo-stack/schema";
+import type {
+  FileTreeNode,
+  PackageRegistryItem,
+  RegistryConfigEntry,
+} from "@create-turbo-stack/schema";
 import { PackageRegistryItemSchema } from "@create-turbo-stack/schema";
 import pc from "picocolors";
 import { readProjectConfig } from "../io/reader";
 import { writeFiles } from "../io/writer";
 
 const DEFAULT_REGISTRY = "https://create-turbo-stack.dev/r";
+const NAMESPACE_RE = /^(@[a-zA-Z0-9][\w-]*)\/(.+)$/;
 
 /** Split "name@version" / "@scope/name@version" into [name, version?]. */
 function parseDep(spec: string): [string, string] {
@@ -17,18 +22,62 @@ function parseDep(spec: string): [string, string] {
   return [spec, "latest"];
 }
 
-/** Resolve a registry item from a URL or a local file/dir. */
-async function resolveItem(name: string, registry: string): Promise<PackageRegistryItem> {
+/** Expand `${VAR}` from the environment (so tokens never live in config). */
+function expandEnv(value: string): string {
+  return value.replace(/\$\{(\w+)\}/g, (_, name) => process.env[name] ?? "");
+}
+
+async function fetchItem(url: string, headers: Record<string, string>): Promise<string> {
+  const res = await fetch(url, { headers });
+  if (res.status === 401) throw new Error(`unauthorized (401) — check your registry token`);
+  if (res.status === 403) throw new Error(`forbidden (403) — token lacks access`);
+  if (!res.ok) throw new Error(`fetch ${url} → ${res.status}`);
+  return res.text();
+}
+
+interface ResolveOptions {
+  /** Explicit `--registry <url|path>` for un-namespaced names. */
+  registry?: string;
+  /** Namespaced registries from create-turbo-stack.json. */
+  registries?: Record<string, RegistryConfigEntry>;
+}
+
+/**
+ * Resolve a registry item. `@ns/name` looks up `@ns` in the configured
+ * registries (with auth headers); a bare name uses `--registry` (URL or
+ * local path) or the default hosted registry.
+ */
+async function resolveItem(rawName: string, opts: ResolveOptions): Promise<PackageRegistryItem> {
+  const ns = rawName.match(NAMESPACE_RE);
   let raw: string;
-  if (/^https?:\/\//.test(registry)) {
-    const url = `${registry.replace(/\/$/, "")}/${name}.json`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`fetch ${url} → ${res.status}`);
-    raw = await res.text();
+
+  if (ns) {
+    const [, namespace, resource] = ns;
+    const entry = opts.registries?.[namespace];
+    if (!entry) {
+      throw new Error(
+        `unknown registry "${namespace}" — add it to create-turbo-stack.json:\n` +
+          `  { "registries": { "${namespace}": "https://.../{name}.json" } }`,
+      );
+    }
+    const template = typeof entry === "string" ? entry : entry.url;
+    const url = new URL(expandEnv(template.replace(/\{name\}/g, resource)));
+    const headers: Record<string, string> = {};
+    if (typeof entry !== "string") {
+      for (const [k, v] of Object.entries(entry.headers ?? {})) headers[k] = expandEnv(v);
+      for (const [k, v] of Object.entries(entry.params ?? {}))
+        url.searchParams.set(k, expandEnv(v));
+    }
+    raw = await fetchItem(url.toString(), headers);
   } else {
-    const stat = await fs.stat(registry).catch(() => null);
-    const file = stat?.isDirectory() ? path.join(registry, `${name}.json`) : registry;
-    raw = await fs.readFile(file, "utf-8");
+    const registry = opts.registry ?? DEFAULT_REGISTRY;
+    if (/^https?:\/\//.test(registry)) {
+      raw = await fetchItem(`${registry.replace(/\/$/, "")}/${rawName}.json`, {});
+    } else {
+      const stat = await fs.stat(registry).catch(() => null);
+      const file = stat?.isDirectory() ? path.join(registry, `${rawName}.json`) : registry;
+      raw = await fs.readFile(file, "utf-8");
+    }
   }
   return PackageRegistryItemSchema.parse(JSON.parse(raw));
 }
@@ -53,7 +102,12 @@ function exportsMap(item: PackageRegistryItem): Record<string, unknown> {
  */
 export async function addRegistryCommand(
   name: string,
-  options: { registry?: string; dryRun?: boolean; yes?: boolean } = {},
+  options: {
+    registry?: string;
+    registries?: Record<string, RegistryConfigEntry>;
+    dryRun?: boolean;
+    yes?: boolean;
+  } = {},
 ): Promise<void> {
   const cwd = process.cwd();
   const config = await readProjectConfig(cwd);
@@ -62,12 +116,11 @@ export async function addRegistryCommand(
     process.exit(1);
   }
 
-  const registry = options.registry ?? DEFAULT_REGISTRY;
   let item: PackageRegistryItem;
   try {
-    item = await resolveItem(name, registry);
+    item = await resolveItem(name, { registry: options.registry, registries: options.registries });
   } catch (err) {
-    p.log.error(`Could not resolve "${name}" from ${registry}: ${(err as Error).message}`);
+    p.log.error(`Could not resolve "${name}": ${(err as Error).message}`);
     process.exit(1);
   }
 

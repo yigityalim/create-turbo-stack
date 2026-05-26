@@ -119,6 +119,23 @@ export const UserConfigPolicySchema = z.object({
 });
 export type UserConfigPolicy = z.infer<typeof UserConfigPolicySchema>;
 
+/**
+ * A namespaced package registry. A bare string is the URL template; the
+ * object form adds auth headers / query params. `${VAR}` placeholders in
+ * url/headers/params are expanded from the environment at request time, so
+ * tokens never live in the config file. Use the `{name}` placeholder for
+ * the package name (e.g. `https://store.com/r/{name}.json`).
+ */
+export const RegistryConfigEntrySchema = z.union([
+  z.string(),
+  z.object({
+    url: z.string(),
+    headers: z.record(z.string(), z.string()).optional(),
+    params: z.record(z.string(), z.string()).optional(),
+  }),
+]);
+export type RegistryConfigEntry = z.infer<typeof RegistryConfigEntrySchema>;
+
 export const UserConfigSchema = z.object({
   $schema: z.string().optional(),
   defaults: UserConfigDefaultsSchema.optional(),
@@ -129,5 +146,16 @@ export const UserConfigSchema = z.object({
    * startup before any prompts run.
    */
   plugins: z.array(z.string().min(1)).optional(),
+  /**
+   * Namespaced package registries for `cts add @ns/name`. The key starts
+   * with `@`; the value is a URL template or an auth-config object.
+   * Private/paid registries gate access on the server via these headers.
+   */
+  registries: z
+    .record(
+      z.string().regex(/^@[a-zA-Z0-9][\w-]*$/, "registry namespace must start with @"),
+      RegistryConfigEntrySchema,
+    )
+    .optional(),
 });
 export type UserConfig = z.infer<typeof UserConfigSchema>;

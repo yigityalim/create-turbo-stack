@@ -52,6 +52,7 @@ export async function addCommand(
       // (shadcn-style `cts add <name>`).
       return addRegistryCommand(type, {
         registry: options.registry,
+        registries: userConfig?.registries,
         dryRun: options.dryRun,
         yes: options.yes,
       });
