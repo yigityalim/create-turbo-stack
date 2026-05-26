@@ -73,7 +73,14 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
     }
     if (app.type === "astro") {
       add("astro", VERSIONS.astro);
+      add("@astrojs/check", VERSIONS.astrojsCheck);
+      // React is pulled in when the app consumes a React package (via
+      // @astrojs/react). Catalog supersets are harmless, so add it here.
       add("@astrojs/react", VERSIONS.astrojsReact);
+      add("react", VERSIONS.react);
+      add("react-dom", VERSIONS.reactDom);
+      add("@types/react", VERSIONS.typesReact);
+      add("@types/react-dom", VERSIONS.typesReactDom);
     }
     if (app.type === "remix") {
       add("@remix-run/node", VERSIONS.remixRunNode);

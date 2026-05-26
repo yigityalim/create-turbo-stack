@@ -4,7 +4,7 @@ export const astroAppType = defineAppType({
   type: "astro",
   templateCategory: "app/astro",
 
-  buildPackageJson(preset, app, { scope, appRefs }) {
+  buildPackageJson(preset, app, { appRefs }) {
     const hasReactPackages = app.consumes.some((c) =>
       preset.packages.some((p) => p.name === c && (p.type === "ui" || p.type === "react-library")),
     );
@@ -14,9 +14,12 @@ export const astroAppType = defineAppType({
       astro: "catalog:",
     };
 
+    // Astro brings its own tsconfig presets, so it doesn't extend the
+    // shared typescript-config package. `astro check` does the real
+    // type-checking (tsc can't read `.astro`).
     const devDeps: Record<string, string> = {
-      [`${scope}/typescript-config`]: "workspace:*",
       typescript: "catalog:",
+      "@astrojs/check": "catalog:",
     };
     if (hasReactPackages) {
       devDeps["@astrojs/react"] = "catalog:";
@@ -34,18 +37,21 @@ export const astroAppType = defineAppType({
         dev: `astro dev --port ${app.port}`,
         build: "astro build",
         preview: "astro preview",
-        "type-check": "tsc --noEmit",
+        "type-check": "astro check",
       },
       dependencies: deps,
       devDependencies: devDeps,
     };
   },
 
-  buildTsconfig(_preset, _app, { scope }) {
+  buildTsconfig() {
+    // Astro ships its own strict preset (knows `.astro` files, Astro
+    // globals, content collections). tsc only sees the `.ts` files; `.astro`
+    // type-checking is `astro check` (opt-in).
     return {
-      extends: `${scope}/typescript-config/base.json`,
-      include: ["src/**/*"],
-      exclude: ["node_modules", "dist"],
+      extends: "astro/tsconfigs/strict",
+      include: [".astro/types.d.ts", "**/*"],
+      exclude: ["dist"],
     };
   },
 

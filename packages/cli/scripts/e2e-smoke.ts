@@ -31,7 +31,7 @@ const LINTERS = ["biome", "oxlint", "eslint-prettier"] as const;
 // App types not exercised by a built-in preset. Each is scaffolded as the
 // only app in a minimal preset and proven to install, type-check, and build.
 // nextjs / nextjs-api-only / hono-standalone are already covered by presets.
-const APP_TYPES = ["vite-react"] as const;
+const APP_TYPES = ["vite-react", "astro"] as const;
 
 interface StepResult {
   step: string;

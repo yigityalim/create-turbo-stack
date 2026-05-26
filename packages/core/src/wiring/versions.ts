@@ -48,6 +48,7 @@ export const VERSIONS = {
   // Astro
   astro: "^5.0.0",
   astrojsReact: "^4.0.0",
+  astrojsCheck: "^0.9.0",
 
   // Remix
   remixRunNode: "^2.0.0",
