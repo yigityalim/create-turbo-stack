@@ -9,15 +9,18 @@ It covers architectural decisions, implementation backlog, and post-launch scope
 
 v1.0 ships when every item below is true — no exceptions.
 
-- [ ] `npx create-turbo-stack` resolves to our package
+- [ ] Published & installable — ships as `@create-turbo-stack/cli` (scope is free;
+      the bare `create-turbo-stack` is squatted by `mislam`, npm dispute dead after
+      3 months, so we go scoped + keep the brand). Not yet published.
 - [x] Every option the CLI prompts for produces correct output (no schema lies)
-- [ ] All mutating commands (`add`, `remove`, `switch`, `upgrade`) are implemented and idempotent
-- [~] Multi-app scoping is explicit: the user always knows which apps are affected
-      (`cts add --app` done; `add integration` / `switch` targeting still pending)
-- [ ] State reconciliation exists: `.turbo-stack.json` can be resynced from disk
-- [ ] Conflict resolution policy is configurable (`.turbo-stack.json` `config` block /
-      `create-turbo-stack.json`) — `applyDiff` has `onConflict`, not yet config-wired
-- [ ] Web builder has working export (ZIP or CLI command copy)
+- [x] All mutating commands (`add`, `remove`, `switch`, `upgrade`, `reconcile`)
+      implemented; `add integration` is idempotent
+- [x] Multi-app scoping is explicit — `--app` / interactive multi-select on
+      `add` / `add integration` / `add package` wires into the chosen apps
+- [x] State reconciliation exists — `reconcile` reports disk↔`.turbo-stack.json` drift
+- [x] Conflict resolution policy is configurable — `conflictPolicy` in config →
+      `applyDiff` `onConflict` (prompt/keep/overwrite/abort)
+- [ ] Web builder has working export (ZIP or CLI command copy) — web agent's domain
 - [x] MCP server is smoke-tested with at least basic tool coverage
 - [ ] One *published* plugin example exists in `examples/` (example written, not published)
 - [x] `bun run test`, `bun run type-check`, and `bun run lint` all exit 0
@@ -60,8 +63,12 @@ The engine and the generated output are real and verified. Current capabilities:
   verified checksum pinned in `.turbo-stack.json` (drift detection). Hardened: registry
   `envVars` and file targets are injection/traversal-safe.
 - **One file per project** — `.turbo-stack.json` holds both resolved state and the local
-  CLI config (`config` block: registries/policy/plugins); `create-turbo-stack.json` and
-  `~/.create-turbo-stack/config.json` are optional org/team overrides.
+  CLI config (`config` block: registries/policy/plugins/conflictPolicy);
+  `create-turbo-stack.json` and `~/.create-turbo-stack/config.json` are optional org/team overrides.
+- **Built-in presets bundled** — `--preset minimal|saas-starter|api-only` resolves offline
+  from the package (no site dependency); URL / file path still supported.
+- **Docs in sync** — `content/docs` covers `cts add` packages, supply-chain, reconcile,
+  conflict policy, the single-file config, and the bundled-preset commands.
 - **E2E harness** — `bun run e2e` scaffolds → installs → type-checks → builds all three
   built-in presets; lints the minimal preset under each linter; proves vite-react / astro /
   sveltekit app types; and runs a registry-composition chain (`cts add session` →
@@ -217,10 +224,16 @@ The output of `create` must be a working project, not a skeleton that requires m
 
 ### P7 — npm publish
 
-- [ ] Claim `create-turbo-stack` package name (contact `hi@mislam.dev`)
-- [ ] Publish `@create-turbo-stack/cli` as scoped package (fallback if name transfer takes time)
-- [ ] Publish `create-turbo-stack` once name is secured
-- [ ] Verify `npx create-turbo-stack` resolves and runs correctly end-to-end
+Decision: go **scoped**. The bare `create-turbo-stack` is squatted by `mislam`
+(v0.0.0, 2025-02); email + GitHub + npm dispute all unanswered after 3 months.
+The `@create-turbo-stack` scope is free, so we keep the brand and publish there.
+
+- [ ] Set `packages/cli` name → `@create-turbo-stack/cli`; rename internal pkgs are
+      not required (scope already `@create-turbo-stack/*`)
+- [ ] Publish `@create-turbo-stack/{schema,core,templates,analyzer,cli}` + set a real version
+- [ ] Optional: grab the free `create-cts` for an `npm create cts` entry (bin `cts`)
+- [ ] Verify `npx @create-turbo-stack/cli` (and `npm create cts`) run end-to-end
+- [ ] If the bare name ever frees up: publish `create-turbo-stack` too (don't block on it)
 
 ### P8 — Plugin ecosystem baseline
 
