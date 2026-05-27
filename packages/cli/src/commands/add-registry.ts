@@ -146,8 +146,8 @@ async function loadItem(
     const entry = opts.registries?.[namespace];
     if (!entry) {
       throw new Error(
-        `unknown registry "${namespace}" — add it to create-turbo-stack.json:\n` +
-          `  { "registries": { "${namespace}": "https://.../{name}.json" } }`,
+        `unknown registry "${namespace}" — add it to .turbo-stack.json:\n` +
+          `  { "config": { "registries": { "${namespace}": "https://.../{name}.json" } } }`,
       );
     }
     const { url, headers } = namespaceRequest(entry, resource);
@@ -412,9 +412,13 @@ export async function addRegistryCommand(
   // Resolve `${VAR}` registry tokens from the project's .env files too.
   await loadEnvSource(cwd);
 
+  // Registries can live in `.turbo-stack.json`'s `config` block (one file per
+  // project) — merged over any global/team `create-turbo-stack.json`, which wins.
+  const registries = { ...options.registries, ...config.config?.registries };
+
   let items: ResolvedItem[];
   try {
-    items = await resolveTree(name, { registry: options.registry, registries: options.registries });
+    items = await resolveTree(name, { registry: options.registry, registries });
   } catch (err) {
     p.log.error(`Could not resolve "${name}": ${(err as Error).message}`);
     process.exit(1);

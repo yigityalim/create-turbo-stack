@@ -55,18 +55,25 @@ fields) survive `add` / `remove`.
 - **Atomic apply.** Disk writes in `add` / `remove` snapshot the
   pre-state and roll back on any failure.
 
-## User config (`create-turbo-stack.json`)
+## User config
 
-Optional. The CLI walks up from cwd to find it. Three keys:
+Four keys (`UserConfigSchema`):
 
 - `defaults` — pre-fill prompt initial values
 - `policy` — `allow` / `forbid` filter prompt options;
   `require` skips a prompt and locks the value
 - `plugins` — npm package names; default export contributes
   `AppTypeDefinition` and/or `IntegrationDefinition` entries
+- `registries` — namespaced package registries (`@ns` → URL template /
+  `{url,headers,params,publicKey}`) for `cts add @ns/name`
 
-Validated by `UserConfigSchema`; JSON Schema available at
-`apps/web/public/schema/user-config.json`.
+**One file per project:** put this config under the `config` key of
+`.turbo-stack.json` — the project needs no second file. An out-of-project
+`create-turbo-stack.json` (walked up from cwd) or the global
+`~/.create-turbo-stack/config.json` is optional, for org/team defaults; the
+project's `config` block wins on overlap. JSON Schema:
+`apps/web/public/schema/user-config.json` (and the project file's
+`config.json`).
 
 ## Commands
 
