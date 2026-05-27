@@ -68,8 +68,18 @@ export const PackageRegistryItemSchema = z.object({
   devDependencies: z.array(z.string()).default([]),
   /** Other registry packages required first (name or URL). */
   registryDependencies: z.array(z.string()).default([]),
-  /** Env vars the package needs: name → example value. */
-  envVars: z.record(z.string(), z.string()).default({}),
+  /**
+   * Env vars the package needs: name → example value. Names MUST be valid
+   * shell identifiers and values single-line — these are interpolated into the
+   * generated env package (`createEnv`) and `.env.example`, so an unvalidated
+   * key/value would be a code/line-injection vector for third-party registries.
+   */
+  envVars: z
+    .record(
+      z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/, "env var name must be a valid identifier"),
+      z.string().regex(/^[^\n\r]*$/, "env var example value must be single-line"),
+    )
+    .default({}),
   /** Subpath exports the generated package.json declares. */
   exports: z.array(z.string()).default(["."]),
   /**

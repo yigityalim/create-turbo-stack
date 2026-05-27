@@ -11,8 +11,10 @@ export async function writeFiles(outputDir: string, nodes: FileTreeNode[]): Prom
 
     const fullPath = path.resolve(resolvedDir, node.path);
 
-    // Prevent path traversal (e.g. "../../etc/passwd")
-    if (!fullPath.startsWith(resolvedDir)) {
+    // Prevent path traversal (e.g. "../../etc/passwd"). The trailing separator
+    // matters: a bare `startsWith` would also accept a sibling like
+    // `/tmp/app-evil` for project `/tmp/app`.
+    if (fullPath !== resolvedDir && !fullPath.startsWith(resolvedDir + path.sep)) {
       throw new Error(`Path traversal detected: ${node.path}`);
     }
 
