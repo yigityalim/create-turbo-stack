@@ -458,6 +458,12 @@
         "additionalProperties": false
       }
     },
+    "registryPackages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "generatedAt": {
       "type": "string",
       "format": "date-time",

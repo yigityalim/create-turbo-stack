@@ -401,9 +401,11 @@ export async function addRegistryCommand(
     dryRun?: boolean;
     yes?: boolean;
     app?: string;
+    /** Target project dir — the create flow passes the freshly scaffolded one. */
+    cwd?: string;
   } = {},
 ): Promise<void> {
-  const cwd = process.cwd();
+  const cwd = options.cwd ?? process.cwd();
   const config = await readProjectConfig(cwd);
   if (!config) {
     p.log.error("No .turbo-stack.json found. Are you in a create-turbo-stack project?");
@@ -420,7 +422,11 @@ export async function addRegistryCommand(
   try {
     items = await resolveTree(name, { registry: options.registry, registries });
   } catch (err) {
-    p.log.error(`Could not resolve "${name}": ${(err as Error).message}`);
+    const message = `Could not resolve "${name}": ${(err as Error).message}`;
+    // Called programmatically (create flow) → throw so the caller can warn and
+    // continue; standalone `cts add` → report and exit.
+    if (options.cwd) throw new Error(message);
+    p.log.error(message);
     process.exit(1);
   }
 

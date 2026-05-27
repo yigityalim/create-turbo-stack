@@ -32,6 +32,7 @@ export type PresetAction =
   | { type: "ADD_PACKAGE"; payload: Package }
   | { type: "UPDATE_PACKAGE"; index: number; payload: Partial<Package> }
   | { type: "REMOVE_PACKAGE"; index: number }
+  | { type: "TOGGLE_REGISTRY_PACKAGE"; payload: string }
   | { type: "LOAD_PRESET"; payload: Preset }
   | { type: "RESET"; payload: Preset };
 
@@ -147,6 +148,14 @@ export function presetReducer(state: Preset, action: PresetAction): Preset {
           }))
         : state.apps;
       return { ...state, packages, apps };
+    }
+
+    case "TOGGLE_REGISTRY_PACKAGE": {
+      const current = state.registryPackages ?? [];
+      const registryPackages = current.includes(action.payload)
+        ? current.filter((r) => r !== action.payload)
+        : [...current, action.payload];
+      return { ...state, registryPackages };
     }
 
     case "LOAD_PRESET":

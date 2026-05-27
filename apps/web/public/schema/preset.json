@@ -457,6 +457,12 @@
         ],
         "additionalProperties": false
       }
+    },
+    "registryPackages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   },
   "required": [

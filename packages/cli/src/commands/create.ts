@@ -19,6 +19,7 @@ import { validatePresetAgainstPolicy } from "../io/policy";
 import { writeFiles } from "../io/writer";
 import { runCreatePrompts } from "../prompts/create-flow";
 import { CLI_VERSION } from "../version";
+import { addRegistryCommand } from "./add-registry";
 
 export async function createCommand(
   projectName: string | undefined,
@@ -143,6 +144,17 @@ export async function createCommand(
     s.stop("Failed to write files");
     await fs.rm(outputDir, { recursive: true, force: true }).catch(() => {});
     throw err;
+  }
+
+  // Materialize any selected registry packages into the fresh project (before
+  // git/install so they land in the initial commit and the install picks up
+  // their catalog deps). Best-effort — a missing/unreachable registry warns.
+  for (const ref of validated.registryPackages ?? []) {
+    try {
+      await addRegistryCommand(ref, { cwd: outputDir, yes: true });
+    } catch (err) {
+      p.log.warn(`Could not add registry package "${ref}": ${(err as Error).message}`);
+    }
   }
 
   s.start("Initializing git repository");

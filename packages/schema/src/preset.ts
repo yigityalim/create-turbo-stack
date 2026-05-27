@@ -47,6 +47,13 @@ export const PresetSchema = z.object({
 
   apps: z.array(AppSchema).min(1),
   packages: z.array(PackageSchema).default([]),
+  /**
+   * Registry packages to `cts add` after scaffolding (names or `@ns/name`
+   * refs). Selected in the web builder or written by hand; the create flow
+   * materializes them into `packages/<name>` once the project exists. Optional
+   * so existing presets (and Preset literals) need no change.
+   */
+  registryPackages: z.array(z.string()).optional(),
 });
 
 export type Preset = z.infer<typeof PresetSchema>;

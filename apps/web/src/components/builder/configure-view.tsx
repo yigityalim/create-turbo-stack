@@ -8,6 +8,7 @@ import { AppsSection } from "./apps-section";
 import { useBuilder } from "./builder-provider";
 import { ConfigureSection } from "./configure-section";
 import { PackagesSection } from "./packages-section";
+import { RegistrySection } from "./registry-section";
 
 export function ConfigureView() {
   const { preset, dispatch, validationErrors, scrollTarget } = useBuilder();
@@ -109,6 +110,7 @@ export function ConfigureView() {
     !normalizedQuery ||
     "packages".includes(normalizedQuery) ||
     "libraries".includes(normalizedQuery);
+  const showRegistry = !normalizedQuery || "registry".includes(normalizedQuery);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -185,11 +187,13 @@ export function ConfigureView() {
               <PackagesSection />
             </div>
           )}
+          {showRegistry && <RegistrySection />}
 
           {normalizedQuery &&
             filteredCategories.length === 0 &&
             !showApps &&
-            !showPackages && (
+            !showPackages &&
+            !showRegistry && (
               <div className="flex items-center justify-center py-12 text-fd-muted-foreground">
                 <p className="font-mono text-sm">
                   No matching options for "{searchQuery}"

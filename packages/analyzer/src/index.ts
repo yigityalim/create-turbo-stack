@@ -76,6 +76,7 @@ export async function analyze(rootPath: string): Promise<AnalysisResult> {
             },
           ],
     packages: pkgsResult.packages,
+    registryPackages: [],
   };
 
   const detections: DetectionReport = {
