@@ -1,7 +1,8 @@
-// User-authored config (`create-turbo-stack.json`). Distinct from
-// `.turbo-stack.json` which is CLI-written state. Three keys:
-// `defaults` (pre-fill prompts), `policy` (allow/forbid/require),
-// `plugins` (npm packages to dynamic-import).
+// User-authored CLI config. Lives either in `.turbo-stack.json`'s `config`
+// block (per project, the common case) or in an external/global
+// `create-turbo-stack.json` (org/team defaults). Four keys: `defaults`
+// (pre-fill prompts), `policy` (allow/forbid/require), `plugins` (npm packages
+// to dynamic-import), `registries` (namespaced package registries).
 
 import { z } from "zod";
 import { ApiStrategySchema } from "./options/api";

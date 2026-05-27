@@ -11,8 +11,8 @@ import type { PackageRegistryItem } from "@create-turbo-stack/schema";
  *     or corruption between build and install. Always present on built items.
  *   - **signature** — Ed25519 over the checksum. Optional; only meaningful when
  *     the consumer holds the publisher's public key out-of-band (configured per
- *     registry in `create-turbo-stack.json`). Protects against a compromised
- *     registry host, which a self-embedded checksum alone cannot.
+ *     registry in `.turbo-stack.json`'s `config.registries`). Protects against a
+ *     compromised registry host, which a self-embedded checksum alone cannot.
  *
  * The canonical form is the integrity *contract*: producer and consumer MUST
  * serialize identically, so it is defined here once and reused everywhere.
