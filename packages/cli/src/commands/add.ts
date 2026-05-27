@@ -1,6 +1,12 @@
 import * as p from "@clack/prompts";
 import { resolveAutoPackages, SUPPORTED_APP_TYPES } from "@create-turbo-stack/core";
-import type { App, Package, Preset, UserConfig } from "@create-turbo-stack/schema";
+import type {
+  App,
+  Package,
+  Preset,
+  TurboStackConfig,
+  UserConfig,
+} from "@create-turbo-stack/schema";
 import {
   AiSchema,
   AnalyticsSchema,
@@ -17,27 +23,37 @@ import { readProjectConfig } from "../io/reader";
 import { addDependencyCommand } from "./add-dependency";
 import { addRegistryCommand } from "./add-registry";
 
+interface AddOptions {
+  dryRun?: boolean;
+  to?: string;
+  dev?: boolean;
+  version?: string;
+  registry?: string;
+  app?: string;
+  yes?: boolean;
+  // Non-interactive inputs for add app / package / integration.
+  type?: string;
+  port?: string;
+  i18n?: boolean;
+  consumes?: string;
+  css?: boolean;
+  exports?: string;
+  value?: string;
+}
+
 export async function addCommand(
   type: string,
   userConfig?: UserConfig,
-  options: {
-    dryRun?: boolean;
-    to?: string;
-    dev?: boolean;
-    version?: string;
-    registry?: string;
-    app?: string;
-    yes?: boolean;
-  } = {},
+  options: AddOptions = {},
   extra?: string,
 ) {
   switch (type) {
     case "app":
-      return addApp(userConfig, options);
+      return addApp(userConfig, options, extra);
     case "package":
-      return addPackage(userConfig, options);
+      return addPackage(userConfig, options, extra);
     case "integration":
-      return addIntegration(userConfig, options);
+      return addIntegration(userConfig, options, extra);
     case "dependency":
     case "dep":
       // `extra` carries the npm package name (e.g. `add dependency lodash`).
@@ -69,7 +85,7 @@ function exitIfPolicyViolated(preset: Preset, policy: UserConfig["policy"] | und
   process.exit(1);
 }
 
-async function addApp(userConfig?: UserConfig, options: { dryRun?: boolean } = {}) {
+async function addApp(userConfig?: UserConfig, options: AddOptions = {}, name?: string) {
   const cwd = process.cwd();
   const config = await readProjectConfig(cwd);
 
@@ -78,11 +94,60 @@ async function addApp(userConfig?: UserConfig, options: { dryRun?: boolean } = {
     process.exit(1);
   }
 
+  const existingNames = new Set(config.apps.map((a) => a.name));
+  const allowedTypes = filterOptions(SUPPORTED_APP_TYPES, userConfig?.policy, "appType");
+  if (allowedTypes.length === 0) {
+    p.log.error("Project policy forbids every supported app type — nothing to add.");
+    process.exit(1);
+  }
+  const DEFAULT_START_PORT = 3000;
+  const maxPort =
+    config.apps.length > 0 ? Math.max(...config.apps.map((a) => a.port)) : DEFAULT_START_PORT - 1;
+
+  // Non-interactive: positional name provided → build from flags + defaults.
+  if (name) {
+    if (!/^[a-z][a-z0-9-]*$/.test(name)) {
+      p.log.error("App name must be lowercase letters, numbers, hyphens.");
+      process.exit(1);
+    }
+    if (existingNames.has(name)) {
+      p.log.error(`App "${name}" already exists.`);
+      process.exit(1);
+    }
+    const appType = (options.type ?? "nextjs") as App["type"];
+    if (!allowedTypes.includes(appType)) {
+      p.log.error(`App type "${appType}" not allowed. One of: ${allowedTypes.join(", ")}.`);
+      process.exit(1);
+    }
+    const port = options.port ? Number(options.port) : maxPort + 1;
+    if (
+      Number.isNaN(port) ||
+      port < 1024 ||
+      port > 65535 ||
+      config.apps.some((a) => a.port === port)
+    ) {
+      p.log.error(`Invalid or already-used port: ${options.port ?? port}.`);
+      process.exit(1);
+    }
+    const consumes = options.consumes
+      ? options.consumes
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
+    p.intro(`${pc.bgCyan(pc.black(" add app "))} to ${pc.cyan(config.basics.projectName)}`);
+    return finalizeApp(
+      cwd,
+      config,
+      { name, type: appType, port, i18n: !!options.i18n, consumes },
+      userConfig,
+      options,
+    );
+  }
+
   p.intro(`${pc.bgCyan(pc.black(" add app "))} to ${pc.cyan(config.basics.projectName)}`);
 
-  const existingNames = new Set(config.apps.map((a) => a.name));
-
-  const name = (await p.text({
+  const appName = (await p.text({
     message: "App name",
     placeholder: "admin",
     validate(value) {
@@ -91,22 +156,14 @@ async function addApp(userConfig?: UserConfig, options: { dryRun?: boolean } = {
       if (existingNames.has(value)) return `App "${value}" already exists`;
     },
   })) as string;
-  if (p.isCancel(name)) return process.exit(0);
+  if (p.isCancel(appName)) return process.exit(0);
 
-  const allowedTypes = filterOptions(SUPPORTED_APP_TYPES, userConfig?.policy, "appType");
-  if (allowedTypes.length === 0) {
-    p.log.error("Project policy forbids every supported app type — nothing to add.");
-    process.exit(1);
-  }
   const appType = (await p.select({
     message: "App type",
     options: allowedTypes.map((t) => ({ value: t, label: t })),
   })) as App["type"];
   if (p.isCancel(appType)) return process.exit(0);
 
-  const DEFAULT_START_PORT = 3000;
-  const maxPort =
-    config.apps.length > 0 ? Math.max(...config.apps.map((a) => a.port)) : DEFAULT_START_PORT - 1;
   const port = (await p.text({
     message: "Port",
     initialValue: String(maxPort + 1),
@@ -143,18 +200,24 @@ async function addApp(userConfig?: UserConfig, options: { dryRun?: boolean } = {
     if (p.isCancel(consumes)) return process.exit(0);
   }
 
-  const newApp: App = {
-    name,
-    type: appType,
-    port: Number(port),
-    i18n,
-    consumes,
-  };
+  return finalizeApp(
+    cwd,
+    config,
+    { name: appName, type: appType, port: Number(port), i18n, consumes },
+    userConfig,
+    options,
+  );
+}
 
-  const updatedPreset: Preset = {
-    ...config,
-    apps: [...config.apps, newApp],
-  };
+/** Shared tail for `add app`: validate the new preset, check policy, apply. */
+async function finalizeApp(
+  cwd: string,
+  config: TurboStackConfig,
+  newApp: App,
+  userConfig: UserConfig | undefined,
+  options: AddOptions,
+): Promise<void> {
+  const updatedPreset: Preset = { ...config, apps: [...config.apps, newApp] };
 
   const result = ValidatedPresetSchema.safeParse(updatedPreset);
   if (!result.success) {
@@ -172,10 +235,10 @@ async function addApp(userConfig?: UserConfig, options: { dryRun?: boolean } = {
     onConflict: resolveOnConflict(config, userConfig),
   });
 
-  p.outro(`${pc.green("Done!")} App ${pc.cyan(name)} added.`);
+  p.outro(`${pc.green("Done!")} App ${pc.cyan(newApp.name)} added.`);
 }
 
-async function addPackage(userConfig?: UserConfig, options: { dryRun?: boolean } = {}) {
+async function addPackage(userConfig?: UserConfig, options: AddOptions = {}, name?: string) {
   const cwd = process.cwd();
   const config = await readProjectConfig(cwd);
 
@@ -184,11 +247,48 @@ async function addPackage(userConfig?: UserConfig, options: { dryRun?: boolean }
     process.exit(1);
   }
 
+  const existingNames = new Set(config.packages.map((p) => p.name));
+  const parseExports = (input: string): string[] =>
+    input
+      .split(",")
+      .map((e) => e.trim())
+      .filter(Boolean)
+      .map((e) => (e.startsWith("./") || e === "." ? e : `./${e}`));
+
+  // Non-interactive: positional name provided → build from flags + defaults.
+  if (name) {
+    if (!/^[a-z][a-z0-9-]*$/.test(name)) {
+      p.log.error("Package name must be lowercase letters, numbers, hyphens.");
+      process.exit(1);
+    }
+    if (existingNames.has(name)) {
+      p.log.error(`Package "${name}" already exists.`);
+      process.exit(1);
+    }
+    const pkgType = (options.type ?? "library") as Package["type"];
+    if (!PackageTypeSchema.options.includes(pkgType)) {
+      p.log.error(`Package type "${pkgType}". One of: ${PackageTypeSchema.options.join(", ")}.`);
+      process.exit(1);
+    }
+    const exports = options.exports ? parseExports(options.exports) : ["."];
+    p.intro(`${pc.bgCyan(pc.black(" add package "))} to ${pc.cyan(config.basics.projectName)}`);
+    return finalizePackage(
+      cwd,
+      config,
+      {
+        name,
+        type: pkgType,
+        producesCSS: options.css ?? (pkgType === "ui" || pkgType === "react-library"),
+        exports: exports.length > 0 ? exports : ["."],
+      },
+      userConfig,
+      options,
+    );
+  }
+
   p.intro(`${pc.bgCyan(pc.black(" add package "))} to ${pc.cyan(config.basics.projectName)}`);
 
-  const existingNames = new Set(config.packages.map((p) => p.name));
-
-  const name = (await p.text({
+  const pkgName = (await p.text({
     message: "Package name",
     placeholder: "billing",
     validate(value) {
@@ -197,7 +297,7 @@ async function addPackage(userConfig?: UserConfig, options: { dryRun?: boolean }
       if (existingNames.has(value)) return `Package "${value}" already exists`;
     },
   })) as string;
-  if (p.isCancel(name)) return process.exit(0);
+  if (p.isCancel(pkgName)) return process.exit(0);
 
   const pkgType = (await p.select({
     message: "Package type",
@@ -218,23 +318,26 @@ async function addPackage(userConfig?: UserConfig, options: { dryRun?: boolean }
   })) as string;
   if (p.isCancel(exportsInput)) return process.exit(0);
 
-  const exports = exportsInput
-    .split(",")
-    .map((e) => e.trim())
-    .filter(Boolean)
-    .map((e) => (e.startsWith("./") || e === "." ? e : `./${e}`));
+  const exports = parseExports(exportsInput);
 
-  const newPkg: Package = {
-    name,
-    type: pkgType,
-    producesCSS,
-    exports: exports.length > 0 ? exports : ["."],
-  };
+  return finalizePackage(
+    cwd,
+    config,
+    { name: pkgName, type: pkgType, producesCSS, exports: exports.length > 0 ? exports : ["."] },
+    userConfig,
+    options,
+  );
+}
 
-  const updatedPreset: Preset = {
-    ...config,
-    packages: [...config.packages, newPkg],
-  };
+/** Shared tail for `add package`: validate the new preset, check policy, apply. */
+async function finalizePackage(
+  cwd: string,
+  config: TurboStackConfig,
+  newPkg: Package,
+  userConfig: UserConfig | undefined,
+  options: AddOptions,
+): Promise<void> {
+  const updatedPreset: Preset = { ...config, packages: [...config.packages, newPkg] };
 
   const result = ValidatedPresetSchema.safeParse(updatedPreset);
   if (!result.success) {
@@ -252,17 +355,43 @@ async function addPackage(userConfig?: UserConfig, options: { dryRun?: boolean }
     onConflict: resolveOnConflict(config, userConfig),
   });
 
-  const scope = config.basics.scope;
-  p.outro(`${pc.green("Done!")} Package ${pc.cyan(`${scope}/${name}`)} created.`);
+  p.outro(
+    `${pc.green("Done!")} Package ${pc.cyan(`${config.basics.scope}/${newPkg.name}`)} created.`,
+  );
 }
 
-async function addIntegration(userConfig?: UserConfig, options: { dryRun?: boolean } = {}) {
+const INTEGRATION_SCHEMAS: Record<string, readonly string[]> = {
+  analytics: AnalyticsSchema.options,
+  errorTracking: ErrorTrackingSchema.options,
+  email: EmailSchema.options,
+  rateLimit: RateLimitSchema.options,
+  ai: AiSchema.options,
+};
+
+async function addIntegration(userConfig?: UserConfig, options: AddOptions = {}, name?: string) {
   const cwd = process.cwd();
   const config = await readProjectConfig(cwd);
 
   if (!config) {
     p.log.error("No .turbo-stack.json found. Are you in a create-turbo-stack project?");
     process.exit(1);
+  }
+
+  // Non-interactive: `add integration <category> --value <provider>`.
+  if (name) {
+    const opts = INTEGRATION_SCHEMAS[name];
+    if (!opts) {
+      p.log.error(
+        `Unknown integration category "${name}". One of: ${Object.keys(INTEGRATION_SCHEMAS).join(", ")}.`,
+      );
+      process.exit(1);
+    }
+    if (!options.value || !opts.includes(options.value)) {
+      p.log.error(`--value for ${name} must be one of: ${opts.join(", ")}.`);
+      process.exit(1);
+    }
+    p.intro(`${pc.bgCyan(pc.black(" add integration "))} to ${pc.cyan(config.basics.projectName)}`);
+    return finalizeIntegration(cwd, config, name, options.value, userConfig, options);
   }
 
   p.intro(`${pc.bgCyan(pc.black(" add integration "))} to ${pc.cyan(config.basics.projectName)}`);
@@ -370,12 +499,21 @@ async function addIntegration(userConfig?: UserConfig, options: { dryRun?: boole
 
   if (p.isCancel(value)) return process.exit(0);
 
+  return finalizeIntegration(cwd, config, category, value, userConfig, options);
+}
+
+/** Shared tail for `add integration`: set the category, validate, apply. */
+async function finalizeIntegration(
+  cwd: string,
+  config: TurboStackConfig,
+  category: string,
+  value: string,
+  userConfig: UserConfig | undefined,
+  options: AddOptions,
+): Promise<void> {
   const updatedPreset: Preset = {
     ...config,
-    integrations: {
-      ...config.integrations,
-      [category]: value,
-    },
+    integrations: { ...config.integrations, [category]: value },
   };
 
   const result = ValidatedPresetSchema.safeParse(updatedPreset);

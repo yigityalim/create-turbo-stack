@@ -81,6 +81,15 @@ export async function run() {
       "Also add the package as a dependency of this app — for registry packages",
     )
     .option("-y, --yes", "Skip the confirmation prompt — for registry packages")
+    // Non-interactive inputs for `add app` / `add package` / `add integration`.
+    // Providing the positional name (or category) skips the prompts.
+    .option("--type <type>", "App type or package type — for add app / add package")
+    .option("--port <port>", "Port — for add app")
+    .option("--i18n", "Enable i18n — for add app")
+    .option("--consumes <pkgs>", "Comma-separated packages to consume — for add app")
+    .option("--css", "Package contains TSX with Tailwind classes — for add package")
+    .option("--exports <subpaths>", "Comma-separated export subpaths — for add package")
+    .option("--value <provider>", "Provider — for add integration <category>")
     .action((type, name, options) =>
       // `--yes` may land on the global program option; merge it in.
       addCommand(type, userConfig, { ...options, yes: options.yes || program.opts().yes }, name),
