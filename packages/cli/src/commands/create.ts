@@ -12,6 +12,7 @@ import {
 import type { FileTree, Preset, TurboStackConfig, UserConfig } from "@create-turbo-stack/schema";
 import { CURRENT_PRESET_SCHEMA_VERSION, ValidatedPresetSchema } from "@create-turbo-stack/schema";
 import pc from "picocolors";
+import { BUILTIN_PRESET_NAMES, BUILTIN_PRESETS } from "../builtin-presets";
 import { initGit } from "../io/git";
 import type { PM } from "../io/pm";
 import { installDependencies } from "../io/pm";
@@ -29,9 +30,11 @@ export async function createCommand(
   let preset: Preset;
 
   if (options.preset) {
-    // Load preset from file or URL
+    // Resolve the preset: a built-in name (bundled, offline), a URL, or a path.
     let raw: string;
-    if (options.preset.startsWith("http://") || options.preset.startsWith("https://")) {
+    if (BUILTIN_PRESETS[options.preset]) {
+      raw = JSON.stringify(BUILTIN_PRESETS[options.preset]);
+    } else if (options.preset.startsWith("http://") || options.preset.startsWith("https://")) {
       const res = await fetch(options.preset);
       if (!res.ok) {
         p.log.error(`Failed to fetch preset: ${res.status} ${res.statusText}`);
@@ -39,7 +42,13 @@ export async function createCommand(
       }
       raw = await res.text();
     } else {
-      raw = await fs.readFile(path.resolve(options.preset), "utf-8");
+      raw = await fs.readFile(path.resolve(options.preset), "utf-8").catch(() => {
+        p.log.error(
+          `Preset "${options.preset}" not found. Use a built-in name ` +
+            `(${BUILTIN_PRESET_NAMES.join(", ")}), a URL, or a file path.`,
+        );
+        process.exit(1);
+      });
     }
 
     try {

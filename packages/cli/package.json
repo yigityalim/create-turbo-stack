@@ -9,6 +9,7 @@
   "files": ["dist", "README.md", "LICENSE"],
   "scripts": {
     "dev": "tsx bin/create-turbo-stack.ts",
+    "build:presets": "bun scripts/build-presets.ts",
     "build": "tsup",
     "lint": "biome check",
     "type-check": "tsc --noEmit",
