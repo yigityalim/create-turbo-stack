@@ -109,12 +109,20 @@ export const ValidatedPresetSchema = PresetSchema.superRefine((data, ctx) => {
     });
   }
 
+  // Mirrors the auto-packages the resolver generates (see core's
+  // resolveAutoPackages) so an app may `consumes` them. Kept in sync by hand —
+  // schema is logic-free and can't import core.
   const allPackageNames = new Set([
     ...pkgNames,
     ...(data.database.strategy !== "none" ? ["db"] : []),
     ...(data.api.strategy !== "none" ? ["api"] : []),
     ...(data.auth.provider !== "none" ? ["auth"] : []),
     ...(data.integrations.envValidation ? ["env"] : []),
+    ...(data.integrations.analytics !== "none" ? ["analytics"] : []),
+    ...(data.integrations.errorTracking === "sentry" ? ["monitoring"] : []),
+    ...(data.integrations.email !== "none" ? ["email"] : []),
+    ...(data.integrations.rateLimit === "upstash" ? ["rate-limit"] : []),
+    ...(data.integrations.ai !== "none" ? ["ai"] : []),
     "typescript-config",
   ]);
   for (const [i, app] of data.apps.entries()) {

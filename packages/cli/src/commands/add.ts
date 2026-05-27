@@ -85,6 +85,56 @@ function exitIfPolicyViolated(preset: Preset, policy: UserConfig["policy"] | und
   process.exit(1);
 }
 
+/** Integration category → the workspace package it generates (consumed by apps). */
+const INTEGRATION_PACKAGE: Record<string, string> = {
+  analytics: "analytics",
+  errorTracking: "monitoring",
+  email: "email",
+  rateLimit: "rate-limit",
+  ai: "ai",
+};
+
+/** Add `pkg` to the `consumes` of the named apps (skips apps already consuming it). */
+function wireConsumes(apps: App[], pkg: string, appNames: ReadonlySet<string>): App[] {
+  return apps.map((a) =>
+    appNames.has(a.name) && !a.consumes.includes(pkg)
+      ? { ...a, consumes: [...a.consumes, pkg] }
+      : a,
+  );
+}
+
+/**
+ * Which apps should consume a newly-added package/integration — answering A1
+ * ("which apps get it?"). `--app` targets one (validated); interactive offers a
+ * multi-select; non-interactive falls back (`all` for integrations so they're
+ * actually used, `none` for a bare package).
+ */
+async function pickConsumerApps(
+  config: TurboStackConfig,
+  options: AddOptions,
+  interactive: boolean,
+  fallback: "all" | "none",
+): Promise<string[]> {
+  const appNames = config.apps.map((a) => a.name);
+  if (options.app) {
+    if (!appNames.includes(options.app)) {
+      p.log.error(`Unknown app "${options.app}". Known apps: ${appNames.join(", ") || "(none)"}.`);
+      process.exit(1);
+    }
+    return [options.app];
+  }
+  if (!interactive) return fallback === "all" ? appNames : [];
+  if (appNames.length === 0) return [];
+  const picked = await p.multiselect({
+    message: "Which apps should use it?",
+    options: appNames.map((n) => ({ value: n, label: `apps/${n}` })),
+    required: false,
+    initialValues: fallback === "all" ? appNames : [],
+  });
+  if (p.isCancel(picked)) return process.exit(0);
+  return picked as string[];
+}
+
 async function addApp(userConfig?: UserConfig, options: AddOptions = {}, name?: string) {
   const cwd = process.cwd();
   const config = await readProjectConfig(cwd);
@@ -272,6 +322,7 @@ async function addPackage(userConfig?: UserConfig, options: AddOptions = {}, nam
     }
     const exports = options.exports ? parseExports(options.exports) : ["."];
     p.intro(`${pc.bgCyan(pc.black(" add package "))} to ${pc.cyan(config.basics.projectName)}`);
+    const targetApps = await pickConsumerApps(config, options, false, "none");
     return finalizePackage(
       cwd,
       config,
@@ -281,6 +332,7 @@ async function addPackage(userConfig?: UserConfig, options: AddOptions = {}, nam
         producesCSS: options.css ?? (pkgType === "ui" || pkgType === "react-library"),
         exports: exports.length > 0 ? exports : ["."],
       },
+      targetApps,
       userConfig,
       options,
     );
@@ -319,25 +371,32 @@ async function addPackage(userConfig?: UserConfig, options: AddOptions = {}, nam
   if (p.isCancel(exportsInput)) return process.exit(0);
 
   const exports = parseExports(exportsInput);
+  const targetApps = await pickConsumerApps(config, options, true, "none");
 
   return finalizePackage(
     cwd,
     config,
     { name: pkgName, type: pkgType, producesCSS, exports: exports.length > 0 ? exports : ["."] },
+    targetApps,
     userConfig,
     options,
   );
 }
 
-/** Shared tail for `add package`: validate the new preset, check policy, apply. */
+/**
+ * Shared tail for `add package`: append the package, wire it into the target
+ * apps' `consumes` (P3 incremental refs), validate, check policy, apply.
+ */
 async function finalizePackage(
   cwd: string,
   config: TurboStackConfig,
   newPkg: Package,
+  targetApps: string[],
   userConfig: UserConfig | undefined,
   options: AddOptions,
 ): Promise<void> {
-  const updatedPreset: Preset = { ...config, packages: [...config.packages, newPkg] };
+  const apps = wireConsumes(config.apps, newPkg.name, new Set(targetApps));
+  const updatedPreset: Preset = { ...config, apps, packages: [...config.packages, newPkg] };
 
   const result = ValidatedPresetSchema.safeParse(updatedPreset);
   if (!result.success) {
@@ -355,8 +414,12 @@ async function finalizePackage(
     onConflict: resolveOnConflict(config, userConfig),
   });
 
+  const wired = config.apps
+    .filter((a, i) => apps[i].consumes.length !== a.consumes.length)
+    .map((a) => a.name);
+  const suffix = wired.length > 0 ? ` — consumed by ${wired.join(", ")}` : "";
   p.outro(
-    `${pc.green("Done!")} Package ${pc.cyan(`${config.basics.scope}/${newPkg.name}`)} created.`,
+    `${pc.green("Done!")} Package ${pc.cyan(`${config.basics.scope}/${newPkg.name}`)} created${suffix}.`,
   );
 }
 
@@ -391,7 +454,8 @@ async function addIntegration(userConfig?: UserConfig, options: AddOptions = {},
       process.exit(1);
     }
     p.intro(`${pc.bgCyan(pc.black(" add integration "))} to ${pc.cyan(config.basics.projectName)}`);
-    return finalizeIntegration(cwd, config, name, options.value, userConfig, options);
+    const targetApps = await pickConsumerApps(config, options, false, "all");
+    return finalizeIntegration(cwd, config, name, options.value, targetApps, userConfig, options);
   }
 
   p.intro(`${pc.bgCyan(pc.black(" add integration "))} to ${pc.cyan(config.basics.projectName)}`);
@@ -499,20 +563,38 @@ async function addIntegration(userConfig?: UserConfig, options: AddOptions = {},
 
   if (p.isCancel(value)) return process.exit(0);
 
-  return finalizeIntegration(cwd, config, category, value, userConfig, options);
+  const targetApps = await pickConsumerApps(config, options, true, "all");
+  return finalizeIntegration(cwd, config, category, value, targetApps, userConfig, options);
 }
 
-/** Shared tail for `add integration`: set the category, validate, apply. */
+/**
+ * Shared tail for `add integration`: set the category, wire its package into the
+ * target apps' `consumes` (A1), validate, apply. Idempotent (P3): if the value
+ * is unchanged and every target app already consumes it, there's nothing to do.
+ */
 async function finalizeIntegration(
   cwd: string,
   config: TurboStackConfig,
   category: string,
   value: string,
+  targetApps: string[],
   userConfig: UserConfig | undefined,
   options: AddOptions,
 ): Promise<void> {
+  const pkg = INTEGRATION_PACKAGE[category];
+  const valueChanged = (config.integrations as Record<string, unknown>)[category] !== value;
+  const apps =
+    pkg && value !== "none" ? wireConsumes(config.apps, pkg, new Set(targetApps)) : config.apps;
+  const consumesChanged = apps.some((a, i) => a.consumes.length !== config.apps[i].consumes.length);
+
+  if (!valueChanged && !consumesChanged) {
+    p.outro(`${pc.dim("No change —")} ${category} is already ${pc.cyan(value)}.`);
+    return;
+  }
+
   const updatedPreset: Preset = {
     ...config,
+    apps,
     integrations: { ...config.integrations, [category]: value },
   };
 
@@ -532,5 +614,11 @@ async function finalizeIntegration(
     onConflict: resolveOnConflict(config, userConfig),
   });
 
-  p.outro(`${pc.green("Done!")} Integration ${pc.cyan(category)} set to ${pc.cyan(value)}.`);
+  const wired = config.apps
+    .filter((a, i) => apps[i].consumes.length !== a.consumes.length)
+    .map((a) => a.name);
+  const suffix = wired.length > 0 ? ` — consumed by ${wired.join(", ")}` : "";
+  p.outro(
+    `${pc.green("Done!")} Integration ${pc.cyan(category)} set to ${pc.cyan(value)}${suffix}.`,
+  );
 }
