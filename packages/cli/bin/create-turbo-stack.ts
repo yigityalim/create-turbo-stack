@@ -74,6 +74,10 @@ async function main() {
     .option("--dev", "Add as a devDependency — for dependency")
     .option("--version <semver>", "Pin a specific version — for dependency (default: latest)")
     .option("--registry <url|path>", "Registry URL or local path — for registry packages")
+    .option(
+      "--app <name>",
+      "Also add the package as a dependency of this app — for registry packages",
+    )
     .option("-y, --yes", "Skip the confirmation prompt — for registry packages")
     .action((type, name, options) =>
       // `--yes` may land on the global program option; merge it in.

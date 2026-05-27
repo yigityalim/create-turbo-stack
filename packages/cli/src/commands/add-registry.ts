@@ -400,6 +400,7 @@ export async function addRegistryCommand(
     registries?: Record<string, RegistryConfigEntry>;
     dryRun?: boolean;
     yes?: boolean;
+    app?: string;
   } = {},
 ): Promise<void> {
   const cwd = process.cwd();
@@ -490,6 +491,42 @@ export async function addRegistryCommand(
           `(couldn't auto-wire ${pc.dim("packages/env/src/index.ts")}).`,
       );
     }
+  }
+
+  // Optionally wire the root package into an app as a workspace dependency
+  // (the app consumes it; the package's own registryDependencies are its deps,
+  // not the app's). --app picks it directly; otherwise prompt interactively.
+  let targetApp = options.app;
+  if (!targetApp && !options.yes && config.apps.length > 0) {
+    const picked = await p.select({
+      message: `Add ${pc.cyan(`${scope}/${rootItem.name}`)} to an app?`,
+      options: [
+        { value: "", label: "no — just add the package" },
+        ...config.apps.map((a) => ({ value: a.name, label: `apps/${a.name}` })),
+      ],
+    });
+    if (p.isCancel(picked)) {
+      p.cancel("Aborted.");
+      return;
+    }
+    targetApp = picked || undefined;
+  }
+  if (targetApp) {
+    if (!config.apps.some((a) => a.name === targetApp)) {
+      p.log.error(
+        `Unknown app "${targetApp}". Known apps: ${config.apps.map((a) => a.name).join(", ")}`,
+      );
+      process.exit(1);
+    }
+    const appPkgPath = `apps/${targetApp}/package.json`;
+    const appPkg = JSON.parse(await fs.readFile(path.join(cwd, appPkgPath), "utf-8"));
+    appPkg.dependencies ??= {};
+    appPkg.dependencies[`${scope}/${rootItem.name}`] = "workspace:*";
+    nodes.push({
+      path: appPkgPath,
+      content: `${JSON.stringify(appPkg, null, 2)}\n`,
+      isDirectory: false,
+    });
   }
 
   p.log.message(`Will write:\n${nodes.map((n) => `  ${pc.green("+")} ${n.path}`).join("\n")}`);

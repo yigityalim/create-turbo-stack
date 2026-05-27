@@ -26,6 +26,7 @@ export async function addCommand(
     dev?: boolean;
     version?: string;
     registry?: string;
+    app?: string;
     yes?: boolean;
   } = {},
   extra?: string,
@@ -55,6 +56,7 @@ export async function addCommand(
         registries: userConfig?.registries,
         dryRun: options.dryRun,
         yes: options.yes,
+        app: options.app,
       });
   }
 }
