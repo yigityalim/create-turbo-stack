@@ -12,7 +12,7 @@ import {
   ValidatedPresetSchema,
 } from "@create-turbo-stack/schema";
 import pc from "picocolors";
-import { applyDiff } from "../io/apply-diff";
+import { applyDiff, resolveOnConflict } from "../io/apply-diff";
 import { filterOptions, validatePresetAgainstPolicy } from "../io/policy";
 import { readProjectConfig } from "../io/reader";
 
@@ -65,7 +65,10 @@ export async function switchCommand(
     process.exit(1);
   }
 
-  await applyDiff(cwd, config as Preset, result.data, { dryRun: options.dryRun });
+  await applyDiff(cwd, config as Preset, result.data, {
+    dryRun: options.dryRun,
+    onConflict: resolveOnConflict(config, userConfig),
+  });
   p.outro(`${pc.green("Done!")} ${pc.cyan(category)} switched to ${pc.cyan(newProvider)}.`);
 }
 

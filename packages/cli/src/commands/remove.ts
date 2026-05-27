@@ -2,7 +2,7 @@ import * as p from "@clack/prompts";
 import type { Preset, UserConfig } from "@create-turbo-stack/schema";
 import { ValidatedPresetSchema } from "@create-turbo-stack/schema";
 import pc from "picocolors";
-import { applyDiff } from "../io/apply-diff";
+import { applyDiff, resolveOnConflict } from "../io/apply-diff";
 import { validatePresetAgainstPolicy } from "../io/policy";
 import { readProjectConfig } from "../io/reader";
 
@@ -83,7 +83,10 @@ async function removeApp(
   }
 
   enforcePolicy(result.data, userConfig);
-  await applyDiff(cwd, config as Preset, result.data, { dryRun: options.dryRun });
+  await applyDiff(cwd, config as Preset, result.data, {
+    dryRun: options.dryRun,
+    onConflict: resolveOnConflict(config, userConfig),
+  });
   p.outro(`${pc.green("Done!")} App ${pc.cyan(target)} removed.`);
 }
 
@@ -154,7 +157,10 @@ async function removePackage(
   }
 
   enforcePolicy(result.data, userConfig);
-  await applyDiff(cwd, config as Preset, result.data, { dryRun: options.dryRun });
+  await applyDiff(cwd, config as Preset, result.data, {
+    dryRun: options.dryRun,
+    onConflict: resolveOnConflict(config, userConfig),
+  });
   p.outro(`${pc.green("Done!")} Package ${pc.cyan(target)} removed.`);
 }
 
@@ -206,7 +212,10 @@ async function removeIntegration(
   }
 
   enforcePolicy(result.data, userConfig);
-  await applyDiff(cwd, config as Preset, result.data, { dryRun: options.dryRun });
+  await applyDiff(cwd, config as Preset, result.data, {
+    dryRun: options.dryRun,
+    onConflict: resolveOnConflict(config, userConfig),
+  });
   p.outro(`${pc.green("Done!")} Integration ${pc.cyan(cat)} removed.`);
 }
 

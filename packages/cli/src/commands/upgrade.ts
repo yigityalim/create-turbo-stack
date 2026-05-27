@@ -3,7 +3,7 @@ import { migratePreset } from "@create-turbo-stack/core";
 import type { Preset } from "@create-turbo-stack/schema";
 import { CURRENT_PRESET_SCHEMA_VERSION, ValidatedPresetSchema } from "@create-turbo-stack/schema";
 import pc from "picocolors";
-import { applyDiff } from "../io/apply-diff";
+import { applyDiff, resolveOnConflict } from "../io/apply-diff";
 import { readProjectConfig } from "../io/reader";
 
 /**
@@ -59,7 +59,10 @@ export async function upgradeCommand(options: { dryRun?: boolean } = {}) {
 
   // surfaces what actually changed file-by-file so the user sees the
   // upgrade's footprint before approving any conflicts.
-  await applyDiff(cwd, config as Preset, result.data, { dryRun: options.dryRun });
+  await applyDiff(cwd, config as Preset, result.data, {
+    dryRun: options.dryRun,
+    onConflict: resolveOnConflict(config),
+  });
   p.outro(
     `${pc.green("Done!")} Upgraded to schema version ${pc.cyan(CURRENT_PRESET_SCHEMA_VERSION)}.`,
   );

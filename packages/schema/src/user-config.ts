@@ -164,5 +164,12 @@ export const UserConfigSchema = z.object({
       RegistryConfigEntrySchema,
     )
     .optional(),
+  /**
+   * How `applyDiff` handles files you've hand-edited since the last scaffold.
+   * `prompt` (default) asks interactively; `keep` preserves your edits;
+   * `overwrite` replaces them; `abort` stops. Set it so CI / MCP / scripted
+   * runs don't deadlock on the prompt.
+   */
+  conflictPolicy: z.enum(["prompt", "keep", "overwrite", "abort"]).optional(),
 });
 export type UserConfig = z.infer<typeof UserConfigSchema>;

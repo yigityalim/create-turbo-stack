@@ -11,7 +11,7 @@ import {
   ValidatedPresetSchema,
 } from "@create-turbo-stack/schema";
 import pc from "picocolors";
-import { applyDiff } from "../io/apply-diff";
+import { applyDiff, resolveOnConflict } from "../io/apply-diff";
 import { filterOptions, validatePresetAgainstPolicy } from "../io/policy";
 import { readProjectConfig } from "../io/reader";
 import { addDependencyCommand } from "./add-dependency";
@@ -167,7 +167,10 @@ async function addApp(userConfig?: UserConfig, options: { dryRun?: boolean } = {
 
   exitIfPolicyViolated(result.data, userConfig?.policy);
 
-  await applyDiff(cwd, config as Preset, result.data, { dryRun: options.dryRun });
+  await applyDiff(cwd, config as Preset, result.data, {
+    dryRun: options.dryRun,
+    onConflict: resolveOnConflict(config, userConfig),
+  });
 
   p.outro(`${pc.green("Done!")} App ${pc.cyan(name)} added.`);
 }
@@ -244,7 +247,10 @@ async function addPackage(userConfig?: UserConfig, options: { dryRun?: boolean }
 
   exitIfPolicyViolated(result.data, userConfig?.policy);
 
-  await applyDiff(cwd, config as Preset, result.data, { dryRun: options.dryRun });
+  await applyDiff(cwd, config as Preset, result.data, {
+    dryRun: options.dryRun,
+    onConflict: resolveOnConflict(config, userConfig),
+  });
 
   const scope = config.basics.scope;
   p.outro(`${pc.green("Done!")} Package ${pc.cyan(`${scope}/${name}`)} created.`);
@@ -383,7 +389,10 @@ async function addIntegration(userConfig?: UserConfig, options: { dryRun?: boole
 
   exitIfPolicyViolated(result.data, userConfig?.policy);
 
-  await applyDiff(cwd, config as Preset, result.data, { dryRun: options.dryRun });
+  await applyDiff(cwd, config as Preset, result.data, {
+    dryRun: options.dryRun,
+    onConflict: resolveOnConflict(config, userConfig),
+  });
 
   p.outro(`${pc.green("Done!")} Integration ${pc.cyan(category)} set to ${pc.cyan(value)}.`);
 }

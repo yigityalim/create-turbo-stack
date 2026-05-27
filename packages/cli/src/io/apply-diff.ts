@@ -56,6 +56,23 @@ export interface ApplyDiffOptions {
 }
 
 /**
+ * Resolve the `onConflict` strategy from configured `conflictPolicy`. The
+ * project's `.turbo-stack.json` `config` wins over an external/global
+ * `create-turbo-stack.json`. `keep` maps to the engine's `skip`; an unset
+ * policy returns `undefined`, leaving `applyDiff`'s interactive `prompt`
+ * default. Lets CI / MCP / scripted runs avoid the conflict prompt.
+ */
+export function resolveOnConflict(
+  projectConfig?: {
+    config?: { conflictPolicy?: "prompt" | "keep" | "overwrite" | "abort" };
+  } | null,
+  userConfig?: { conflictPolicy?: "prompt" | "keep" | "overwrite" | "abort" },
+): ApplyDiffOptions["onConflict"] {
+  const policy = projectConfig?.config?.conflictPolicy ?? userConfig?.conflictPolicy;
+  return policy === "keep" ? "skip" : policy;
+}
+
+/**
  * Apply the difference between `oldPreset` and `newPreset` to disk.
  *
  * The whole apply phase is atomic from the user's perspective: every

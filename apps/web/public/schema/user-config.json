@@ -611,6 +611,15 @@
           }
         ]
       }
+    },
+    "conflictPolicy": {
+      "type": "string",
+      "enum": [
+        "prompt",
+        "keep",
+        "overwrite",
+        "abort"
+      ]
     }
   },
   "additionalProperties": false
