@@ -11,6 +11,7 @@ import { initCommand } from "./commands/init";
 import { listCommand } from "./commands/list";
 import { mcpCommand } from "./commands/mcp";
 import { presetCommand } from "./commands/preset";
+import { reconcileCommand } from "./commands/reconcile";
 import { removeCommand } from "./commands/remove";
 import { switchCommand } from "./commands/switch";
 import { upgradeCommand } from "./commands/upgrade";
@@ -96,6 +97,12 @@ export async function run() {
     .description("Migrate the project's preset to the current schema version")
     .option("--dry-run", "Print what would be done without writing")
     .action((options) => upgradeCommand(options));
+
+  program
+    .command("reconcile")
+    .description("Report how the project on disk diverges from .turbo-stack.json (read-only)")
+    .option("--json", "Emit machine-readable JSON")
+    .action((options) => reconcileCommand(options));
 
   program
     .command("switch <category> [value]")
