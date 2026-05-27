@@ -131,27 +131,28 @@ All lifecycle commands must exist, work, and be usable in CI (non-interactive).
 - [ ] `reconcile` — resyncs state file from disk (see A2). `init` adopts; `reconcile` is the
       drift-detect-and-resync case, not yet implemented
 - [x] `--dry-run` flag on all mutating commands (`add`, `remove`, `switch`, `upgrade`)
-- [ ] Non-interactive flags for `add app` / `add package` / `add integration`
-      (`--name`, `--type`, `--port`, …) — currently prompt-only (registry `cts add` is
-      already non-interactive via `--yes`)
+- [x] Non-interactive flags for `add app` / `add package` / `add integration`
+      (positional name + `--type`/`--port`/`--i18n`/`--consumes`/`--css`/`--exports`/
+      `--value`/`--app`); prompts remain the fallback
 - [ ] Real-use pass: exercise every command interactively end-to-end (not just smoke)
 
 ### P2 — Architectural resolutions
 
 Implement the three architectural decisions above.
 
-- [~] A1: Multi-app scoping — `cts add --app <name>` done (wires the pkg into an app, with
-      interactive fallback). Still open: `add integration` / `switch` app targeting +
-      `targetApps` in `applyDiff`
-- [ ] A2: State reconciliation — implement `reconcile` command
-- [ ] A3: Conflict resolution policy — `applyDiff` has the `onConflict` option; still need to
-      surface it in the config (`.turbo-stack.json` `config`) so CI/MCP skip the prompt
+- [x] A1: Multi-app scoping — `--app` / interactive multi-select on `cts add`,
+      `add integration`, `add package` wires the package into the chosen apps'
+      `consumes` (apps then get the `workspace:*` dep). Schema now allows consuming
+      the integration auto-packages.
+- [x] A2: State reconciliation — `reconcile` command
+- [x] A3: Conflict resolution policy — `conflictPolicy` in config → `applyDiff` `onConflict`
 
 ### P3 — Core correctness
 
 - [x] Atomic rollback: snapshot pre-state before any write; restore on any failure in `applyDiff`
-- [ ] `add integration` idempotency: detect if provider is already active, skip silently or warn
-- [ ] Incremental workspace refs: when a new package is added, wire existing apps that match `consumes`
+- [x] `add integration` idempotency: unchanged value + already-consumed → "No change"
+- [x] Incremental workspace refs: `add package` wires the new package into the chosen apps'
+      `consumes` (`--app` / interactive multi-select) — user-driven rather than auto-matched
 
 ### P4 — Generated project quality
 
