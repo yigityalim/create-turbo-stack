@@ -142,7 +142,13 @@ function applySwitch(preset: Preset, category: string, value: string): Preset | 
     case "database":
       return {
         ...preset,
-        database: { strategy: value as Preset["database"]["strategy"] } as Preset["database"],
+        // `drizzle` requires a `driver` (no schema default), so a bare
+        // `switch database drizzle` would fail validation — pick the common
+        // default. supabase/prisma/none are strategy-only. The driver can be
+        // changed afterward by editing the preset / re-running the builder.
+        database: (value === "drizzle"
+          ? { strategy: "drizzle", driver: "postgres" }
+          : { strategy: value as Preset["database"]["strategy"] }) as Preset["database"],
       };
     case "auth":
       return {
