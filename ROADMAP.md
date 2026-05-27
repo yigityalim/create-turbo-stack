@@ -12,9 +12,11 @@ v1.0 ships when every item below is true — no exceptions.
 - [ ] `npx create-turbo-stack` resolves to our package
 - [x] Every option the CLI prompts for produces correct output (no schema lies)
 - [ ] All mutating commands (`add`, `remove`, `switch`, `upgrade`) are implemented and idempotent
-- [ ] Multi-app scoping is explicit: the user always knows which apps are affected
+- [~] Multi-app scoping is explicit: the user always knows which apps are affected
+      (`cts add --app` done; `add integration` / `switch` targeting still pending)
 - [ ] State reconciliation exists: `.turbo-stack.json` can be resynced from disk
-- [ ] Conflict resolution policy is configurable in `create-turbo-stack.json`
+- [ ] Conflict resolution policy is configurable (`.turbo-stack.json` `config` block /
+      `create-turbo-stack.json`) — `applyDiff` has `onConflict`, not yet config-wired
 - [ ] Web builder has working export (ZIP or CLI command copy)
 - [x] MCP server is smoke-tested with at least basic tool coverage
 - [ ] One *published* plugin example exists in `examples/` (example written, not published)
@@ -49,9 +51,21 @@ The engine and the generated output are real and verified. Current capabilities:
 - **Plugin architecture** — `defineAppType` / `defineIntegration` registries; one file
   adds a framework or provider. Third-party plugins via `create-turbo-stack.json`.
 - **Analyzer** — reverse-engineers an existing Turborepo into a `Preset` with confidence.
+- **Package registry (`cts add`)** — shadcn-for-packages: copies whole workspace packages
+  in. `registryDependencies` (recursive, `@scope/` rewrite, `workspace:*`), namespaced
+  registries + auth, `--app` wiring, glob `include` (one file per package), env vars wired
+  into the load-bearing env package. See P9.
+- **Supply-chain integrity** — SHA-256 `checksum` per registry item (recomputed on add,
+  aborts on mismatch), Ed25519 `signature` verified against a per-registry `publicKey`,
+  verified checksum pinned in `.turbo-stack.json` (drift detection). Hardened: registry
+  `envVars` and file targets are injection/traversal-safe.
+- **One file per project** — `.turbo-stack.json` holds both resolved state and the local
+  CLI config (`config` block: registries/policy/plugins); `create-turbo-stack.json` and
+  `~/.create-turbo-stack/config.json` are optional org/team overrides.
 - **E2E harness** — `bun run e2e` scaffolds → installs → type-checks → builds all three
-  built-in presets, and lints the minimal preset under each linter. The generated
-  projects compile and pass their own linter.
+  built-in presets; lints the minimal preset under each linter; proves vite-react / astro /
+  sveltekit app types; and runs a registry-composition chain (`cts add session` →
+  crypto + security → install → type-check). Generated projects compile and lint clean.
 
 ---
 
@@ -108,23 +122,30 @@ dead options and implementing the rest:
 
 All lifecycle commands must exist, work, and be usable in CI (non-interactive).
 
-- [ ] `add dependency <pkg> --to=<workspace>` — missing entirely
-- [ ] `remove app <name>` — requires `delete` mutation type in diff engine
-- [ ] `remove package <name>`
-- [ ] `remove integration <category>` — revert provider to `none`, clean up stale files
-- [ ] `switch <category> <provider>` — delete old provider files before writing new ones
-- [ ] `upgrade` — migrate `.turbo-stack.json` between schema versions via migration registry
-- [ ] `reconcile` — resyncs state file from disk (see A2)
-- [ ] `--dry-run` flag on all mutating commands (`add`, `remove`, `switch`, `upgrade`)
-- [ ] Non-interactive flags for all `add` subcommands (`--name`, `--type`, `--port`, etc.)
+- [x] `add dependency <pkg> --to=<workspace>` (+ `--dev`, `--version`)
+- [x] `remove app <name>` — `delete` mutation type in the diff engine
+- [x] `remove package <name>`
+- [x] `remove integration <category>` — revert provider to `none`, clean up stale files
+- [x] `switch <category> <provider>` — diff-driven file transition (drizzle defaults driver)
+- [x] `upgrade` — migrate `.turbo-stack.json` between schema versions via migration registry
+- [ ] `reconcile` — resyncs state file from disk (see A2). `init` adopts; `reconcile` is the
+      drift-detect-and-resync case, not yet implemented
+- [x] `--dry-run` flag on all mutating commands (`add`, `remove`, `switch`, `upgrade`)
+- [ ] Non-interactive flags for `add app` / `add package` / `add integration`
+      (`--name`, `--type`, `--port`, …) — currently prompt-only (registry `cts add` is
+      already non-interactive via `--yes`)
+- [ ] Real-use pass: exercise every command interactively end-to-end (not just smoke)
 
 ### P2 — Architectural resolutions
 
 Implement the three architectural decisions above.
 
-- [ ] A1: Multi-app scoping — `--app` flag + interactive fallback; wire `targetApps` into `applyDiff`
+- [~] A1: Multi-app scoping — `cts add --app <name>` done (wires the pkg into an app, with
+      interactive fallback). Still open: `add integration` / `switch` app targeting +
+      `targetApps` in `applyDiff`
 - [ ] A2: State reconciliation — implement `reconcile` command
-- [ ] A3: Conflict resolution policy — add to `UserConfigSchema`, wire into `applyDiff`
+- [ ] A3: Conflict resolution policy — `applyDiff` has the `onConflict` option; still need to
+      surface it in the config (`.turbo-stack.json` `config`) so CI/MCP skip the prompt
 
 ### P3 — Core correctness
 
@@ -169,6 +190,10 @@ The output of `create` must be a working project, not a skeleton that requires m
 
 ### P5 — Web builder
 
+- [x] Registry section — fetch `/r/registry.json`, toggle packages into `preset.registryPackages`;
+      the create flow materializes them via `cts add` after scaffold
+- [ ] **Revision pass** — UI polish + correctness review (dark mode, file tree, code viewer;
+      see builder notes). The builder needs a dedicated going-over before launch
 - [ ] ZIP download of full file tree (JSZip — already listed as post-v1.0, move up)
 - [ ] Preset metadata editor in sidebar (name, description, author — schema fields exist, UI missing)
 - [ ] "Copy as CLI command" button: `npx create-turbo-stack --preset <share-url>`
@@ -182,9 +207,10 @@ The output of `create` must be a working project, not a skeleton that requires m
 - [ ] CLI command unit tests: argument parsing, flag validation, error paths
 - [x] E2E: `create --preset` → install → type-check → build for minimal, saas-starter, api-only
 - [x] E2E linter matrix: minimal scaffolded under each linter → install → lint clean
-- [ ] E2E: one full cycle per supported app type — only `nextjs`, `nextjs-api-only`, and
-      `hono-standalone` are exercised by presets; `vite-react`, `sveltekit`, `astro`, and
-      `remix` resolve a file tree (unit-tested) but are not yet install+build proven. **Next up.**
+- [x] E2E: one full cycle per supported app type — `nextjs` / `nextjs-api-only` /
+      `hono-standalone` via presets, plus `vite-react` / `astro` / `sveltekit` scaffolded,
+      installed, type-checked, and built. (`remix` removed — EOL.)
+- [x] E2E: registry composition — `cts add` a dependency chain → install → type-check
 - [ ] Template snapshot tests: render each `.eta` file with a fixture context, assert output is stable
 - [x] MCP server smoke test: basic tool coverage (`mcp/server.test.ts`)
 
@@ -221,10 +247,16 @@ CTS ships batteries, the registry community-extends them.
 - [x] `registryDependencies`: recursive, topological, cycle-safe tree resolve;
       sibling deps wired `workspace:*` + `@scope/` import rewrite
 - [x] `.turbo-stack.json` state: installed packages recorded for remove/reconcile
-- [x] Namespaces + auth: `registries` in `create-turbo-stack.json` (`@ns` → URL
-      template / `{url,headers,params}`); `${VAR}` env-expanded; 401/403 surfaced
-- [x] Reference packages: `registry/{security,crypto,session}`
-- [x] Web browse page (`/registry`) with category tags
+- [x] Namespaces + auth: `registries` in `.turbo-stack.json` `config` (or an external
+      `create-turbo-stack.json`); `@ns` → URL template / `{url,headers,params,publicKey}`;
+      `${VAR}` resolved from `.env`/`.env.local` + shell; 401/403 surfaced
+- [x] `--app` wiring; `environment` hint (node→@types/node); WebWorker lib for universal
+      Web-API packages; lib-superset + catalog-conflict guardrails
+- [x] Registry `envVars` wired into the load-bearing env package (typed `env.X`), not just
+      `.env.example`
+- [x] Reference packages: `registry/{security,crypto,session}` + authoring guide
+      (`registry/README.md`)
+- [x] Web browse page (`/registry`) with category tags + builder selection
 - [x] Supply-chain: write preview; SHA-256 `checksum` per item (recomputed on
       add, aborts on mismatch); Ed25519 `signature` verified against a per-
       registry `publicKey`; verified checksum pinned in `.turbo-stack.json`
