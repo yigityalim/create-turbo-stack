@@ -1,0 +1,81 @@
+---
+title: Registry Packages
+description: Add ready-made workspace packages with cts add — shadcn for whole packages
+---
+
+The package registry is shadcn's model applied to **whole Turborepo workspace
+packages** instead of React components. `cts add <name>` copies a ready-made
+package into `packages/<name>` — the code is **copied in and yours to own**, not
+hidden behind an npm dependency.
+
+```bash
+npx create-turbo-stack add security      # → packages/security, code you own
+```
+
+This is distinct from the [preset registry](./registry), which shares whole
+project presets for `create`.
+
+## What `cts add` does
+
+Run inside a create-turbo-stack project (it reads `.turbo-stack.json` for scope +
+linter). For `cts add <name>` it:
+
+1. **Resolves** the item from the registry (`--registry <url|path>`, or the
+   configured namespace, or the default hosted registry).
+2. **Verifies integrity** — recomputes the item's SHA-256 `checksum` and aborts
+   on mismatch; verifies an Ed25519 `signature` when the registry has a
+   configured `publicKey`.
+3. **Materializes** `packages/<name>`: `package.json` (exports + your linter),
+   `tsconfig.json`, and the source files.
+4. **Wires** — npm deps into the root catalog, env vars into `.env.example` *and*
+   the typed `env` package, and (with `--app`) the package into an app's deps.
+5. **Records** it in `.turbo-stack.json` (with the verified checksum) for
+   remove / reconcile and drift detection.
+
+A write preview is shown first; `--yes` skips the confirm (CI / agents).
+
+## Composition
+
+A package can build on others via `registryDependencies`. `cts add` resolves the
+whole tree (deps first, deduped, cycle-safe), wires siblings as `workspace:*`,
+and rewrites the `@scope/` import placeholder to your project's scope.
+
+```bash
+npx create-turbo-stack add session    # also pulls `crypto`, wired @your-scope/crypto
+```
+
+## Private & paid registries
+
+Configure a namespace in `.turbo-stack.json`'s [`config.registries`](./config):
+
+```jsonc
+{
+  "config": {
+    "registries": {
+      "@acme": {
+        "url": "https://store.acme.com/r/{name}",
+        "headers": { "Authorization": "Bearer ${ACME_TOKEN}" },
+        "publicKey": "<base64 SPKI>"
+      }
+    }
+  }
+}
+```
+
+```bash
+ACME_TOKEN=… npx create-turbo-stack add @acme/feature-flags
+```
+
+The server gates access (401 / 403 → surfaced clearly) and serves **signed**
+items; the CLI verifies the signature against `publicKey`. `${VAR}` is expanded
+from the environment / `.env`, so tokens never live in the config file.
+
+## Authoring packages
+
+Write real source under `registry/<name>/`, declare an item in
+`registry/<name>/registry-item.json`, and `bun run build:registry` inlines the
+files and stamps a checksum. Each item declares `dependencies`, `exports`,
+`environment` (`node` adds `@types/node`), `lib` (use `WebWorker` for universal
+Web-API code), `build` (`none` source-export vs `tsup` compiled),
+`registryDependencies`, `envVars`, `categories`, and `docs`. The full authoring
+contract lives in `registry/README.md`.

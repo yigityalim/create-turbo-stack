@@ -29,14 +29,17 @@ After confirmation, the CLI generates all files, initializes git, and installs d
 
 Skip the prompts with a preset:
 
-```bash
-# Built-in presets
-npx create-turbo-stack --preset minimal
-npx create-turbo-stack --preset saas-starter
-npx create-turbo-stack --preset api-only
+`--preset` takes a URL or a local file path:
 
-# Community preset (any URL)
-npx create-turbo-stack --preset https://example.com/my-stack.json
+```bash
+# Built-in presets (hosted)
+npx create-turbo-stack my-app --preset https://create-turbo-stack.dev/s/minimal.json
+npx create-turbo-stack my-app --preset https://create-turbo-stack.dev/s/saas-starter.json
+npx create-turbo-stack my-app --preset https://create-turbo-stack.dev/s/api-only.json
+
+# A local file, or any community URL
+npx create-turbo-stack my-app --preset ./my-stack.json
+npx create-turbo-stack my-app --preset https://example.com/my-stack.json
 ```
 
 ## Project Structure
@@ -79,4 +82,8 @@ Your monorepo is ready. Add more apps or packages anytime:
 ```bash
 npx create-turbo-stack add app
 npx create-turbo-stack add package
+npx create-turbo-stack add security   # a ready-made registry package
 ```
+
+Pull ready-made workspace packages with [`cts add <name>`](./packages), or
+configure the project further via [project config](./config).

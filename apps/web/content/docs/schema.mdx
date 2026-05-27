@@ -10,8 +10,10 @@ All schemas are available as JSON Schema files and as Zod v4 types in `@create-t
 | Schema | URL |
 |--------|-----|
 | Preset | [/schema/preset.json](/schema/preset.json) |
-| Registry | [/schema/registry.json](/schema/registry.json) |
-| Config | [/schema/config.json](/schema/config.json) |
+| Preset registry | [/schema/registry.json](/schema/registry.json) |
+| Package registry | [/schema/package-registry.json](/schema/package-registry.json) |
+| Project state (`.turbo-stack.json`) | [/schema/config.json](/schema/config.json) |
+| User config | [/schema/user-config.json](/schema/user-config.json) |
 
 Use `$schema` in your preset files for IDE autocompletion:
 
@@ -65,7 +67,7 @@ Use `$schema` in your preset files for IDE autocompletion:
 | Field | Type | Default |
 |-------|------|---------|
 | `framework` | `"tailwind4"` \| `"vanilla"` \| `"css-modules"` | `"tailwind4"` |
-| `ui` | `"shadcn"` \| `"radix-raw"` \| `"none"` | `"none"` |
+| `ui` | `"shadcn"` \| `"none"` | `"none"` |
 | `styling` | `"css-variables"` \| `"static"` | `"css-variables"` |
 
 ### apps (array)
@@ -77,6 +79,10 @@ Use `$schema` in your preset files for IDE autocompletion:
 | `port` | number | Dev server port (1000-65535) |
 | `i18n` | boolean | Enable internationalization |
 | `consumes` | string[] | Package names to depend on |
+
+Scaffold-supported today: `nextjs`, `nextjs-api-only`, `hono-standalone`,
+`vite-react`, `sveltekit`, `astro`. The rest are reserved in the enum (add one
+via a [plugin](./plugins) with `defineAppType`).
 
 ### packages (array)
 
@@ -97,3 +103,8 @@ Use `$schema` in your preset files for IDE autocompletion:
 | `rateLimit` | `"upstash"` \| `"none"` | `"none"` |
 | `ai` | `"vercel-ai-sdk"` \| `"langchain"` \| `"none"` | `"none"` |
 | `envValidation` | boolean | `true` |
+
+### registryPackages (array)
+
+`string[]` — names or `@ns/name` refs of [registry packages](./packages) to
+`cts add` after scaffolding (selectable in the builder). Optional.

@@ -18,13 +18,17 @@ Most write-capable commands also accept `--dry-run` to preview the diff without 
 Scaffold a new project.
 
 ```bash
-npx create-turbo-stack [project-name] [--preset <url>] [--dry-run]
+npx create-turbo-stack [project-name] [--preset <url>] [--yes] [--no-install] [--dry-run]
 ```
 
 | Option | Description |
 |---|---|
 | `--preset <url>` | Use a preset URL or file path |
+| `--yes` | Accept all defaults (non-interactive) |
+| `--no-install` | Skip dependency install |
 | `--dry-run` | Print the file tree; write nothing |
+
+A preset's `registryPackages` are materialized via `add` after scaffolding.
 
 ```bash
 npx create-turbo-stack my-app
@@ -47,23 +51,40 @@ After `init`, the rest of the toolchain (`add`, `remove`, `switch`, `upgrade`) b
 
 ## add
 
-Add an app, package, integration, or npm dependency.
+Add an app, package, integration, npm dependency, or a **registry package** by
+name (shadcn-style — see [Registry Packages](./packages)).
 
 ```bash
-npx create-turbo-stack add <type> [name] [--dry-run]
+npx create-turbo-stack add <type|name> [name] [--dry-run]
 ```
 
 | Type | Description |
 |---|---|
-| `app` | New workspace app — interactive |
-| `package` | New workspace package — interactive |
-| `integration` | Set / change a provider in a category — interactive |
+| `app [name]` | New workspace app |
+| `package [name]` | New workspace package |
+| `integration [category]` | Set / change a provider in a category |
 | `dependency <pkg>` | Catalog-aware npm dep add (use `--to=<workspace>`) |
+| `<name>` / `@ns/<name>` | A registry package — fetched, verified, copied into `packages/<name>` |
+
+`app` / `package` / `integration` prompt when run bare; pass the name (and flags
+below) to run non-interactively (CI, agents):
+
+| Flag | For | Description |
+|---|---|---|
+| `--type <t>` | app / package | App type or package type |
+| `--port <n>` `--i18n` `--consumes <a,b>` | app | Port, i18n, consumed packages |
+| `--css` `--exports <a,b>` | package | Produces CSS; export subpaths |
+| `--value <provider>` | integration | The provider (e.g. `posthog`) |
+| `--app <name>` | integration / package / registry | Wire the package into this app's deps |
+| `--registry <url\|path>` `-y, --yes` | registry | Source + skip confirm |
 
 ```bash
-npx create-turbo-stack add app
+npx create-turbo-stack add app admin --type nextjs --port 3001
+npx create-turbo-stack add package billing --type utils --app web
+npx create-turbo-stack add integration analytics --value posthog --app web
+npx create-turbo-stack add security                 # registry package
+npx create-turbo-stack add @acme/feature-flags -y   # private registry
 npx create-turbo-stack add dependency lodash --to=apps/web
-npx create-turbo-stack add dependency vitest --to=packages/ui --dev
 ```
 
 ## remove
@@ -104,6 +125,18 @@ npx create-turbo-stack upgrade [--dry-run]
 ```
 
 Idempotent. On a project already at the current version, it reports "nothing to do" and exits.
+
+## reconcile
+
+Report how the project on disk diverges from `.turbo-stack.json` — packages/apps
+recorded in state but missing on disk, or on disk but untracked, plus expected
+files that are absent. Read-only (writes nothing); drift happens via manual edits,
+deletions, failed applies, or external tooling. Run it when `add`/`remove`/`switch`
+seem to produce wrong diffs.
+
+```bash
+npx create-turbo-stack reconcile [--json]
+```
 
 ## info
 
@@ -169,4 +202,4 @@ Tools are prefixed with `turbostack_` to avoid global namespace collisions on th
 | Root | `package.json` (catalog), `turbo.json`, `biome.json`, `.gitignore`, `.npmrc`, `.env.example`, `README.md`, `vitest.config.ts`, `.husky/pre-commit`, `.github/workflows/ci.yml`, `docker-compose.yml` (if DB) |
 | Per Next.js app | `package.json`, `tsconfig.json`, `next.config.ts`, `vercel.json`, `src/app/{layout,page,error,not-found,loading}.tsx`, `src/app/{robots,sitemap,manifest}.ts`, `src/app/globals.css`, `instrumentation.ts` (if Sentry), `components.json` + `src/lib/utils.ts` (if shadcn), `src/i18n/{routing,request}.ts` + `messages/en.json` + `src/middleware.ts` (if i18n) |
 | Per package | `package.json` (exports map + `catalog:`), `tsconfig.json`, `src/index.ts` |
-| State | `.turbo-stack.json` — preset + catalog + cssSourceMap + autoPackages + cliVersion + generatedAt |
+| State | `.turbo-stack.json` — preset + catalog + cssSourceMap + autoPackages + cliVersion + generatedAt, plus an optional `config` block (registries/policy/plugins) and `registry` provenance on `add`-ed packages |

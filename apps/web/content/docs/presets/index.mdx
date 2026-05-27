@@ -3,16 +3,18 @@ title: Presets
 description: Use and create stack presets
 ---
 
-A **preset** is a JSON file that describes a complete stack configuration. Instead of answering CLI prompts, you can pass a preset URL to scaffold instantly.
+A **preset** is a JSON file that describes a complete stack configuration. Instead of answering CLI prompts, pass a preset URL (or local file path) to `--preset` to scaffold instantly.
 
 ## Built-in Presets
+
+Hosted at `https://create-turbo-stack.dev/s/<name>.json`.
 
 ### minimal
 
 Next.js + UI package + Tailwind 4 + Biome. The simplest starting point.
 
 ```bash
-npx create-turbo-stack --preset minimal
+npx create-turbo-stack my-app --preset https://create-turbo-stack.dev/s/minimal.json
 ```
 
 ### saas-starter
@@ -20,7 +22,7 @@ npx create-turbo-stack --preset minimal
 Full-stack SaaS: Supabase (DB + Auth), tRPC v11, shadcn/ui, i18n, Sentry, PostHog, React Email.
 
 ```bash
-npx create-turbo-stack --preset saas-starter
+npx create-turbo-stack my-app --preset https://create-turbo-stack.dev/s/saas-starter.json
 ```
 
 ### api-only
@@ -28,7 +30,7 @@ npx create-turbo-stack --preset saas-starter
 Hono standalone API with Drizzle ORM and Upstash rate limiting. No frontend.
 
 ```bash
-npx create-turbo-stack --preset api-only
+npx create-turbo-stack my-app --preset https://create-turbo-stack.dev/s/api-only.json
 ```
 
 ## Using a Community Preset

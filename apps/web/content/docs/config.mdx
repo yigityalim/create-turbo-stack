@@ -3,25 +3,34 @@ title: Project Config
 description: Customize the CLI per-project with create-turbo-stack.json
 ---
 
-Drop a `create-turbo-stack.json` at any level of your repo to set defaults, lock down choices, and load plugins. The CLI walks up from cwd to find it; the nearest match wins.
+CLI config — defaults, policy, plugins, registries, conflict policy — lives in
+**one place per project**: the `config` block of `.turbo-stack.json`. So a project
+needs a single file. An out-of-project `create-turbo-stack.json` (walked up from
+cwd) or the global `~/.create-turbo-stack/config.json` is optional, for org/team
+defaults shared across repos; the project's `config` block wins on overlap.
 
-Two files, two responsibilities:
-
-| File | Owner | Purpose |
+| Where | Owner | Purpose |
 |---|---|---|
-| `.turbo-stack.json` | CLI (read/write) | Active state — the resolved preset, catalog, generated time |
-| `create-turbo-stack.json` | You (read-only from CLI) | Defaults, policy, plugins |
+| `.turbo-stack.json` `config` | You (in the project) | This project's config — the common case |
+| `create-turbo-stack.json` | You (team/external) | Org defaults shared across repos (optional) |
+| `~/.create-turbo-stack/config.json` | You (machine global) | Personal defaults (optional) |
 
-Don't commit `.turbo-stack.json` updates by hand; let the CLI manage it. Commit `create-turbo-stack.json` to share team conventions.
+The rest of `.turbo-stack.json` (resolved preset, catalog, …) is CLI-managed —
+don't hand-edit it; the `config` block is yours to edit.
 
 ## Shape
+
+The same `UserConfigSchema` applies whether it's the `config` block of
+`.turbo-stack.json` or a standalone `create-turbo-stack.json`:
 
 ```json
 {
   "$schema": "https://create-turbo-stack.dev/schema/user-config.json",
-  "defaults": { /* ... */ },
-  "policy":   { /* ... */ },
-  "plugins":  ["@scope/cts-plugin"]
+  "defaults":       { /* ... */ },
+  "policy":         { /* ... */ },
+  "plugins":        ["@scope/cts-plugin"],
+  "registries":     { "@acme": { /* ... */ } },
+  "conflictPolicy": "prompt"
 }
 ```
 
@@ -83,6 +92,36 @@ npm package names whose default export contributes registry entries.
 ```
 
 The CLI imports each plugin at startup and registers its default export. See [Plugins](./plugins).
+
+## registries
+
+Namespaced package registries for `cts add @ns/<name>` (see
+[Registry Packages](./packages)). A bare string is the URL template; the object
+form adds auth headers / query params and an Ed25519 `publicKey` to verify
+signatures. `${VAR}` placeholders resolve from the environment (and the project's
+`.env` / `.env.local`) at request time, so tokens never live in the file.
+
+```json
+{
+  "registries": {
+    "@acme": {
+      "url": "https://store.acme.com/r/{name}",
+      "headers": { "Authorization": "Bearer ${ACME_TOKEN}" },
+      "publicKey": "<base64 SPKI>"
+    }
+  }
+}
+```
+
+## conflictPolicy
+
+How `applyDiff` handles files you've hand-edited since the last scaffold:
+`prompt` (default, interactive), `keep`, `overwrite`, or `abort`. Set it so CI /
+MCP / scripted runs don't deadlock on the prompt.
+
+```json
+{ "conflictPolicy": "keep" }
+```
 
 ## Global config
 
