@@ -35,9 +35,37 @@ function depPackageName(ref: string): string {
   return ns ? ns[2] : ref;
 }
 
-/** Expand `${VAR}` from the environment (so tokens never live in config). */
+/**
+ * The source `${VAR}` placeholders resolve against — the project's `.env` /
+ * `.env.local` merged under the real environment (shell env wins). Set by
+ * `loadEnvSource` so a registry token can live in `.env.local` instead of
+ * needing to be exported in the shell.
+ */
+let envSource: Record<string, string | undefined> = process.env;
+
+function parseDotenv(text: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const line of text.split("\n")) {
+    const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
+    if (!m) continue;
+    let val = m[2];
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    out[m[1]] = val;
+  }
+  return out;
+}
+
+async function loadEnvSource(cwd: string): Promise<void> {
+  const read = async (f: string) =>
+    parseDotenv(await fs.readFile(path.join(cwd, f), "utf-8").catch(() => ""));
+  envSource = { ...(await read(".env")), ...(await read(".env.local")), ...process.env };
+}
+
+/** Expand `${VAR}` from `envSource` (so tokens never live in config). */
 function expandEnv(value: string): string {
-  return value.replace(/\$\{(\w+)\}/g, (_, name) => process.env[name] ?? "");
+  return value.replace(/\$\{(\w+)\}/g, (_, name) => envSource[name] ?? "");
 }
 
 async function fetchItem(url: string, headers: Record<string, string>): Promise<string> {
@@ -186,6 +214,57 @@ function implicitDevDeps(item: PackageRegistryItem): string[] {
 }
 
 /**
+ * Best-effort wiring of registry env vars into the load-bearing `env` package
+ * (typed `createEnv`), so they become `env.X` not just `.env.example` lines.
+ * `NEXT_PUBLIC_*` go in `client`, the rest in `server`; each also gets a
+ * `runtimeEnv` entry. Returns the rewritten source, or `null` to leave the file
+ * untouched (var already present, or the file was hand-edited beyond our shape —
+ * we never risk corrupting a user-owned, load-bearing file).
+ */
+function wireEnvPackage(src: string, varNames: string[]): string | null {
+  if (!src.includes("createEnv(")) return null;
+  const toAdd = varNames.filter((v) => !new RegExp(`\\b${v}\\s*:`).test(src));
+  if (toAdd.length === 0) return null;
+
+  let out = src;
+  if (!/from ["']zod["']/.test(out)) {
+    out = out.replace(
+      /(import .*?from ["']@t3-oss\/env-nextjs["'];\n)/,
+      `$1import { z } from "zod";\n`,
+    );
+  }
+
+  const block = (kind: "server" | "client", names: string[]): boolean => {
+    if (names.length === 0) return true;
+    const entries = names.map((v) => `    ${v}: z.string(),`).join("\n");
+    const re = new RegExp(`(${kind}:\\s*\\{\\n)`);
+    if (re.test(out)) {
+      out = out.replace(re, `$1${entries}\n`);
+    } else {
+      // No existing block — insert one right after `createEnv({`.
+      const inserted = out.replace(/(createEnv\(\{\n)/, `$1  ${kind}: {\n${entries}\n  },\n`);
+      if (inserted === out) return false;
+      out = inserted;
+    }
+    return true;
+  };
+
+  const clientVars = toAdd.filter((v) => v.startsWith("NEXT_PUBLIC_"));
+  const serverVars = toAdd.filter((v) => !v.startsWith("NEXT_PUBLIC_"));
+  if (!block("server", serverVars) || !block("client", clientVars)) return null;
+
+  const runtime = toAdd.map((v) => `    ${v}: process.env.${v},`).join("\n");
+  if (/runtimeEnv:\s*\{\}/.test(out)) {
+    out = out.replace(/runtimeEnv:\s*\{\}/, `runtimeEnv: {\n${runtime}\n  }`);
+  } else if (/runtimeEnv:\s*\{\n/.test(out)) {
+    out = out.replace(/(runtimeEnv:\s*\{\n)/, `$1${runtime}\n`);
+  } else {
+    return null;
+  }
+  return out;
+}
+
+/**
  * Runtime-sharing guardrail. A source-exported dependency is type-checked under
  * the *consumer's* tsconfig, so the consumer's `lib` must cover the dep's `lib`
  * (e.g. session → crypto, both need `WebWorker`). Warn when it doesn't — the
@@ -329,6 +408,8 @@ export async function addRegistryCommand(
     p.log.error("No .turbo-stack.json found. Are you in a create-turbo-stack project?");
     process.exit(1);
   }
+  // Resolve `${VAR}` registry tokens from the project's .env files too.
+  await loadEnvSource(cwd);
 
   let items: ResolvedItem[];
   try {
@@ -393,6 +474,22 @@ export async function addRegistryCommand(
       }
     }
     nodes.push({ path: ".env.example", content: env, isDirectory: false });
+
+    // Also wire them into the load-bearing env package (typed `env.X`), so the
+    // vars are validated — not just documented. Best-effort; skipped if there's
+    // no env package or it's been hand-edited beyond our recognizable shape.
+    const envIndex = await fs
+      .readFile(path.join(cwd, "packages/env/src/index.ts"), "utf-8")
+      .catch(() => null);
+    const wired = envIndex && wireEnvPackage(envIndex, Object.keys(envVars));
+    if (wired) {
+      nodes.push({ path: "packages/env/src/index.ts", content: wired, isDirectory: false });
+    } else if (envIndex) {
+      p.log.warn(
+        `Added env vars to .env.example — add them to packages/env yourself ` +
+          `(couldn't auto-wire ${pc.dim("packages/env/src/index.ts")}).`,
+      );
+    }
   }
 
   p.log.message(`Will write:\n${nodes.map((n) => `  ${pc.green("+")} ${n.path}`).join("\n")}`);
