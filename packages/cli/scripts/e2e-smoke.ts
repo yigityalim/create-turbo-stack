@@ -159,6 +159,52 @@ async function smokeAppType(appType: string): Promise<StepResult[]> {
   }
 }
 
+/**
+ * Scaffold minimal, then `cts add` a real registry-dependency chain from the
+ * built local registry: `session` (which pulls `crypto`) plus `security`.
+ * Install and type-check. The composition test — proves the dep tree resolves,
+ * the `@scope/` import rewrite + `workspace:*` wiring is correct, and shared
+ * `lib` (WebWorker) actually compiles across packages. The class of bug that
+ * only shows up when packages depend on each other.
+ */
+async function smokeComposition(): Promise<StepResult[]> {
+  const dir = mkdtempSync(path.join(tmpdir(), "cts-e2e-compose-"));
+  const registry = path.join(REPO_ROOT, "apps/web/public/r");
+  const results: StepResult[] = [];
+
+  try {
+    const presetPath = path.join(REPO_ROOT, "presets", "minimal.json");
+    results.push(
+      timed("scaffold", () =>
+        run(`bunx tsx ${CLI_BIN} app --preset ${presetPath} --no-install`, dir),
+      ),
+    );
+    if (!results.at(-1)?.ok) return results;
+
+    const appDir = path.join(dir, "app");
+    results.push(
+      timed("add session", () =>
+        run(`bunx tsx ${CLI_BIN} add session --registry ${registry} --yes`, appDir),
+      ),
+    );
+    if (!results.at(-1)?.ok) return results;
+    results.push(
+      timed("add security", () =>
+        run(`bunx tsx ${CLI_BIN} add security --registry ${registry} --yes`, appDir),
+      ),
+    );
+    if (!results.at(-1)?.ok) return results;
+
+    results.push(timed("install", () => run("bun install", appDir)));
+    if (!results.at(-1)?.ok) return results;
+
+    results.push(timed("type-check", () => run("bun run type-check", appDir)));
+    return results;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 function report(label: string, results: StepResult[]): boolean {
   console.log(`\n=== ${label} ===`);
   let failed = false;
@@ -178,10 +224,11 @@ async function main() {
   const presets = filter ? PRESETS.filter((p) => p === filter) : PRESETS;
   const linters = filter ? LINTERS.filter((l) => l === filter) : LINTERS;
   const appTypes = filter ? APP_TYPES.filter((a) => a === filter) : APP_TYPES;
-  if (presets.length === 0 && linters.length === 0 && appTypes.length === 0) {
+  const runComposition = !filter || filter === "composition";
+  if (presets.length === 0 && linters.length === 0 && appTypes.length === 0 && !runComposition) {
     console.error(
       `Unknown target "${filter}". Presets: ${PRESETS.join(", ")}. ` +
-        `Linters: ${LINTERS.join(", ")}. App types: ${APP_TYPES.join(", ")}.`,
+        `Linters: ${LINTERS.join(", ")}. App types: ${APP_TYPES.join(", ")}. Plus: composition.`,
     );
     process.exit(1);
   }
@@ -196,8 +243,13 @@ async function main() {
   for (const linter of linters) {
     anyFailed = report(`linter:${linter}`, await smokeLinter(linter)) || anyFailed;
   }
+  if (runComposition) {
+    anyFailed = report("composition", await smokeComposition()) || anyFailed;
+  }
 
-  console.log(anyFailed ? "\nFAIL" : "\nAll presets, app types, and linters verified.");
+  console.log(
+    anyFailed ? "\nFAIL" : "\nAll presets, app types, linters, and composition verified.",
+  );
   process.exit(anyFailed ? 1 : 0);
 }
 

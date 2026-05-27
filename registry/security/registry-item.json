@@ -6,7 +6,7 @@
   "description": "Security headers (CSP, HSTS, X-Frame-Options, …) plus an origin/CSRF guard for Next.js and Web-API handlers.",
   "dependencies": [],
   "exports": [".", "./headers", "./middleware"],
-  "lib": ["ES2022", "DOM"],
+  "lib": ["ES2022", "WebWorker"],
   "environment": "universal",
   "categories": ["security"],
   "files": [

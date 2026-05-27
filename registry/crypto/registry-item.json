@@ -6,7 +6,7 @@
   "description": "Web Crypto helpers: SHA-256 / HMAC hashing and secure random tokens.",
   "dependencies": [],
   "exports": [".", "./hash", "./random"],
-  "lib": ["ES2022", "DOM"],
+  "lib": ["ES2022", "WebWorker"],
   "environment": "universal",
   "categories": ["security", "crypto"],
   "files": [

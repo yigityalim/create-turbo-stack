@@ -15,7 +15,7 @@
   ],
   "lib": [
     "ES2022",
-    "DOM"
+    "WebWorker"
   ],
   "environment": "universal",
   "build": "none",
@@ -42,5 +42,5 @@
       "content": "/**\n * Lightweight CSRF guard: reject cross-origin state-changing requests.\n * Same-origin (and any explicitly allowed origins) pass; everything else is\n * blocked on POST / PUT / PATCH / DELETE. Works with the Web `Request` /\n * `Response` API (Next.js middleware, route handlers, edge functions).\n */\nconst MUTATING_METHODS = new Set([\"POST\", \"PUT\", \"PATCH\", \"DELETE\"]);\n\nexport function isTrustedOrigin(request: Request, allowedOrigins: string[] = []): boolean {\n  if (!MUTATING_METHODS.has(request.method)) return true;\n\n  const origin = request.headers.get(\"origin\");\n  if (!origin) return false;\n\n  const host = request.headers.get(\"host\");\n  const allowList = [\n    host ? `https://${host}` : null,\n    host ? `http://${host}` : null,\n    ...allowedOrigins,\n  ].filter((o): o is string => Boolean(o));\n\n  return allowList.includes(origin);\n}\n\n/**\n * Returns a 403 `Response` for untrusted cross-origin mutations, or `null`\n * when the request is allowed — call it at the top of a handler/middleware:\n *\n * ```ts\n * const blocked = assertTrustedOrigin(request);\n * if (blocked) return blocked;\n * ```\n */\nexport function assertTrustedOrigin(\n  request: Request,\n  allowedOrigins: string[] = [],\n): Response | null {\n  if (isTrustedOrigin(request, allowedOrigins)) return null;\n  return new Response(\"Forbidden: untrusted origin\", { status: 403 });\n}\n"
     }
   ],
-  "checksum": "sha256-b8ee78c7b7d186160c2a662b74c3436cbbf6f68564d42977c06c299b443155a3"
+  "checksum": "sha256-0c156ebb497f60bca2ce2dacd5fd25128d92024c0edd63ba05993c77fcde0d34"
 }

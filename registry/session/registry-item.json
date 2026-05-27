@@ -6,7 +6,7 @@
   "description": "Secure session id helpers — composes the crypto package.",
   "registryDependencies": ["crypto"],
   "exports": ["."],
-  "lib": ["ES2022", "DOM"],
+  "lib": ["ES2022", "WebWorker"],
   "environment": "universal",
   "categories": ["security", "auth"],
   "docs": "Store `hashSessionId(id)`, never the raw id. Compare incoming ids by\nre-hashing and matching the stored hash, so a leaked database never\nexposes usable session tokens.",

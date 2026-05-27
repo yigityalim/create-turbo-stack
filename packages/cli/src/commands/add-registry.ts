@@ -185,6 +185,31 @@ function implicitDevDeps(item: PackageRegistryItem): string[] {
   return item.environment === "node" ? ["@types/node"] : [];
 }
 
+/**
+ * Runtime-sharing guardrail. A source-exported dependency is type-checked under
+ * the *consumer's* tsconfig, so the consumer's `lib` must cover the dep's `lib`
+ * (e.g. session → crypto, both need `WebWorker`). Warn when it doesn't — the
+ * build would otherwise fail with confusing "Cannot find name 'crypto'" errors.
+ * tsup deps ship their own `.d.ts`, so they're exempt.
+ */
+function checkLibSupersets(items: ResolvedItem[]): void {
+  const byName = new Map(items.map((r) => [r.item.name, r.item]));
+  for (const { item } of items) {
+    const consumerLib = new Set(item.lib ?? []);
+    for (const ref of item.registryDependencies) {
+      const dep = byName.get(depPackageName(ref));
+      if (!dep || dep.build === "tsup") continue;
+      const missing = (dep.lib ?? []).filter((l) => !consumerLib.has(l));
+      if (missing.length > 0) {
+        p.log.warn(
+          `${pc.yellow(item.name)} consumes ${pc.yellow(dep.name)} (source) but is missing ` +
+            `lib [${missing.join(", ")}] — add it to ${item.name}'s lib or type-check may fail.`,
+        );
+      }
+    }
+  }
+}
+
 function exportsMap(item: PackageRegistryItem): Record<string, unknown> {
   const map: Record<string, unknown> = {};
   for (const exp of item.exports) {
@@ -326,6 +351,8 @@ export async function addRegistryCommand(
   const npmDeps: string[] = [];
   const envVars: Record<string, string> = {};
 
+  checkLibSupersets(items);
+
   for (const { item } of items) {
     nodes.push(...materializeItem(item, scope, linter));
     npmDeps.push(...item.dependencies, ...item.devDependencies, ...implicitDevDeps(item));
@@ -341,6 +368,13 @@ export async function addRegistryCommand(
     root.workspaces.catalog ??= {};
     for (const dep of npmDeps) {
       const [n, v] = parseDep(dep);
+      const existing = root.workspaces.catalog[n];
+      // First-write wins (don't clobber the user's pin); warn on a real clash.
+      if (existing && existing !== v && v !== "latest" && existing !== "latest") {
+        p.log.warn(
+          `catalog version conflict for ${pc.yellow(n)}: keeping ${existing}, ignoring ${v}`,
+        );
+      }
       root.workspaces.catalog[n] ??= v;
     }
     nodes.push({

@@ -76,7 +76,7 @@ package. Just drop a new folder with a `registry-item.json` and it's in.
 | `registryDependencies` | Names of other registry packages. Pulled in first (see below). |
 | `exports` | `"."` → `./src/index.ts`. `"./hash"` → `./src/hash.ts`. With `build: "tsup"`, points at `./dist/*` instead. So a file per export. |
 | `environment` | `"node"` adds `@types/node` + tsconfig `types: ["node"]`. Use it whenever you import `node:*` or touch `process`. `"browser"`/`"universal"` add nothing — rely on `lib`. |
-| `lib` | Only when you use Web APIs (`fetch`, `crypto`, `Request`, `TextEncoder`, DOM). Then `["ES2022", "DOM"]`. Omit otherwise. |
+| `lib` | For universal Web-API code (`fetch`, `crypto`, `Request`, `TextEncoder`) use `["ES2022", "WebWorker"]` — it exposes those APIs but NOT `document`/`window`, so a stray browser-only call fails at compile time instead of crashing in Node. Use `["ES2022", "DOM"]` only for genuine browser/DOM packages. Omit otherwise. |
 | `build` | `"none"` (default): exports `./src` directly, no build step — the right choice for almost everything. `"tsup"`: compiled to `dist`, for packages meant to be published to npm. |
 | `envVars` | Vars the package reads. Appended to the user's `.env.example` (existing keys are never clobbered). |
 | `docs` | Markdown, printed after install and shown on the browse page. Keep it to the one thing a user must know. |
@@ -101,8 +101,9 @@ import { randomToken, sha256 } from "@scope/crypto"; // ← @scope/, not a real 
 package.json gets `"@their-project/crypto": "workspace:*"`.
 
 **Runtime sharing rule:** if your package consumes a Web-API source package
-(e.g. one with `lib: ["ES2022","DOM"]`), declare the same `lib` so the shared
-types resolve. (Or that dependency uses `build: "tsup"` and ships its `.d.ts`.)
+(e.g. one with `lib: ["ES2022","WebWorker"]`), declare the same `lib` so the
+shared types resolve. `cts add` warns when a dependency's `lib` isn't covered
+by yours. (Or that dependency uses `build: "tsup"` and ships its `.d.ts`.)
 
 ## Build & verify
 
@@ -136,6 +137,10 @@ bun install && bun run type-check
   when the code actually needs those types.
 - **One concern per package.** Compose with `registryDependencies` instead of
   bundling unrelated helpers.
+- **`universal` means prove it.** If you claim `environment: "universal"`, the
+  `WebWorker` lib stops you from compiling against `document`/`window`, but you
+  should still have a test that runs under **both Node and a jsdom/browser**
+  environment — "compiles" is not "runs on both runtimes".
 
 ## Checklist for a new package
 
@@ -150,7 +155,7 @@ bun install && bun run type-check
 
 ## Reference packages
 
-- `security/` — Web-API (`lib: DOM`), multiple exports, no deps.
+- `security/` — Web-API (`lib: WebWorker`), multiple exports, no deps.
 - `crypto/` — Web Crypto helpers, multiple exports.
 - `session/` — composes `crypto` via `registryDependencies` + `@scope/` import.
 

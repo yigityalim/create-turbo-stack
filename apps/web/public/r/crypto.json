@@ -15,7 +15,7 @@
   ],
   "lib": [
     "ES2022",
-    "DOM"
+    "WebWorker"
   ],
   "environment": "universal",
   "build": "none",
@@ -43,5 +43,5 @@
       "content": "/**\n * A cryptographically-secure random token, hex-encoded. Uses\n * `crypto.getRandomValues` (Web Crypto). Default 32 bytes → 64 hex chars.\n * Good for session ids, CSRF tokens, API keys.\n */\nexport function randomToken(bytes = 32): string {\n  const buf = crypto.getRandomValues(new Uint8Array(bytes));\n  return Array.from(buf)\n    .map((b) => b.toString(16).padStart(2, \"0\"))\n    .join(\"\");\n}\n\n/** A random URL-safe base64 string (no padding). */\nexport function randomId(bytes = 16): string {\n  const buf = crypto.getRandomValues(new Uint8Array(bytes));\n  return btoa(String.fromCharCode(...buf))\n    .replace(/\\+/g, \"-\")\n    .replace(/\\//g, \"_\")\n    .replace(/=+$/, \"\");\n}\n"
     }
   ],
-  "checksum": "sha256-b4969baaf283b114f7f8d163c3c1e2c938f6437a7608855a2360240b73b8fab2"
+  "checksum": "sha256-b35e630cb6698d9b95d4a8e5d13dfd4fd92d280d121815d57394114714095b48"
 }

@@ -15,7 +15,7 @@
   ],
   "lib": [
     "ES2022",
-    "DOM"
+    "WebWorker"
   ],
   "environment": "universal",
   "build": "none",
@@ -32,5 +32,5 @@
       "content": "import { randomToken, sha256 } from \"@scope/crypto\";\n\n/** A new opaque, secure session id (256 bits of entropy, hex). */\nexport function createSessionId(): string {\n  return randomToken(32);\n}\n\n/**\n * Hash a session id for storage — store the hash, compare against it, so a\n * leaked database never exposes usable session tokens.\n */\nexport function hashSessionId(id: string): Promise<string> {\n  return sha256(id);\n}\n"
     }
   ],
-  "checksum": "sha256-ccc252d479052768a0e338f96f4f00915aa37604e1770d2a32d854d3b9d60163"
+  "checksum": "sha256-2c63d8263ad768ffe90978e9671638c695226e3fc9aac38e2e9ba100d04ad198"
 }
