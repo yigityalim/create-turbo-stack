@@ -1,5 +1,6 @@
 "use client";
 
+import { INTEGRATION_PACKAGE_NAMES } from "@create-turbo-stack/schema";
 import {
   ChevronDown,
   ChevronRight,
@@ -12,6 +13,18 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
+
+/**
+ * Auto-package names — the two structural builtins plus every integration
+ * category's workspace package (db, api, auth, monitoring, rate-limit, cache,
+ * …). Derived from the schema's `INTEGRATION_PACKAGE_NAMES` map, so a new
+ * integration category appears here without edits.
+ */
+const AUTO_PACKAGE_NAMES = new Set<string>([
+  "typescript-config",
+  "env",
+  ...Object.values(INTEGRATION_PACKAGE_NAMES),
+]);
 
 export type TreeNode = {
   name: string;
@@ -191,9 +204,10 @@ export function FileExplorer({
         node.path.split("/").length === 2
       ) {
         const pkgName = node.path.split("/")[1];
-        // Skip auto-packages (typescript-config, env, db, api, auth)
-        const autoPackages = ["typescript-config", "env", "db", "api", "auth"];
-        if (!autoPackages.includes(pkgName)) {
+        // Auto-packages (cache, monitoring, db, env, …) are derived from preset
+        // selections — they have no standalone identity to configure/remove
+        // here. Use the integration prompts instead.
+        if (!AUTO_PACKAGE_NAMES.has(pkgName)) {
           items.push(
             {
               label: "Configure",
@@ -236,22 +250,20 @@ export function FileExplorer({
   return (
     <div className="relative h-full overflow-auto p-3 text-sm">
       <div className="space-y-0.5">
-        {root.children.map((child) => (
-          <TreeNodeComponent
-            key={child.path}
-            node={child}
-            depth={0}
-            expanded={effectiveExpanded}
-            toggleExpand={toggleExpand}
-            selectedPath={selectedPath}
-            onSelectFile={onSelectFile}
-            onContextMenu={handleContextMenu}
-            addedPaths={addedPaths}
-            removedPaths={removedPaths}
-            searchMatchPaths={searchMatchPaths}
-            contentOnlyMatches={contentOnlyMatches}
-          />
-        ))}
+        <ChildList
+          items={root.children}
+          depth={0}
+          expanded={effectiveExpanded}
+          toggleExpand={toggleExpand}
+          selectedPath={selectedPath}
+          onSelectFile={onSelectFile}
+          onContextMenu={handleContextMenu}
+          addedPaths={addedPaths}
+          removedPaths={removedPaths}
+          searchMatchPaths={searchMatchPaths}
+          contentOnlyMatches={contentOnlyMatches}
+          isSearching={isSearching}
+        />
       </div>
 
       {/* Context menu */}
@@ -306,7 +318,7 @@ function ContextMenuPopover({
       ref={ref}
       role="menu"
       tabIndex={0}
-      className="fixed z-50 min-w-[160px] rounded-lg border border-fd-border bg-fd-popover p-1 shadow-lg animate-in fade-in zoom-in-95 duration-100"
+      className="fixed z-50 min-w-[160px] rounded-[3px] border border-fd-border bg-fd-popover p-1 shadow-lg animate-in fade-in zoom-in-95 duration-100"
       style={{ left: pos.x, top: pos.y }}
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => {
@@ -326,10 +338,10 @@ function ContextMenuPopover({
               onSelect(item.action);
             }}
             className={cn(
-              "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left font-mono text-xs transition-colors",
+              "flex w-full items-center gap-2 rounded-[2px] px-2.5 py-1.5 text-left font-mono text-xs transition-colors",
               isDestructive
                 ? "text-red-400 hover:bg-red-500/10"
-                : "text-fd-foreground hover:bg-fd-accent",
+                : "text-fd-foreground hover:bg-fd-primary/[0.06] hover:text-fd-primary",
             )}
           >
             <Icon className="h-3.5 w-3.5" />
@@ -341,22 +353,9 @@ function ContextMenuPopover({
   );
 }
 
-// ─── Tree Node ────────────────────────────────────────────────────────────────
+// ─── Child List (nest dispatcher) ─────────────────────────────────────────────
 
-function TreeNodeComponent({
-  node,
-  depth,
-  expanded,
-  toggleExpand,
-  selectedPath,
-  onSelectFile,
-  onContextMenu,
-  addedPaths,
-  removedPaths,
-  searchMatchPaths,
-  contentOnlyMatches,
-}: {
-  node: TreeNode;
+type SharedNodeProps = {
   depth: number;
   expanded: Set<string>;
   toggleExpand: (path: string) => void;
@@ -367,20 +366,81 @@ function TreeNodeComponent({
   removedPaths?: Set<string>;
   searchMatchPaths?: Set<string> | null;
   contentOnlyMatches?: Set<string> | null;
-}) {
+  isSearching: boolean;
+};
+
+/**
+ * Render a directory's children, respecting upstream sort and collapsing
+ * VSCode-style file nesting (index.test.ts under index.ts, lockfiles under
+ * package.json, …). During search we flatten — nesting would hide matches
+ * whose parent doesn't itself match.
+ */
+function ChildList({
+  items,
+  ...shared
+}: { items: TreeNode[] } & SharedNodeProps) {
+  if (shared.isSearching) {
+    return (
+      <>
+        {items.map((child) => (
+          <TreeNodeComponent key={child.path} node={child} {...shared} />
+        ))}
+      </>
+    );
+  }
+  const { dirs, groups } = splitChildren(items);
+  return (
+    <>
+      {dirs.map((dir) => (
+        <TreeNodeComponent key={dir.path} node={dir} {...shared} />
+      ))}
+      {groups.map(({ parent, nested }) => (
+        <TreeNodeComponent
+          key={parent.path}
+          node={parent}
+          nestedChildren={nested}
+          {...shared}
+        />
+      ))}
+    </>
+  );
+}
+
+// ─── Tree Node ────────────────────────────────────────────────────────────────
+
+function TreeNodeComponent({
+  node,
+  nestedChildren,
+  depth,
+  expanded,
+  toggleExpand,
+  selectedPath,
+  onSelectFile,
+  onContextMenu,
+  addedPaths,
+  removedPaths,
+  searchMatchPaths,
+  contentOnlyMatches,
+  isSearching,
+}: {
+  node: TreeNode;
+  /** File-nesting children (e.g. `index.test.ts` under `index.ts`). */
+  nestedChildren?: TreeNode[];
+} & SharedNodeProps) {
   const isExpanded = expanded.has(node.path);
   const isSelected = selectedPath === node.path;
   const isAdded = !node.isDirectory && addedPaths?.has(node.path);
   const isContentOnly = !node.isDirectory && contentOnlyMatches?.has(node.path);
   const paddingLeft = depth * 16 + 6;
+  const hasNested = !node.isDirectory && (nestedChildren?.length ?? 0) > 0;
 
-  // Search filtering: hide non-matching files
-  if (
-    searchMatchPaths &&
-    !node.isDirectory &&
-    !searchMatchPaths.has(node.path)
-  ) {
-    return null;
+  // Search filtering: hide non-matching files (unless a nested child matches).
+  if (searchMatchPaths && !node.isDirectory) {
+    const selfMatches = searchMatchPaths.has(node.path);
+    const nestedMatches = nestedChildren?.some((n) =>
+      searchMatchPaths.has(n.path),
+    );
+    if (!selfMatches && !nestedMatches) return null;
   }
   // Hide directories with no matching descendants
   if (searchMatchPaths && node.isDirectory) {
@@ -404,8 +464,8 @@ function TreeNodeComponent({
           onClick={() => toggleExpand(node.path)}
           onContextMenu={(e) => onContextMenu(e, node)}
           className={cn(
-            "group flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-fd-muted/20",
-            isInteractive && "hover:bg-fd-primary/5",
+            "group flex w-full items-center gap-1.5 rounded-[2px] px-1.5 py-1 text-left transition-colors hover:bg-fd-primary/[0.06] hover:text-fd-foreground",
+            isInteractive && "hover:bg-fd-primary/10",
           )}
           style={{ paddingLeft }}
         >
@@ -430,7 +490,86 @@ function TreeNodeComponent({
         </button>
         {isExpanded && (
           <div className="space-y-0.5">
-            {node.children.map((child) => (
+            <ChildList
+              items={node.children}
+              depth={depth + 1}
+              expanded={expanded}
+              toggleExpand={toggleExpand}
+              selectedPath={selectedPath}
+              onSelectFile={onSelectFile}
+              onContextMenu={onContextMenu}
+              addedPaths={addedPaths}
+              removedPaths={removedPaths}
+              searchMatchPaths={searchMatchPaths}
+              contentOnlyMatches={contentOnlyMatches}
+              isSearching={isSearching}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // File with nested companions (index.ts → index.test.ts, package.json → bun.lock, …)
+  if (hasNested) {
+    return (
+      <div>
+        <div
+          className={cn(
+            "group flex w-full items-center rounded-[2px] transition-colors",
+            isSelected
+              ? "bg-fd-primary/10"
+              : isAdded
+                ? "bg-green-500/8"
+                : "hover:bg-fd-primary/[0.06]",
+          )}
+          style={{ paddingLeft }}
+        >
+          <button
+            type="button"
+            onClick={() => toggleExpand(node.path)}
+            aria-label={isExpanded ? "Collapse" : "Expand"}
+            className="flex shrink-0 items-center py-1 pr-0.5"
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-3.5 w-3.5 text-fd-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5 text-fd-muted-foreground" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => onSelectFile(node)}
+            className="flex min-w-0 flex-1 items-center gap-1.5 py-1 pr-1.5 text-left"
+          >
+            <FileIcon name={node.name} isSelected={isSelected} />
+            <span
+              className={cn(
+                "truncate font-mono text-[13px]",
+                isSelected
+                  ? "text-fd-primary"
+                  : isAdded
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-fd-foreground",
+              )}
+            >
+              {node.name}
+            </span>
+            {isAdded && (
+              <span className="ml-auto shrink-0 rounded-[2px] bg-green-500/15 px-1 font-mono text-[9px] text-green-600 dark:text-green-400">
+                NEW
+              </span>
+            )}
+            {isContentOnly && !isAdded && (
+              <span className="ml-auto shrink-0 rounded-[2px] bg-blue-500/15 px-1 font-mono text-[9px] text-blue-600 dark:text-blue-400">
+                CONTENT
+              </span>
+            )}
+          </button>
+        </div>
+        {isExpanded && nestedChildren && (
+          <div className="space-y-0.5">
+            {nestedChildren.map((child) => (
               <TreeNodeComponent
                 key={child.path}
                 node={child}
@@ -444,6 +583,7 @@ function TreeNodeComponent({
                 removedPaths={removedPaths}
                 searchMatchPaths={searchMatchPaths}
                 contentOnlyMatches={contentOnlyMatches}
+                isSearching={isSearching}
               />
             ))}
           </div>
@@ -457,12 +597,12 @@ function TreeNodeComponent({
       type="button"
       onClick={() => onSelectFile(node)}
       className={cn(
-        "flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left transition-colors",
+        "flex w-full items-center gap-1.5 rounded-[2px] px-1.5 py-1 text-left transition-colors",
         isSelected
           ? "bg-fd-primary/10 text-fd-primary"
           : isAdded
             ? "bg-green-500/8 text-green-600 dark:text-green-400"
-            : "text-fd-foreground hover:bg-fd-muted/15",
+            : "text-fd-foreground hover:bg-fd-primary/[0.06]",
       )}
       style={{ paddingLeft: paddingLeft + 20 }}
     >
@@ -480,12 +620,12 @@ function TreeNodeComponent({
         {node.name}
       </span>
       {isAdded && (
-        <span className="ml-auto shrink-0 rounded bg-green-500/15 px-1 font-mono text-[9px] text-green-600 dark:text-green-400">
+        <span className="ml-auto shrink-0 rounded-[2px] bg-green-500/15 px-1 font-mono text-[9px] text-green-600 dark:text-green-400">
           NEW
         </span>
       )}
       {isContentOnly && !isAdded && (
-        <span className="ml-auto shrink-0 rounded bg-blue-500/15 px-1 font-mono text-[9px] text-blue-600 dark:text-blue-400">
+        <span className="ml-auto shrink-0 rounded-[2px] bg-blue-500/15 px-1 font-mono text-[9px] text-blue-600 dark:text-blue-400">
           CONTENT
         </span>
       )}
@@ -532,4 +672,106 @@ function getFileIconColor(name: string): string {
     default:
       return "text-fd-muted-foreground";
   }
+}
+
+// ─── File-Nesting Helpers ─────────────────────────────────────────────────────
+//
+// Directory sort is owned upstream (`preview-view.tsx` runs an IDE-style sort:
+// dirs → source → styles → data → dotfiles). These helpers ONLY collapse
+// auxiliary files under their parent (index.test.ts under index.ts,
+// package-lock.json under package.json, …) — they preserve upstream order so
+// the smart sort isn't clobbered.
+
+const ESCAPE_REGEX = /[.*+?^${}()|[\]\\]/g;
+function escapeRegex(s: string): string {
+  return s.replace(ESCAPE_REGEX, "\\$&");
+}
+
+/**
+ * VSCode-style file nesting rules. When `isNestedChild(parent, child)` is
+ * true, `child` collapses under `parent` in the explorer.
+ *
+ *   `index.ts`      ← `index.{test,spec,bench,stories,d,module}.{ts,tsx,…}`
+ *   `package.json`  ← lockfiles + `.npmrc`
+ *   `tsconfig.json` ← `tsconfig.*.json`
+ *   `.env` / `.env.example` ← every other `.env.*`
+ */
+function isNestedChild(parentName: string, childName: string): boolean {
+  if (parentName === childName) return false;
+
+  // Same-stem auxiliary files: index.test.ts, index.stories.tsx, …
+  const dot = parentName.lastIndexOf(".");
+  if (dot > 0) {
+    const stem = parentName.slice(0, dot);
+    const auxRe = new RegExp(
+      `^${escapeRegex(stem)}\\.(test|spec|bench|d|stories?|story|module)\\.(ts|tsx|js|jsx|mjs|cjs|css|scss)$`,
+    );
+    if (auxRe.test(childName)) return true;
+  }
+
+  if (parentName === "package.json") {
+    return /^(package-lock\.json|pnpm-lock\.yaml|bun\.lock|bun\.lockb|yarn\.lock|\.npmrc)$/.test(
+      childName,
+    );
+  }
+  if (parentName === "tsconfig.json") {
+    return /^tsconfig\..+\.json$/.test(childName);
+  }
+  if (parentName.startsWith(".env")) {
+    return childName.startsWith(".env.") && childName !== parentName;
+  }
+
+  return false;
+}
+
+/**
+ * For each file pick its best parent (the shortest matching candidate, so
+ * `package.json` beats `package-lock.json` when both could claim
+ * `.npmrc`). Order-independent: works whatever order the input list is in,
+ * which lets us respect upstream sort. Files without a parent are top-level.
+ */
+function nestFiles(
+  files: TreeNode[],
+): Array<{ parent: TreeNode; nested: TreeNode[] }> {
+  const parentByPath = new Map<string, TreeNode>();
+  for (const child of files) {
+    let best: TreeNode | undefined;
+    for (const candidate of files) {
+      if (candidate.path === child.path) continue;
+      if (!isNestedChild(candidate.name, child.name)) continue;
+      if (!best || candidate.name.length < best.name.length) best = candidate;
+    }
+    if (best) parentByPath.set(child.path, best);
+  }
+
+  const childrenByParentPath = new Map<string, TreeNode[]>();
+  for (const child of files) {
+    const parent = parentByPath.get(child.path);
+    if (!parent) continue;
+    const arr = childrenByParentPath.get(parent.path) ?? [];
+    arr.push(child);
+    childrenByParentPath.set(parent.path, arr);
+  }
+
+  // Iterate `files` in input order so upstream's sort decides the top-level
+  // ordering; only files that aren't a nested child of another show up here.
+  const groups: Array<{ parent: TreeNode; nested: TreeNode[] }> = [];
+  for (const file of files) {
+    if (parentByPath.has(file.path)) continue;
+    groups.push({
+      parent: file,
+      nested: childrenByParentPath.get(file.path) ?? [],
+    });
+  }
+  return groups;
+}
+
+/** Split a directory's children into (dirs, file-groups) preserving upstream order. */
+function splitChildren(children: TreeNode[]): {
+  dirs: TreeNode[];
+  groups: Array<{ parent: TreeNode; nested: TreeNode[] }>;
+} {
+  const dirs = children.filter((c) => c.isDirectory);
+  const files = children.filter((c) => !c.isDirectory);
+  return { dirs, groups: nestFiles(files) };
 }
