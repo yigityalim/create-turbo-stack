@@ -261,11 +261,11 @@ describe("detectIntegrations", () => {
 
   // detections shape
 
-  it("returns all 6 detection keys", async () => {
+  it("returns all 7 detection keys", async () => {
     tmp = await createFixture({ "package.json": { name: "bare" } });
     const r = await detectIntegrations(tmp);
     expect(Object.keys(r.detections).sort()).toEqual(
-      ["ai", "analytics", "email", "envValidation", "errorTracking", "rateLimit"].sort(),
+      ["ai", "analytics", "cache", "email", "envValidation", "errorTracking", "rateLimit"].sort(),
     );
   });
 

@@ -8,9 +8,12 @@ function dbDep(preset: Preset, scope: string): Record<string, string> {
   return preset.database.strategy !== "none" ? { [`${scope}/db`]: "workspace:*" } : {};
 }
 
+const AUTH_EXPORTS = [".", "./server", "./client", "./middleware"] as const;
+
 export const clerk = defineIntegration({
   category: "auth",
   provider: "clerk",
+  packageExports: AUTH_EXPORTS,
   catalogEntries: () => [{ name: "@clerk/nextjs", version: VERSIONS.clerkNextjs }],
   envVars: () => ({
     server: [
@@ -39,6 +42,7 @@ export const clerk = defineIntegration({
 export const betterAuth = defineIntegration({
   category: "auth",
   provider: "better-auth",
+  packageExports: AUTH_EXPORTS,
   catalogEntries: () => [{ name: "better-auth", version: VERSIONS.betterAuth }],
   envVars: () => ({
     server: [
@@ -89,6 +93,7 @@ export const betterAuth = defineIntegration({
 export const nextAuth = defineIntegration({
   category: "auth",
   provider: "next-auth",
+  packageExports: AUTH_EXPORTS,
   catalogEntries: () => [{ name: "next-auth", version: VERSIONS.nextAuth }],
   envVars: () => ({
     server: [
@@ -139,6 +144,7 @@ export const nextAuth = defineIntegration({
 export const lucia = defineIntegration({
   category: "auth",
   provider: "lucia",
+  packageExports: AUTH_EXPORTS,
   // Lucia's npm version is in flux; no catalog entry by default — users
   // pick adapter & version manually. Add when you settle on a stack.
   catalogEntries: () => [],
@@ -161,6 +167,7 @@ export const lucia = defineIntegration({
 export const supabaseAuth = defineIntegration({
   category: "auth",
   provider: "supabase-auth",
+  packageExports: AUTH_EXPORTS,
   catalogEntries: () => [],
   // middleware.ts reads SUPABASE_URL / SUPABASE_ANON_KEY directly, so declare
   // them here too. When db is also Supabase these overlap with the database

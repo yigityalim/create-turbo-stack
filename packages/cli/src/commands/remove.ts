@@ -1,6 +1,6 @@
 import * as p from "@clack/prompts";
 import type { Preset, UserConfig } from "@create-turbo-stack/schema";
-import { ValidatedPresetSchema } from "@create-turbo-stack/schema";
+import { INTEGRATION_OPTION_CATEGORIES, ValidatedPresetSchema } from "@create-turbo-stack/schema";
 import pc from "picocolors";
 import { applyDiff, resolveOnConflict } from "../io/apply-diff";
 import { validatePresetAgainstPolicy } from "../io/policy";
@@ -164,8 +164,9 @@ async function removePackage(
   p.outro(`${pc.green("Done!")} Package ${pc.cyan(target)} removed.`);
 }
 
-const INTEGRATION_CATEGORIES = ["analytics", "errorTracking", "email", "rateLimit", "ai"] as const;
-type IntegrationCategory = (typeof INTEGRATION_CATEGORIES)[number];
+// Removable integration categories come from the schema (the `integrations.*`
+// keys), so a new category is removable without editing this command.
+type IntegrationCategory = (typeof INTEGRATION_OPTION_CATEGORIES)[number];
 
 async function removeIntegration(
   category: string | undefined,
@@ -186,13 +187,13 @@ async function removeIntegration(
   const cat = (category ??
     ((await p.select({
       message: "Which integration to remove?",
-      options: INTEGRATION_CATEGORIES.filter(
+      options: INTEGRATION_OPTION_CATEGORIES.filter(
         (c) => config.integrations[c] && config.integrations[c] !== "none",
       ).map((c) => ({ value: c, label: `${c} (${config.integrations[c]})` })),
     })) as IntegrationCategory)) as IntegrationCategory;
   if (p.isCancel(cat)) return process.exit(0);
 
-  if (!INTEGRATION_CATEGORIES.includes(cat)) {
+  if (!INTEGRATION_OPTION_CATEGORIES.includes(cat)) {
     p.log.error(`Unknown integration category: ${cat}.`);
     process.exit(1);
   }

@@ -16,6 +16,7 @@ export async function detectIntegrations(root: string): Promise<{
   const email = detectEmail(allPkgs);
   const rateLimit = detectRateLimit(allPkgs);
   const ai = detectAi(allPkgs);
+  const cache = detectCache(allPkgs);
   const envValidation = detectEnvValidation(allPkgs);
 
   return {
@@ -25,6 +26,7 @@ export async function detectIntegrations(root: string): Promise<{
       email: email.value as Integrations["email"],
       rateLimit: rateLimit.value as Integrations["rateLimit"],
       ai: ai.value as Integrations["ai"],
+      cache: cache.value as Integrations["cache"],
       envValidation: envValidation.value === "true",
     },
     detections: {
@@ -33,6 +35,7 @@ export async function detectIntegrations(root: string): Promise<{
       email,
       rateLimit,
       ai,
+      cache,
       envValidation,
     },
   };
@@ -158,6 +161,23 @@ function detectAi(pkgs: PkgJson[]): Detection<string> {
     };
   }
   return { value: "none", confidence: "medium", reason: "No AI SDK detected" };
+}
+
+// Cache shares `@upstash/redis` with the rate-limit package, so the dep alone
+// isn't a clean signal. The auto-generated `packages/cache` workspace is —
+// detect that, then confirm the SDK is wired in.
+function detectCache(pkgs: PkgJson[]): Detection<string> {
+  const hasCachePkg = pkgs.some(
+    (p) => typeof p.name === "string" && p.name.split("/").pop() === "cache",
+  );
+  if (hasCachePkg && anyHasDep(pkgs, "@upstash/redis")) {
+    return {
+      value: "upstash",
+      confidence: "certain",
+      reason: "packages/cache with @upstash/redis found",
+    };
+  }
+  return { value: "none", confidence: "medium", reason: "No cache package detected" };
 }
 
 function detectEnvValidation(pkgs: PkgJson[]): Detection<string> {

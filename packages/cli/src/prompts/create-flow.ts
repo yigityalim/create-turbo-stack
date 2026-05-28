@@ -1,5 +1,7 @@
 import * as p from "@clack/prompts";
+import { listIntegrations } from "@create-turbo-stack/core";
 import type { Preset, UserConfig } from "@create-turbo-stack/schema";
+import { INTEGRATION_OPTION_CATEGORIES } from "@create-turbo-stack/schema";
 import pc from "picocolors";
 import { filterOptions, lockedValue } from "../io/policy";
 import { CLI_VERSION } from "../version";
@@ -428,36 +430,18 @@ export async function runCreatePrompts(
     app.consumes = [...allPkgNames];
   }
 
-  // Items whose category is fully constrained by allow/forbid are
-  // hidden from the picker so the user can't pick something invalid.
-  const allIntegrationItems = [
-    {
-      value: "posthog",
-      label: "PostHog analytics",
-      category: "analytics" as const,
-    },
-    {
-      value: "vercel-analytics",
-      label: "Vercel Analytics",
-      category: "analytics" as const,
-    },
-    {
-      value: "sentry",
-      label: "Sentry error tracking",
-      category: "errorTracking" as const,
-    },
-    {
-      value: "react-email-resend",
-      label: "React Email + Resend",
-      category: "email" as const,
-    },
-    {
-      value: "upstash",
-      label: "Upstash rate limiting",
-      category: "rateLimit" as const,
-    },
-    { value: "vercel-ai-sdk", label: "Vercel AI SDK", category: "ai" as const },
-  ];
+  // Integration providers are derived from the registry: each `integrations.*`
+  // category contributes its registered providers (label + value). Adding a
+  // category/provider upstream surfaces here automatically — no hand-listed
+  // picker to keep in sync. Items whose category is constrained by
+  // allow/forbid are hidden so the user can't pick something invalid.
+  const allIntegrationItems = INTEGRATION_OPTION_CATEGORIES.flatMap((category) =>
+    listIntegrations(category).map((def) => ({
+      value: def.provider,
+      label: def.label ?? def.provider,
+      category,
+    })),
+  );
   const integrationOptions = allIntegrationItems
     .filter((item) => {
       const allow = policy?.allow?.[item.category] as readonly string[] | undefined;
@@ -468,36 +452,30 @@ export async function runCreatePrompts(
     })
     .map(({ value, label }) => ({ value, label }));
 
+  const defaultIntegrations = (defaults?.integrations ?? {}) as Record<string, string | undefined>;
   const extras = onCancel(
     await p.multiselect({
       message: "Integrations",
       options: integrationOptions,
       required: false,
-      initialValues: [
-        ...(defaults?.integrations?.analytics === "posthog" ? ["posthog"] : []),
-        ...(defaults?.integrations?.analytics === "vercel-analytics" ? ["vercel-analytics"] : []),
-        ...(defaults?.integrations?.errorTracking === "sentry" ? ["sentry"] : []),
-        ...(defaults?.integrations?.email === "react-email-resend" ? ["react-email-resend"] : []),
-        ...(defaults?.integrations?.rateLimit === "upstash" ? ["upstash"] : []),
-        ...(defaults?.integrations?.ai === "vercel-ai-sdk" ? ["vercel-ai-sdk"] : []),
-      ],
+      initialValues: allIntegrationItems
+        .filter((item) => defaultIntegrations[item.category] === item.value)
+        .map((item) => item.value),
     }),
   );
 
   const requiredEnvValidation = lockedValue(policy, "envValidation");
 
-  const integrations: Preset["integrations"] = {
-    analytics: extras.includes("posthog")
-      ? "posthog"
-      : extras.includes("vercel-analytics")
-        ? "vercel-analytics"
-        : "none",
-    errorTracking: extras.includes("sentry") ? "sentry" : "none",
-    email: extras.includes("react-email-resend") ? "react-email-resend" : "none",
-    rateLimit: extras.includes("upstash") ? "upstash" : "none",
-    ai: extras.includes("vercel-ai-sdk") ? "vercel-ai-sdk" : "none",
+  // For each category the first selected provider wins; unselected → "none".
+  const integrationsResult: Record<string, string> = {};
+  for (const category of INTEGRATION_OPTION_CATEGORIES) {
+    const chosen = listIntegrations(category).find((def) => extras.includes(def.provider));
+    integrationsResult[category] = chosen?.provider ?? "none";
+  }
+  const integrations = {
+    ...integrationsResult,
     envValidation: requiredEnvValidation ?? defaults?.integrations?.envValidation ?? true,
-  };
+  } as Preset["integrations"];
 
   p.log.message("");
   p.log.message(pc.bold("Summary:"));

@@ -8,12 +8,10 @@ import type {
   UserConfig,
 } from "@create-turbo-stack/schema";
 import {
-  AiSchema,
-  AnalyticsSchema,
-  EmailSchema,
-  ErrorTrackingSchema,
+  INTEGRATION_OPTION_CATEGORIES,
+  INTEGRATION_PROVIDER_VALUES,
+  integrationPackageName,
   PackageTypeSchema,
-  RateLimitSchema,
   ValidatedPresetSchema,
 } from "@create-turbo-stack/schema";
 import pc from "picocolors";
@@ -85,14 +83,19 @@ function exitIfPolicyViolated(preset: Preset, policy: UserConfig["policy"] | und
   process.exit(1);
 }
 
-/** Integration category → the workspace package it generates (consumed by apps). */
-const INTEGRATION_PACKAGE: Record<string, string> = {
-  analytics: "analytics",
-  errorTracking: "monitoring",
-  email: "email",
-  rateLimit: "rate-limit",
-  ai: "ai",
+/** Pretty labels for the integration category picker (presentation only;
+ *  unknown categories fall back to a humanized id, so a new category needs no
+ *  edit here). */
+const CATEGORY_LABELS: Record<string, string> = {
+  analytics: "Analytics",
+  errorTracking: "Error Tracking",
+  email: "Email",
+  rateLimit: "Rate Limiting",
+  ai: "AI",
 };
+const categoryLabel = (c: string): string =>
+  CATEGORY_LABELS[c] ??
+  c.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^\w/, (m) => m.toUpperCase());
 
 /** Add `pkg` to the `consumes` of the named apps (skips apps already consuming it). */
 function wireConsumes(apps: App[], pkg: string, appNames: ReadonlySet<string>): App[] {
@@ -423,14 +426,6 @@ async function finalizePackage(
   );
 }
 
-const INTEGRATION_SCHEMAS: Record<string, readonly string[]> = {
-  analytics: AnalyticsSchema.options,
-  errorTracking: ErrorTrackingSchema.options,
-  email: EmailSchema.options,
-  rateLimit: RateLimitSchema.options,
-  ai: AiSchema.options,
-};
-
 async function addIntegration(userConfig?: UserConfig, options: AddOptions = {}, name?: string) {
   const cwd = process.cwd();
   const config = await readProjectConfig(cwd);
@@ -442,10 +437,12 @@ async function addIntegration(userConfig?: UserConfig, options: AddOptions = {},
 
   // Non-interactive: `add integration <category> --value <provider>`.
   if (name) {
-    const opts = INTEGRATION_SCHEMAS[name];
+    const opts = INTEGRATION_PROVIDER_VALUES[name as keyof typeof INTEGRATION_PROVIDER_VALUES] as
+      | readonly string[]
+      | undefined;
     if (!opts) {
       p.log.error(
-        `Unknown integration category "${name}". One of: ${Object.keys(INTEGRATION_SCHEMAS).join(", ")}.`,
+        `Unknown integration category "${name}". One of: ${Object.keys(INTEGRATION_PROVIDER_VALUES).join(", ")}.`,
       );
       process.exit(1);
     }
@@ -460,107 +457,36 @@ async function addIntegration(userConfig?: UserConfig, options: AddOptions = {},
 
   p.intro(`${pc.bgCyan(pc.black(" add integration "))} to ${pc.cyan(config.basics.projectName)}`);
 
+  const integrationsState = config.integrations as unknown as Record<string, string>;
   const category = (await p.select({
     message: "Integration category",
-    options: [
-      {
-        value: "analytics",
-        label: "Analytics",
-        hint: `current: ${config.integrations.analytics}`,
-      },
-      {
-        value: "errorTracking",
-        label: "Error Tracking",
-        hint: `current: ${config.integrations.errorTracking}`,
-      },
-      {
-        value: "email",
-        label: "Email",
-        hint: `current: ${config.integrations.email}`,
-      },
-      {
-        value: "rateLimit",
-        label: "Rate Limiting",
-        hint: `current: ${config.integrations.rateLimit}`,
-      },
-      { value: "ai", label: "AI", hint: `current: ${config.integrations.ai}` },
-    ],
+    options: INTEGRATION_OPTION_CATEGORIES.map((c) => ({
+      value: c,
+      label: categoryLabel(c),
+      hint: `current: ${integrationsState[c]}`,
+    })),
   })) as string;
   if (p.isCancel(category)) return process.exit(0);
 
-  type IntegrationValue = string;
-  let value: IntegrationValue;
   const policy = userConfig?.policy;
 
-  // Policy filter applied per category
-  const filterFor = (
-    schemaOptions: readonly string[],
-    cat: Parameters<typeof filterOptions>[2],
-  ) => {
-    const allowed = filterOptions(schemaOptions, policy, cat);
-    return allowed.length > 0 ? allowed : [...schemaOptions];
-  };
+  // Provider options are derived from the schema's per-category enum, then
+  // policy-filtered. A new category/provider flows through with no switch.
+  const providerValues =
+    INTEGRATION_PROVIDER_VALUES[category as keyof typeof INTEGRATION_PROVIDER_VALUES];
+  if (!providerValues) return;
+  const allowed = filterOptions(
+    [...providerValues],
+    policy,
+    category as Parameters<typeof filterOptions>[2],
+  );
+  const optionValues = allowed.length > 0 ? allowed : [...providerValues];
 
-  switch (category) {
-    case "analytics": {
-      value = (await p.select({
-        message: "Analytics provider",
-        options: filterFor(AnalyticsSchema.options, "analytics").map((v) => ({
-          value: v,
-          label: v,
-        })),
-        initialValue: config.integrations.analytics,
-      })) as string;
-      break;
-    }
-    case "errorTracking": {
-      value = (await p.select({
-        message: "Error tracking provider",
-        options: filterFor(ErrorTrackingSchema.options, "errorTracking").map((v) => ({
-          value: v,
-          label: v,
-        })),
-        initialValue: config.integrations.errorTracking,
-      })) as string;
-      break;
-    }
-    case "email": {
-      value = (await p.select({
-        message: "Email provider",
-        options: filterFor(EmailSchema.options, "email").map((v) => ({
-          value: v,
-          label: v,
-        })),
-        initialValue: config.integrations.email,
-      })) as string;
-      break;
-    }
-    case "rateLimit": {
-      value = (await p.select({
-        message: "Rate limiting provider",
-        options: filterFor(RateLimitSchema.options, "rateLimit").map((v) => ({
-          value: v,
-          label: v,
-        })),
-        initialValue: config.integrations.rateLimit,
-      })) as string;
-      break;
-    }
-    case "ai": {
-      value = (await p.select({
-        message: "AI provider",
-        options: filterFor(AiSchema.options, "ai").map((v) => ({
-          value: v,
-          label: v,
-        })),
-        initialValue: config.integrations.ai,
-      })) as string;
-      break;
-    }
-    default:
-      return;
-  }
-
+  const value = (await p.select({
+    message: `${categoryLabel(category)} provider`,
+    options: optionValues.map((v) => ({ value: v, label: v })),
+    initialValue: integrationsState[category],
+  })) as string;
   if (p.isCancel(value)) return process.exit(0);
 
   const targetApps = await pickConsumerApps(config, options, true, "all");
@@ -581,7 +507,7 @@ async function finalizeIntegration(
   userConfig: UserConfig | undefined,
   options: AddOptions,
 ): Promise<void> {
-  const pkg = INTEGRATION_PACKAGE[category];
+  const pkg = integrationPackageName(category);
   const valueChanged = (config.integrations as Record<string, unknown>)[category] !== value;
   const apps =
     pkg && value !== "none" ? wireConsumes(config.apps, pkg, new Set(targetApps)) : config.apps;

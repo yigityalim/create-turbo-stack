@@ -11,6 +11,7 @@ export * from "./options/css";
 export * from "./options/database";
 export * from "./options/integrations";
 export * from "./options/package";
+export * from "./options/package-override";
 export * from "./package-registry";
 export * from "./preset";
 export * from "./registry";

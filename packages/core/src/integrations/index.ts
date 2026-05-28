@@ -14,6 +14,7 @@ import { aiIntegrations } from "./ai";
 import { analyticsIntegrations } from "./analytics";
 import { apiIntegrations } from "./api";
 import { authIntegrations } from "./auth";
+import { cacheIntegrations } from "./cache";
 import { databaseIntegrations } from "./database";
 import { emailIntegrations } from "./email";
 import { errorTrackingIntegrations } from "./error-tracking";
@@ -29,6 +30,7 @@ const ALL = [
   ...emailIntegrations,
   ...rateLimitIntegrations,
   ...aiIntegrations,
+  ...cacheIntegrations,
 ];
 
 for (const def of ALL) registerIntegration(def);

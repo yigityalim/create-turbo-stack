@@ -22,6 +22,7 @@
     "email": "none",
     "rateLimit": "upstash",
     "ai": "none",
+    "cache": "upstash",
     "envValidation": true
   },
   "apps": [

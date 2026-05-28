@@ -96,6 +96,7 @@ export const VERSIONS = {
   reactEmailComponents: "^0.1.0",
   nodemailer: "^6.0.0",
   typesNodemailer: "^6.0.0",
+  bugsnagJs: "^8.0.0",
   upstashRatelimit: "^2.0.0",
   upstashRedis: "^1.0.0",
   ai: "^4.0.0",

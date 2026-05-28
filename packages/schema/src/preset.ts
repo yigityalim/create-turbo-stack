@@ -5,8 +5,9 @@ import { AuthSchema } from "./options/auth";
 import { BasicsSchema } from "./options/basics";
 import { CssSchema } from "./options/css";
 import { DatabaseSchema } from "./options/database";
-import { IntegrationsSchema } from "./options/integrations";
+import { IntegrationsSchema, integrationPackageName } from "./options/integrations";
 import { PackageSchema } from "./options/package";
+import { PackageOverridesSchema } from "./options/package-override";
 
 /** Rejects strings containing Eta/EJS template syntax to prevent template injection. */
 const safeString = z
@@ -54,6 +55,15 @@ export const PresetSchema = z.object({
    * so existing presets (and Preset literals) need no change.
    */
   registryPackages: z.array(z.string()).optional(),
+  /**
+   * Per-package customization — keyed by workspace package name (`"cache"`,
+   * `"db"`, `"ui"`, …). Lets the user *add* deps, scripts, exports, and extra
+   * files on top of what the resolver emits. Auto-package identity stays
+   * provider-owned; everything in this record is additive. See
+   * `PackageOverrideSchema`. Keys are validated against the set of packages
+   * the resolver would emit (auto + user) in `ValidatedPresetSchema`.
+   */
+  packageOverrides: PackageOverridesSchema.optional(),
 });
 
 export type Preset = z.infer<typeof PresetSchema>;
@@ -110,19 +120,26 @@ export const ValidatedPresetSchema = PresetSchema.superRefine((data, ctx) => {
   }
 
   // Mirrors the auto-packages the resolver generates (see core's
-  // resolveAutoPackages) so an app may `consumes` them. Kept in sync by hand —
-  // schema is logic-free and can't import core.
+  // resolveAutoPackages) so an app may `consumes` them. Derived from the
+  // integration ↔ package map: a new category flows through automatically,
+  // no hand-listing. schema is logic-free and can't import core, but the map
+  // itself lives here in schema.
+  const integrationPackages: string[] = [];
+  if (data.database.strategy !== "none")
+    integrationPackages.push(integrationPackageName("database"));
+  if (data.api.strategy !== "none") integrationPackages.push(integrationPackageName("api"));
+  if (data.auth.provider !== "none") integrationPackages.push(integrationPackageName("auth"));
+  for (const [category, value] of Object.entries(data.integrations)) {
+    if (category === "envValidation") continue;
+    if (typeof value === "string" && value !== "none") {
+      integrationPackages.push(integrationPackageName(category));
+    }
+  }
+
   const allPackageNames = new Set([
     ...pkgNames,
-    ...(data.database.strategy !== "none" ? ["db"] : []),
-    ...(data.api.strategy !== "none" ? ["api"] : []),
-    ...(data.auth.provider !== "none" ? ["auth"] : []),
+    ...integrationPackages,
     ...(data.integrations.envValidation ? ["env"] : []),
-    ...(data.integrations.analytics !== "none" ? ["analytics"] : []),
-    ...(data.integrations.errorTracking === "sentry" ? ["monitoring"] : []),
-    ...(data.integrations.email !== "none" ? ["email"] : []),
-    ...(data.integrations.rateLimit === "upstash" ? ["rate-limit"] : []),
-    ...(data.integrations.ai !== "none" ? ["ai"] : []),
     "typescript-config",
   ]);
   for (const [i, app] of data.apps.entries()) {
@@ -145,6 +162,19 @@ export const ValidatedPresetSchema = PresetSchema.superRefine((data, ctx) => {
       message: `Duplicate port: ${dupePort}`,
       path: ["apps"],
     });
+  }
+
+  // Package overrides must target a package the resolver actually emits —
+  // typo-detection lives here so the user finds out at validate time, not
+  // when a generated project silently lacks their tweak.
+  for (const overrideName of Object.keys(data.packageOverrides ?? {})) {
+    if (!allPackageNames.has(overrideName)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `packageOverrides targets unknown package: '${overrideName}'`,
+        path: ["packageOverrides", overrideName],
+      });
+    }
   }
 });
 

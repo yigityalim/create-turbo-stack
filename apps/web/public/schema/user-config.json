@@ -137,6 +137,7 @@
               "type": "string",
               "enum": [
                 "sentry",
+                "bugsnag",
                 "none"
               ]
             },
@@ -160,6 +161,13 @@
               "enum": [
                 "vercel-ai-sdk",
                 "langchain",
+                "none"
+              ]
+            },
+            "cache": {
+              "type": "string",
+              "enum": [
+                "upstash",
                 "none"
               ]
             },
@@ -295,6 +303,7 @@
                 "type": "string",
                 "enum": [
                   "sentry",
+                  "bugsnag",
                   "none"
                 ]
               }
@@ -327,6 +336,16 @@
                 "enum": [
                   "vercel-ai-sdk",
                   "langchain",
+                  "none"
+                ]
+              }
+            },
+            "cache": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "upstash",
                   "none"
                 ]
               }
@@ -454,6 +473,7 @@
                 "type": "string",
                 "enum": [
                   "sentry",
+                  "bugsnag",
                   "none"
                 ]
               }
@@ -486,6 +506,16 @@
                 "enum": [
                   "vercel-ai-sdk",
                   "langchain",
+                  "none"
+                ]
+              }
+            },
+            "cache": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "upstash",
                   "none"
                 ]
               }

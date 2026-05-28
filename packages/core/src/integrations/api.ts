@@ -11,6 +11,7 @@ function dbDep(preset: Preset, scope: string): Record<string, string> {
 export const trpc = defineIntegration({
   category: "api",
   provider: "trpc",
+  packageExports: [".", "./server", "./client"],
   catalogEntries: () => [
     { name: "@trpc/server", version: VERSIONS.trpcServer },
     { name: "@trpc/client", version: VERSIONS.trpcClient },

@@ -2,15 +2,11 @@
 // must either be implemented (registered) or be in the allowlist.
 
 import {
-  AiSchema,
-  AnalyticsSchema,
   ApiStrategySchema,
   AppTypeSchema,
   AuthProviderSchema,
   DatabaseStrategySchema,
-  EmailSchema,
-  ErrorTrackingSchema,
-  RateLimitSchema,
+  INTEGRATION_PROVIDER_VALUES,
 } from "@create-turbo-stack/schema";
 import { describe, expect, it } from "vitest";
 import { getIntegration, type IntegrationCategory } from "./integrations";
@@ -64,14 +60,17 @@ const INTEGRATION_ENUMS: ReadonlyArray<{
   category: IntegrationCategory;
   values: readonly string[];
 }> = [
+  // Top-level discriminated-union slots (stable; rarely change).
   { category: "auth", values: AuthProviderSchema.options },
   { category: "database", values: DatabaseStrategySchema.options },
   { category: "api", values: ApiStrategySchema.options },
-  { category: "analytics", values: AnalyticsSchema.options },
-  { category: "errorTracking", values: ErrorTrackingSchema.options },
-  { category: "email", values: EmailSchema.options },
-  { category: "rateLimit", values: RateLimitSchema.options },
-  { category: "ai", values: AiSchema.options },
+  // `integrations.*` categories — auto-discovered from the schema so a new
+  // category is covered by adding one entry to INTEGRATION_PROVIDER_VALUES,
+  // never editing this test.
+  ...Object.entries(INTEGRATION_PROVIDER_VALUES).map(([category, values]) => ({
+    category: category as IntegrationCategory,
+    values,
+  })),
 ];
 
 describe("Integration registry ↔ schema", () => {

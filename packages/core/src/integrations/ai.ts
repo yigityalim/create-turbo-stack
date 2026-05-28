@@ -5,6 +5,7 @@ import { defineIntegration } from "./types";
 export const vercelAiSdk = defineIntegration({
   category: "ai",
   provider: "vercel-ai-sdk",
+  label: "Vercel AI SDK",
   catalogEntries: () => [
     { name: "ai", version: VERSIONS.ai },
     { name: "@ai-sdk/openai", version: VERSIONS.aiSdkOpenai },
@@ -28,6 +29,7 @@ export const vercelAiSdk = defineIntegration({
 export const langchain = defineIntegration({
   category: "ai",
   provider: "langchain",
+  label: "LangChain",
   catalogEntries: () => [],
   resolvePackageFiles: (_preset, ctx) => [
     ...ctx.makeBase(),

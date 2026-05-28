@@ -5,6 +5,7 @@ import { defineIntegration } from "./types";
 export const reactEmailResend = defineIntegration({
   category: "email",
   provider: "react-email-resend",
+  label: "React Email + Resend",
   catalogEntries: () => [
     { name: "resend", version: VERSIONS.resend },
     { name: "@react-email/components", version: VERSIONS.reactEmailComponents },
@@ -49,6 +50,7 @@ export const reactEmailResend = defineIntegration({
 export const nodemailer = defineIntegration({
   category: "email",
   provider: "nodemailer",
+  label: "Nodemailer (SMTP)",
   catalogEntries: () => [{ name: "nodemailer", version: VERSIONS.nodemailer }],
   envVars: () => ({
     server: [

@@ -26,6 +26,7 @@ function comprehensivePreset(): Preset {
       email: "react-email-resend",
       rateLimit: "upstash",
       ai: "vercel-ai-sdk",
+      cache: "upstash",
       envValidation: true,
     },
     apps: [{ name: "web", type: "nextjs", port: 3000, i18n: true, consumes: ["ui"] }],
@@ -125,6 +126,7 @@ describe("env wiring — validated vs process.env fallback", () => {
         email: "none",
         rateLimit: "none",
         ai: "none",
+        cache: "none",
         envValidation,
       },
     });

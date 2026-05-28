@@ -5,6 +5,7 @@ import { defineIntegration } from "./types";
 export const upstash = defineIntegration({
   category: "rateLimit",
   provider: "upstash",
+  label: "Upstash rate limiting",
   catalogEntries: () => [
     { name: "@upstash/ratelimit", version: VERSIONS.upstashRatelimit },
     { name: "@upstash/redis", version: VERSIONS.upstashRedis },

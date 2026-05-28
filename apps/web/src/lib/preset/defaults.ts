@@ -35,6 +35,7 @@ export const DEFAULT_PRESET: Preset = {
     email: "none",
     rateLimit: "none",
     ai: "none",
+    cache: "none",
     envValidation: true,
   },
 
@@ -99,6 +100,7 @@ export const BUILTIN_PRESETS: {
         email: "react-email-resend",
         rateLimit: "none",
         ai: "none",
+        cache: "upstash",
         envValidation: true,
       },
 
@@ -157,6 +159,7 @@ export const BUILTIN_PRESETS: {
         email: "none",
         rateLimit: "upstash",
         ai: "none",
+        cache: "upstash",
         envValidation: true,
       },
 

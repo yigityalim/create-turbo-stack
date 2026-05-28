@@ -1,5 +1,11 @@
-import type { FileTreeNode, Package, Preset } from "@create-turbo-stack/schema";
-import { activeProvider, getIntegration, type IntegrationCategory } from "../../integrations";
+import type { FileTreeNode, Package, PackageOverride, Preset } from "@create-turbo-stack/schema";
+import { integrationPackageName } from "@create-turbo-stack/schema";
+import {
+  activeProvider,
+  getIntegration,
+  INTEGRATION_CATEGORIES,
+  type IntegrationCategory,
+} from "../../integrations";
 import { buildPackageContext } from "./base";
 import {
   resolveEnvPackage,
@@ -8,20 +14,14 @@ import {
 } from "./builtins";
 
 /**
- * Auto-package names map 1:1 to integration categories. When a package
- * has a matching active provider, that provider's `resolvePackageFiles`
- * owns the scaffold — there's no per-package switch here.
+ * Package name → integration category. Inverts the shared package-name map
+ * (so monitoring→errorTracking, rate-limit→rateLimit, db→database) — when a
+ * package has a matching active provider, that provider's `resolvePackageFiles`
+ * owns the scaffold, with no per-package switch to maintain.
  */
-const CATEGORY_BY_PACKAGE: Record<string, IntegrationCategory> = {
-  db: "database",
-  api: "api",
-  auth: "auth",
-  analytics: "analytics",
-  monitoring: "errorTracking",
-  email: "email",
-  "rate-limit": "rateLimit",
-  ai: "ai",
-};
+const CATEGORY_BY_PACKAGE: Record<string, IntegrationCategory> = Object.fromEntries(
+  INTEGRATION_CATEGORIES.map((category) => [integrationPackageName(category), category]),
+);
 
 /**
  * Resolve files for a single package. Dispatch order:
@@ -29,10 +29,18 @@ const CATEGORY_BY_PACKAGE: Record<string, IntegrationCategory> = {
  *   2. provider-backed auto-packages (db, api, auth, analytics, ...)
  *      delegate to the active integration's resolvePackageFiles
  *   3. everything else is a plain user package
+ *
+ * Any `preset.packageOverrides[pkg.name]` is applied as a final pass — see
+ * `applyPackageOverride` for the merge rules.
  */
 export function resolvePackageFiles(preset: Preset, pkg: Package): FileTreeNode[] {
   const base = `packages/${pkg.name}`;
+  const nodes = resolveBaseNodes(preset, pkg, base);
+  const override = preset.packageOverrides?.[pkg.name];
+  return override ? applyPackageOverride(nodes, base, override) : nodes;
+}
 
+function resolveBaseNodes(preset: Preset, pkg: Package, base: string): FileTreeNode[] {
   if (pkg.name === "typescript-config") return resolveTypescriptConfigPackage(preset, base);
   if (pkg.name === "env") return resolveEnvPackage(preset, pkg, base);
 
@@ -48,4 +56,58 @@ export function resolvePackageFiles(preset: Preset, pkg: Package): FileTreeNode[
   }
 
   return resolveGenericPackage(preset, pkg, base);
+}
+
+/**
+ * Layer a user-supplied override on top of the resolver's output. All fields
+ * are additive — none of them can remove what the provider emitted:
+ *
+ *  - `dependencies` / `devDependencies` / `scripts` are merged into the
+ *    package.json (the override wins on key collision).
+ *  - `extraFiles` are written as new nodes; a path that collides with a
+ *    provider file is rejected so an override can't silently mask wiring.
+ *
+ * `exports` is merged earlier (in `resolveAutoPackages`) so the resolver
+ * emits them in package.json directly — no JSON re-parse needed here.
+ */
+function applyPackageOverride(
+  nodes: FileTreeNode[],
+  base: string,
+  override: PackageOverride,
+): FileTreeNode[] {
+  const pkgJsonPath = `${base}/package.json`;
+  const providerPaths = new Set(nodes.map((n) => n.path));
+
+  const merged: FileTreeNode[] = nodes.map((node) => {
+    if (node.path !== pkgJsonPath || !node.content) return node;
+    const parsed = JSON.parse(node.content);
+    if (override.dependencies) {
+      parsed.dependencies = { ...(parsed.dependencies ?? {}), ...override.dependencies };
+    }
+    if (override.devDependencies) {
+      parsed.devDependencies = {
+        ...(parsed.devDependencies ?? {}),
+        ...override.devDependencies,
+      };
+    }
+    if (override.scripts) {
+      parsed.scripts = { ...(parsed.scripts ?? {}), ...override.scripts };
+    }
+    return { ...node, content: `${JSON.stringify(parsed, null, 2)}\n` };
+  });
+
+  for (const extra of override.extraFiles ?? []) {
+    const path = `${base}/${extra.path}`;
+    if (providerPaths.has(path)) {
+      // The resolver already produced this file — refuse to overwrite
+      // load-bearing wiring (package.json, tsconfig.json, source files).
+      // Use a different filename to surface the customization side-by-side.
+      throw new Error(
+        `packageOverrides extraFiles cannot overwrite a resolver-generated file: ${path}`,
+      );
+    }
+    merged.push({ path, content: extra.content, isDirectory: false });
+  }
+
+  return merged;
 }

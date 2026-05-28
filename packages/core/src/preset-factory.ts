@@ -1,4 +1,5 @@
 import type { App, Package, Preset } from "@create-turbo-stack/schema";
+import { IntegrationsSchema } from "@create-turbo-stack/schema";
 
 export function makePreset(overrides: Partial<Preset> = {}): Preset {
   return {
@@ -17,14 +18,9 @@ export function makePreset(overrides: Partial<Preset> = {}): Preset {
     api: { strategy: "none" },
     auth: { provider: "none", rbac: false, entitlements: false },
     css: { framework: "tailwind4", ui: "none", styling: "css-variables" },
-    integrations: {
-      analytics: "none",
-      errorTracking: "none",
-      email: "none",
-      rateLimit: "none",
-      ai: "none",
-      envValidation: false,
-    },
+    // Derived from the schema so every new integration field flows in with
+    // its declared default — no hand-list to keep in sync.
+    integrations: IntegrationsSchema.parse({ envValidation: false }),
     apps: [],
     packages: [],
     ...overrides,
@@ -68,14 +64,15 @@ export function makeFullPreset(): Preset {
     api: { strategy: "trpc", version: "v11" },
     auth: { provider: "clerk", rbac: false, entitlements: false },
     css: { framework: "tailwind4", ui: "shadcn", styling: "css-variables" },
-    integrations: {
+    integrations: IntegrationsSchema.parse({
       analytics: "posthog",
       errorTracking: "sentry",
       email: "react-email-resend",
       rateLimit: "upstash",
       ai: "vercel-ai-sdk",
+      cache: "upstash",
       envValidation: true,
-    },
+    }),
     apps: [
       {
         name: "web",

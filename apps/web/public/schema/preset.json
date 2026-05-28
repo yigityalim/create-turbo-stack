@@ -302,6 +302,7 @@
           "type": "string",
           "enum": [
             "sentry",
+            "bugsnag",
             "none"
           ]
         },
@@ -331,6 +332,14 @@
             "none"
           ]
         },
+        "cache": {
+          "default": "none",
+          "type": "string",
+          "enum": [
+            "upstash",
+            "none"
+          ]
+        },
         "envValidation": {
           "default": true,
           "type": "boolean"
@@ -342,6 +351,7 @@
         "email",
         "rateLimit",
         "ai",
+        "cache",
         "envValidation"
       ],
       "additionalProperties": false
@@ -462,6 +472,71 @@
       "type": "array",
       "items": {
         "type": "string"
+      }
+    },
+    "packageOverrides": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "dependencies": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "devDependencies": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "scripts": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "exports": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "extraFiles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "content"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
       }
     }
   },

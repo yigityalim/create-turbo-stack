@@ -1,4 +1,4 @@
-import type { FileTreeNode, Package, Preset } from "@create-turbo-stack/schema";
+import type { FileTreeNode, Integrations, Package, Preset } from "@create-turbo-stack/schema";
 
 /**
  * Integration plugin contract — a provider owns everything about itself
@@ -15,6 +15,21 @@ export interface IntegrationDefinition {
 
   /** Schema discriminant value: "posthog", "clerk", "drizzle", etc. */
   provider: string;
+
+  /**
+   * Human label for this provider in the CLI integration picker. Optional —
+   * falls back to the provider id. Only the `integrations.*` providers
+   * (analytics/email/…) use it; auth/database/api have their own prompts.
+   */
+  label?: string;
+
+  /**
+   * `exports` for the generated workspace package (defaults to `["."]`).
+   * The active provider's value wins, e.g. tRPC exposes `./server`/`./client`,
+   * auth exposes `./middleware`. Drives `resolveAutoPackages` so there's no
+   * per-category exports switch.
+   */
+  packageExports?: readonly string[];
 
   /** npm packages contributed to the workspace catalog. */
   catalogEntries(preset: Preset): readonly CatalogEntrySpec[];
@@ -95,19 +110,17 @@ export interface EnvAccess {
 }
 
 /**
- * The categories below are the integration "slots" on a Preset.
- * `auth`, `database`, `api` live as top-level discriminated unions on the
- * Preset; the rest live under `integrations.*`.
+ * The integration "slots" on a Preset. `auth`, `database`, `api` live as
+ * top-level discriminated unions; the rest are the keys of `integrations.*`
+ * (minus the `envValidation` flag). Derived from the schema type, so adding a
+ * field to `IntegrationsSchema` extends this union automatically — no second
+ * place to edit.
  */
 export type IntegrationCategory =
   | "auth"
   | "database"
   | "api"
-  | "analytics"
-  | "errorTracking"
-  | "email"
-  | "rateLimit"
-  | "ai";
+  | Exclude<keyof Integrations, "envValidation">;
 
 export interface CatalogEntrySpec {
   name: string;

@@ -1,107 +1,46 @@
 import type { Package, Preset } from "@create-turbo-stack/schema";
+import { integrationPackageName } from "@create-turbo-stack/schema";
+import { activeProvider, getIntegration, INTEGRATION_CATEGORIES } from "../integrations";
 
 /**
- * Based on preset selections, determine which packages are automatically created.
- * These are not user-specified — they're generated from choices like database, API, auth.
+ * Based on preset selections, determine which packages are automatically
+ * created. These are not user-specified — they're generated from choices like
+ * database, API, auth, and the `integrations.*` providers.
+ *
+ * Structural built-ins (typescript-config, env) are explicit; every
+ * provider-backed package is derived from the integration registry: if a
+ * category has an active provider that scaffolds a package, that provider owns
+ * the package name (`integrationPackageName`) and its `exports`. No per-category
+ * branch to keep in sync — a new category appears here for free.
  */
 export function resolveAutoPackages(preset: Preset): Package[] {
   const auto: Package[] = [];
 
   // Always: typescript-config
-  auto.push({
-    name: "typescript-config",
-    type: "config",
-    producesCSS: false,
-    exports: ["."],
-  });
+  auto.push({ name: "typescript-config", type: "config", producesCSS: false, exports: ["."] });
 
   // If env validation enabled
   if (preset.integrations.envValidation) {
-    auto.push({
-      name: "env",
-      type: "library",
-      producesCSS: false,
-      exports: ["."],
-    });
+    auto.push({ name: "env", type: "library", producesCSS: false, exports: ["."] });
   }
 
-  // If database !== none
-  if (preset.database.strategy !== "none") {
+  // Provider-backed packages (db, api, auth, analytics, monitoring, email, …)
+  for (const category of INTEGRATION_CATEGORIES) {
+    const provider = activeProvider(preset, category);
+    if (!provider) continue;
+    const integration = getIntegration(category, provider);
+    if (!integration?.resolvePackageFiles) continue;
+    const name = integrationPackageName(category);
+    const providerExports = integration.packageExports ?? ["."];
+    // `packageOverrides.<name>.exports` is additive — extra subpaths surface
+    // in package.json so the user can publish a custom entry without losing
+    // what the provider emits. Deduped to keep package.json clean.
+    const extraExports = preset.packageOverrides?.[name]?.exports ?? [];
     auto.push({
-      name: "db",
+      name,
       type: "library",
       producesCSS: false,
-      exports: ["."],
-    });
-  }
-
-  // If api !== none
-  if (preset.api.strategy !== "none") {
-    auto.push({
-      name: "api",
-      type: "library",
-      producesCSS: false,
-      exports: preset.api.strategy === "trpc" ? [".", "./server", "./client"] : ["."],
-    });
-  }
-
-  // If auth !== none
-  if (preset.auth.provider !== "none") {
-    auto.push({
-      name: "auth",
-      type: "library",
-      producesCSS: false,
-      exports: [".", "./server", "./client", "./middleware"],
-    });
-  }
-
-  // Analytics
-  if (preset.integrations.analytics !== "none") {
-    auto.push({
-      name: "analytics",
-      type: "library",
-      producesCSS: false,
-      exports: [".", "./server"],
-    });
-  }
-
-  // Error tracking
-  if (preset.integrations.errorTracking === "sentry") {
-    auto.push({
-      name: "monitoring",
-      type: "library",
-      producesCSS: false,
-      exports: ["."],
-    });
-  }
-
-  // Email
-  if (preset.integrations.email !== "none") {
-    auto.push({
-      name: "email",
-      type: "library",
-      producesCSS: false,
-      exports: ["."],
-    });
-  }
-
-  // Rate limiting
-  if (preset.integrations.rateLimit === "upstash") {
-    auto.push({
-      name: "rate-limit",
-      type: "library",
-      producesCSS: false,
-      exports: ["."],
-    });
-  }
-
-  // AI
-  if (preset.integrations.ai !== "none") {
-    auto.push({
-      name: "ai",
-      type: "library",
-      producesCSS: false,
-      exports: ["."],
+      exports: Array.from(new Set([...providerExports, ...extraExports])),
     });
   }
 

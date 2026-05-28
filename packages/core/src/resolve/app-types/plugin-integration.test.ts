@@ -84,6 +84,7 @@ describe("AppType plugin integration", () => {
         email: "none",
         rateLimit: "none",
         ai: "none",
+        cache: "none",
         envValidation: false,
       },
       apps: [

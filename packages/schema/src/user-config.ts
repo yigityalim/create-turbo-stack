@@ -14,6 +14,7 @@ import { DatabaseStrategySchema } from "./options/database";
 import {
   AiSchema,
   AnalyticsSchema,
+  CacheSchema,
   EmailSchema,
   ErrorTrackingSchema,
   RateLimitSchema,
@@ -62,6 +63,7 @@ export const UserConfigDefaultsSchema = z.object({
       email: EmailSchema.optional(),
       rateLimit: RateLimitSchema.optional(),
       ai: AiSchema.optional(),
+      cache: CacheSchema.optional(),
       envValidation: z.boolean().optional(),
     })
     .optional(),
@@ -94,6 +96,7 @@ export const PolicyAllowFieldsSchema = z.object({
   email: z.array(EmailSchema).optional(),
   rateLimit: z.array(RateLimitSchema).optional(),
   ai: z.array(AiSchema).optional(),
+  cache: z.array(CacheSchema).optional(),
 });
 
 export const PolicyRequireSchema = z.object({

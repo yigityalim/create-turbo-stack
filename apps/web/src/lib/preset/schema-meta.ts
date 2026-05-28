@@ -10,22 +10,19 @@
  * are presentation concerns that don't belong in the schema package.
  */
 import {
-  AiSchema,
-  AnalyticsSchema,
   ApiStrategySchema,
   AppTypeSchema,
   AuthProviderSchema,
   CssFrameworkSchema,
   DatabaseStrategySchema,
   DrizzleDriverSchema,
-  EmailSchema,
-  ErrorTrackingSchema,
   HonoModeSchema,
+  INTEGRATION_OPTION_CATEGORIES,
+  INTEGRATION_PROVIDER_VALUES,
   LinterSchema,
   // Enum schemas (public .options property)
   PackageManagerSchema,
   PackageTypeSchema,
-  RateLimitSchema,
   StylingArchSchema,
   TypeScriptStrictnessSchema,
   UiLibrarySchema,
@@ -46,6 +43,8 @@ export type FieldMeta = {
   type: "enum" | "boolean";
   options?: OptionMeta[];
   defaultValue?: unknown;
+  /** Short explanation shown inline (e.g. under boolean toggles). */
+  description?: string;
 };
 
 export type CategoryMeta = {
@@ -237,6 +236,10 @@ const LABELS: Record<
     label: "Sentry",
     description: "Error monitoring & performance",
   },
+  "errorTracking.bugsnag": {
+    label: "Bugsnag",
+    description: "Crash & error monitoring",
+  },
   "errorTracking.none": { label: "None", description: "No error tracking" },
 
   // Email
@@ -267,6 +270,13 @@ const LABELS: Record<
     description: "LLM application framework",
   },
   "ai.none": { label: "None", description: "No AI integration" },
+
+  // Cache
+  "cache.upstash": {
+    label: "Upstash",
+    description: "Serverless Redis cache (REST)",
+  },
+  "cache.none": { label: "None", description: "No cache layer" },
 
   // App type
   "appType.nextjs": {
@@ -317,6 +327,20 @@ const LABELS: Record<
   },
 };
 
+/**
+ * Pretty labels for the integrations category dropdowns. Optional — unknown
+ * categories fall back to `humanize(cat)`, so adding a category needs no edit
+ * here (just for polish).
+ */
+const INTEGRATION_CATEGORY_LABELS: Record<string, string> = {
+  analytics: "Analytics",
+  errorTracking: "Error Tracking",
+  email: "Email",
+  rateLimit: "Rate Limiting",
+  ai: "AI",
+  cache: "Cache",
+};
+
 function getOptionMeta(group: string, value: string): OptionMeta {
   const meta = LABELS[`${group}.${value}`];
   return {
@@ -347,8 +371,9 @@ function makeBooleanField(
   key: string,
   label: string,
   defaultValue: boolean,
+  description?: string,
 ): FieldMeta {
-  return { key, label, type: "boolean", defaultValue };
+  return { key, label, type: "boolean", defaultValue, description };
 }
 
 // ─── Categories ───────────────────────────────────────────────────────────────
@@ -381,7 +406,12 @@ export const CATEGORIES: CategoryMeta[] = [
         LinterSchema.options,
         "biome",
       ),
-      makeBooleanField("gitInit", "Git Init", true),
+      makeBooleanField(
+        "gitInit",
+        "Git Init",
+        true,
+        "Initialize a git repository and create the first commit.",
+      ),
     ],
   },
   {
@@ -449,8 +479,18 @@ export const CATEGORIES: CategoryMeta[] = [
         AuthProviderSchema.options,
         "none",
       ),
-      makeBooleanField("rbac", "Role-Based Access Control", false),
-      makeBooleanField("entitlements", "Entitlements", false),
+      makeBooleanField(
+        "rbac",
+        "Role-Based Access Control",
+        false,
+        "Scaffold roles & permissions in the auth package — gate routes and actions by role (admin, member, …).",
+      ),
+      makeBooleanField(
+        "entitlements",
+        "Entitlements",
+        false,
+        "Plan/feature gating — check what a user is allowed to do based on their subscription or flags.",
+      ),
     ],
   },
   {
@@ -479,33 +519,31 @@ export const CATEGORIES: CategoryMeta[] = [
   {
     key: "integrations",
     label: "Integrations",
-    description: "Analytics, error tracking, email, rate limiting, AI",
+    description:
+      "Analytics, error tracking, email, rate limiting, AI, cache, …",
     icon: "Puzzle",
+    // Field list derived from the schema's `integrations.*` keys + provider
+    // enums (see INTEGRATION_OPTION_CATEGORIES / INTEGRATION_PROVIDER_VALUES).
+    // Adding a category upstream surfaces here automatically; `LABELS` polish
+    // is optional — categories with no entry fall back to a humanized id.
     fields: [
-      makeEnumField(
-        "analytics",
-        "Analytics",
-        "analytics",
-        AnalyticsSchema.options,
-        "none",
+      ...INTEGRATION_OPTION_CATEGORIES.map((cat) =>
+        makeEnumField(
+          cat,
+          INTEGRATION_CATEGORY_LABELS[cat] ?? humanize(cat),
+          cat,
+          INTEGRATION_PROVIDER_VALUES[
+            cat as keyof typeof INTEGRATION_PROVIDER_VALUES
+          ] as readonly string[],
+          "none",
+        ),
       ),
-      makeEnumField(
-        "errorTracking",
-        "Error Tracking",
-        "errorTracking",
-        ErrorTrackingSchema.options,
-        "none",
+      makeBooleanField(
+        "envValidation",
+        "Env Validation (@t3-oss/env)",
+        true,
+        "Validate environment variables at boot with typed t3-env schemas — fail fast instead of crashing in prod.",
       ),
-      makeEnumField("email", "Email", "email", EmailSchema.options, "none"),
-      makeEnumField(
-        "rateLimit",
-        "Rate Limiting",
-        "rateLimit",
-        RateLimitSchema.options,
-        "none",
-      ),
-      makeEnumField("ai", "AI", "ai", AiSchema.options, "none"),
-      makeBooleanField("envValidation", "Env Validation (@t3-oss/env)", true),
     ],
   },
 ];

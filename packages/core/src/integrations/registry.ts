@@ -1,4 +1,5 @@
 import type { Preset } from "@create-turbo-stack/schema";
+import { INTEGRATION_OPTION_CATEGORIES, integrationPackageName } from "@create-turbo-stack/schema";
 import { registerTemplates } from "../render/template-registry";
 import type { IntegrationCategory, IntegrationDefinition } from "./types";
 
@@ -26,38 +27,34 @@ export function activeProvider(preset: Preset, category: IntegrationCategory): s
   }
 }
 
-/** Every integration category, in a stable order for iteration. */
-export const INTEGRATION_CATEGORIES: readonly IntegrationCategory[] = [
-  "auth",
-  "database",
-  "api",
-  "analytics",
-  "errorTracking",
-  "email",
-  "rateLimit",
-  "ai",
-];
+/** The three top-level discriminated-union slots, distinct from `integrations.*`. */
+const TOP_LEVEL_CATEGORIES = ["auth", "database", "api"] as const;
+
+/**
+ * Every integration category, in a stable order. Derived from the schema
+ * (top-level slots first, then the `integrations.*` keys) so a new category
+ * appears here automatically.
+ */
+export const INTEGRATION_CATEGORIES = [
+  ...TOP_LEVEL_CATEGORIES,
+  ...INTEGRATION_OPTION_CATEGORIES,
+] as readonly IntegrationCategory[];
 
 const key = (category: IntegrationCategory, provider: string) => `${category}:${provider}`;
 
 /**
  * Resolve a category + provider pair to the template path used by
- * `packages/templates`. This must match how the build script keys
- * baked templates: `integration/<category>/<provider>` for the per-app
- * integration categories, and `<category>/<provider>` for the top-level
- * stack choices (auth, database, api).
+ * `packages/templates`. Matches how the build script keys baked templates:
+ * `<pkgName>/<provider>` for the top-level stack choices (e.g. `db/drizzle`,
+ * `auth/clerk`) and `integration/<pkgName>/<provider>` for the per-app
+ * integration categories (e.g. `integration/monitoring/sentry`). The folder
+ * uses the package name, so errorTracking→monitoring and rateLimit→rate-limit
+ * fall out of the shared map — no special-casing.
  */
 function templateCategoryFor(category: IntegrationCategory, provider: string): string {
-  switch (category) {
-    case "auth":
-    case "database":
-    case "api":
-      return `${category}/${provider}`;
-    case "errorTracking":
-      return `integration/monitoring/${provider}`;
-    default:
-      return `integration/${category}/${provider}`;
-  }
+  const pkgName = integrationPackageName(category);
+  const isTopLevel = (TOP_LEVEL_CATEGORIES as readonly string[]).includes(category);
+  return isTopLevel ? `${pkgName}/${provider}` : `integration/${pkgName}/${provider}`;
 }
 
 export function registerIntegration(def: IntegrationDefinition): void {

@@ -25,6 +25,7 @@ export const BUILTIN_PRESETS: Record<string, unknown> = {
       email: "none",
       rateLimit: "none",
       ai: "none",
+      cache: "none",
       envValidation: true,
     },
     apps: [{ name: "web", type: "nextjs", port: 3000, i18n: false, consumes: ["ui"] }],
@@ -54,6 +55,7 @@ export const BUILTIN_PRESETS: Record<string, unknown> = {
       email: "react-email-resend",
       rateLimit: "none",
       ai: "none",
+      cache: "upstash",
       envValidation: true,
     },
     apps: [
@@ -89,6 +91,7 @@ export const BUILTIN_PRESETS: Record<string, unknown> = {
       email: "none",
       rateLimit: "upstash",
       ai: "none",
+      cache: "upstash",
       envValidation: true,
     },
     apps: [{ name: "api", type: "hono-standalone", port: 3000, i18n: false, consumes: [] }],

@@ -5,6 +5,8 @@ import { defineIntegration } from "./types";
 export const posthog = defineIntegration({
   category: "analytics",
   provider: "posthog",
+  label: "PostHog analytics",
+  packageExports: [".", "./server"],
   catalogEntries: () => [
     { name: "posthog-js", version: VERSIONS.posthogJs },
     { name: "posthog-node", version: VERSIONS.posthogNode },
@@ -51,6 +53,8 @@ export const posthog = defineIntegration({
 export const vercelAnalytics = defineIntegration({
   category: "analytics",
   provider: "vercel-analytics",
+  label: "Vercel Analytics",
+  packageExports: [".", "./server"],
   catalogEntries: () => [{ name: "@vercel/analytics", version: VERSIONS.vercelAnalytics }],
   resolvePackageFiles: (_preset, ctx) => [
     ...ctx.makeBase({ deps: { "@vercel/analytics": "catalog:" } }),
@@ -61,6 +65,8 @@ export const vercelAnalytics = defineIntegration({
 export const plausible = defineIntegration({
   category: "analytics",
   provider: "plausible",
+  label: "Plausible",
+  packageExports: [".", "./server"],
   catalogEntries: () => [],
   resolvePackageFiles: (_preset, ctx) => [
     ...ctx.makeBase(),
