@@ -529,7 +529,10 @@ function TreeNodeComponent({
             type="button"
             onClick={() => toggleExpand(node.path)}
             aria-label={isExpanded ? "Collapse" : "Expand"}
-            className="flex shrink-0 items-center py-1 pr-0.5"
+            // pr-1.5 matches the directory's `gap-1.5` between chevron and
+            // folder icon, so nested-parent file icons line up vertically
+            // with directory icons and chevronless files (paddingLeft+20).
+            className="flex shrink-0 items-center py-1 pr-1.5"
           >
             {isExpanded ? (
               <ChevronDown className="h-3.5 w-3.5 text-fd-muted-foreground" />
@@ -540,6 +543,8 @@ function TreeNodeComponent({
           <button
             type="button"
             onClick={() => onSelectFile(node)}
+            // gap-1.5 here matches the directory's gap; chevron pr-1.5 above
+            // already provides the spacing so we don't double up.
             className="flex min-w-0 flex-1 items-center gap-1.5 py-1 pr-1.5 text-left"
           >
             <FileIcon name={node.name} isSelected={isSelected} />

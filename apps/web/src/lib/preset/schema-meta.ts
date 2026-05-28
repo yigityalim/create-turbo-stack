@@ -45,6 +45,12 @@ export type FieldMeta = {
   defaultValue?: unknown;
   /** Short explanation shown inline (e.g. under boolean toggles). */
   description?: string;
+  /**
+   * LABELS-prefix this field's options were rendered against (`"auth"`,
+   * `"cache"`, …). Carries through to the UI so the option card can look up
+   * the brand icon for `(group, value)` without re-deriving it.
+   */
+  group?: string;
 };
 
 export type CategoryMeta = {
@@ -364,6 +370,7 @@ function makeEnumField(
     type: "enum",
     options: options.map((v) => getOptionMeta(group, v)),
     defaultValue,
+    group,
   };
 }
 
