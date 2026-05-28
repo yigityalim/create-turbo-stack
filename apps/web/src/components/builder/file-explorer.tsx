@@ -4,7 +4,6 @@ import { INTEGRATION_PACKAGE_NAMES } from "@create-turbo-stack/schema";
 import {
   ChevronDown,
   ChevronRight,
-  File,
   Folder,
   FolderOpen,
   Plus,
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
+import { FileIcon } from "./file-icons";
 
 /**
  * Auto-package names — the two structural builtins plus every integration
@@ -633,12 +633,7 @@ function TreeNodeComponent({
   );
 }
 
-// ─── File Icon ────────────────────────────────────────────────────────────────
-
-function FileIcon({ name, isSelected }: { name: string; isSelected: boolean }) {
-  const colorClass = isSelected ? "text-fd-primary/70" : getFileIconColor(name);
-  return <File className={cn("h-4 w-4 shrink-0", colorClass)} />;
-}
+// ─── Tree helpers ─────────────────────────────────────────────────────────────
 
 function hasMatchingDescendant(
   node: TreeNode,
@@ -650,28 +645,6 @@ function hasMatchingDescendant(
       return true;
   }
   return false;
-}
-
-function getFileIconColor(name: string): string {
-  const ext = name.split(".").pop()?.toLowerCase() ?? "";
-  switch (ext) {
-    case "ts":
-    case "tsx":
-      return "text-blue-400";
-    case "js":
-    case "jsx":
-      return "text-yellow-400";
-    case "json":
-      return "text-yellow-600 dark:text-yellow-300";
-    case "css":
-    case "scss":
-      return "text-pink-400";
-    case "md":
-    case "mdx":
-      return "text-gray-400";
-    default:
-      return "text-fd-muted-foreground";
-  }
 }
 
 // ─── File-Nesting Helpers ─────────────────────────────────────────────────────
