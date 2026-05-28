@@ -6,6 +6,7 @@ import {
   INTEGRATION_CATEGORIES,
   type IntegrationCategory,
 } from "../../integrations";
+import { substitutePm } from "../../wiring/pm";
 import { buildPackageContext } from "./base";
 import {
   resolveEnvPackage,
@@ -37,7 +38,7 @@ export function resolvePackageFiles(preset: Preset, pkg: Package): FileTreeNode[
   const base = `packages/${pkg.name}`;
   const nodes = resolveBaseNodes(preset, pkg, base);
   const override = preset.packageOverrides?.[pkg.name];
-  return override ? applyPackageOverride(nodes, base, override) : nodes;
+  return override ? applyPackageOverride(nodes, base, override, preset) : nodes;
 }
 
 function resolveBaseNodes(preset: Preset, pkg: Package, base: string): FileTreeNode[] {
@@ -74,9 +75,11 @@ function applyPackageOverride(
   nodes: FileTreeNode[],
   base: string,
   override: PackageOverride,
+  preset: Preset,
 ): FileTreeNode[] {
   const pkgJsonPath = `${base}/package.json`;
   const providerPaths = new Set(nodes.map((n) => n.path));
+  const pm = preset.basics.packageManager;
 
   const merged: FileTreeNode[] = nodes.map((node) => {
     if (node.path !== pkgJsonPath || !node.content) return node;
@@ -106,7 +109,11 @@ function applyPackageOverride(
         `packageOverrides extraFiles cannot overwrite a resolver-generated file: ${path}`,
       );
     }
-    merged.push({ path, content: extra.content, isDirectory: false });
+    // Static `{{pm-*}}` placeholders are substituted against the user's
+    // package manager so a README written with `{{pm-install}}` renders the
+    // right command for bun/pnpm/npm/yarn. No-op if the content has no
+    // placeholder — overhead is one `.includes("{{pm")` per file.
+    merged.push({ path, content: substitutePm(extra.content, pm), isDirectory: false });
   }
 
   return merged;
