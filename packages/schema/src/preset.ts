@@ -6,7 +6,7 @@ import { BasicsSchema } from "./options/basics";
 import { CssSchema } from "./options/css";
 import { DatabaseSchema } from "./options/database";
 import { IntegrationsSchema, integrationPackageName } from "./options/integrations";
-import { PackageSchema } from "./options/package";
+import { PackageSchema, WorkspaceLocationSchema } from "./options/package";
 import { PackageOverridesSchema } from "./options/package-override";
 
 /** Rejects strings containing Eta/EJS template syntax to prevent template injection. */
@@ -64,9 +64,54 @@ export const PresetSchema = z.object({
    * the resolver would emit (auto + user) in `ValidatedPresetSchema`.
    */
   packageOverrides: PackageOverridesSchema.optional(),
+  /**
+   * Locations for auto-packages — `db`, `api`, `auth`, `analytics`,
+   * `monitoring`, `email`, `rate-limit`, `ai`, `cache`, `env`,
+   * `typescript-config`. Default is `"packages"` for every auto-package.
+   *
+   * Set this to relocate engine-generated packages into a different workspace
+   * glob:
+   *   `{ db: "packages/data", api: "packages/data", auth: "packages/auth" }`
+   *   → `packages/data/db`, `packages/data/api`, `packages/auth/auth`.
+   *   `{ "typescript-config": "tooling" }`
+   *   → `tooling/typescript-config`.
+   *
+   * User packages carry their own `location` field; this record covers only
+   * the engine-generated ones. Same `WorkspaceLocationSchema` rules apply.
+   */
+  autoPackageLocations: z.record(z.string(), WorkspaceLocationSchema).optional(),
 });
 
 export type Preset = z.infer<typeof PresetSchema>;
+
+/**
+ * Enumerate the package names the engine auto-creates for a given preset.
+ *
+ * Mirrors what core's `resolveAutoPackages` produces, but as plain strings
+ * — no rendering, no Eta — so it's safe to call from the browser. Used by:
+ *   - the cross-field validator below (to verify `app.consumes` references)
+ *   - the web builder's "Consumes" chip list (so the UI can't drift from
+ *     what actually appears under `packages/` in the preview)
+ *
+ * Drift contract: every shipped provider in a non-"none" slot scaffolds a
+ * package, so "enum value !== 'none'" is the authoritative signal. If a
+ * future integration is added to the enum without a package, the resolver
+ * — not this helper — owns the decision; keep them in sync there.
+ */
+export function autoPackageNames(preset: Preset): string[] {
+  const names = ["typescript-config"];
+  if (preset.integrations.envValidation !== "none") names.push("env");
+  if (preset.database.strategy !== "none") names.push(integrationPackageName("database"));
+  if (preset.api.strategy !== "none") names.push(integrationPackageName("api"));
+  if (preset.auth.provider !== "none") names.push(integrationPackageName("auth"));
+  for (const [category, value] of Object.entries(preset.integrations)) {
+    if (category === "envValidation") continue;
+    if (typeof value === "string" && value !== "none") {
+      names.push(integrationPackageName(category));
+    }
+  }
+  return names;
+}
 
 /** Preset with cross-field validation rules applied. */
 export const ValidatedPresetSchema = PresetSchema.superRefine((data, ctx) => {
@@ -119,29 +164,9 @@ export const ValidatedPresetSchema = PresetSchema.superRefine((data, ctx) => {
     });
   }
 
-  // Mirrors the auto-packages the resolver generates (see core's
-  // resolveAutoPackages) so an app may `consumes` them. Derived from the
-  // integration ↔ package map: a new category flows through automatically,
-  // no hand-listing. schema is logic-free and can't import core, but the map
-  // itself lives here in schema.
-  const integrationPackages: string[] = [];
-  if (data.database.strategy !== "none")
-    integrationPackages.push(integrationPackageName("database"));
-  if (data.api.strategy !== "none") integrationPackages.push(integrationPackageName("api"));
-  if (data.auth.provider !== "none") integrationPackages.push(integrationPackageName("auth"));
-  for (const [category, value] of Object.entries(data.integrations)) {
-    if (category === "envValidation") continue;
-    if (typeof value === "string" && value !== "none") {
-      integrationPackages.push(integrationPackageName(category));
-    }
-  }
-
-  const allPackageNames = new Set([
-    ...pkgNames,
-    ...integrationPackages,
-    ...(data.integrations.envValidation ? ["env"] : []),
-    "typescript-config",
-  ]);
+  // Verify each `app.consumes` references an actual package — auto-generated
+  // (mirrored by `autoPackageNames` above) or user-declared.
+  const allPackageNames = new Set([...pkgNames, ...autoPackageNames(data)]);
   for (const [i, app] of data.apps.entries()) {
     for (const consumed of app.consumes) {
       if (!allPackageNames.has(consumed)) {
@@ -162,6 +187,53 @@ export const ValidatedPresetSchema = PresetSchema.superRefine((data, ctx) => {
       message: `Duplicate port: ${dupePort}`,
       path: ["apps"],
     });
+  }
+
+  // Location collision check. If app A lives at `packages/billing` and
+  // package P also has location `packages/billing`, A's manifest sits where
+  // Turborepo expects a workspace directory — discovery breaks. More subtly,
+  // if package P1 has full path `packages/billing` and another package's
+  // location is `packages/billing/...`, the parent has a manifest while
+  // being a workspace glob root — also broken.
+  const memberPaths = new Map<string, string>(); // path → "app|package:name"
+  for (const a of data.apps) {
+    memberPaths.set(`${a.location}/${a.name}`, `app:${a.name}`);
+  }
+  for (const p of data.packages) {
+    memberPaths.set(`${p.location}/${p.name}`, `package:${p.name}`);
+  }
+  for (const name of autoPackageNames(data)) {
+    const loc = data.autoPackageLocations?.[name] ?? "packages";
+    memberPaths.set(`${loc}/${name}`, `auto:${name}`);
+  }
+  const allLocations = new Set<string>();
+  for (const a of data.apps) allLocations.add(a.location);
+  for (const p of data.packages) allLocations.add(p.location);
+  for (const loc of Object.values(data.autoPackageLocations ?? {})) {
+    allLocations.add(loc);
+  }
+  for (const loc of allLocations) {
+    for (const [memberPath, owner] of memberPaths) {
+      if (loc === memberPath || loc.startsWith(`${memberPath}/`)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Workspace location '${loc}' collides with ${owner} at '${memberPath}' — a workspace directory can't also be a member`,
+          path: ["packages"],
+        });
+      }
+    }
+  }
+
+  // autoPackageLocations keys must reference packages the resolver actually
+  // emits. Typoing `"data"` instead of `"db"` silently does nothing.
+  for (const autoName of Object.keys(data.autoPackageLocations ?? {})) {
+    if (!autoPackageNames(data).includes(autoName)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `autoPackageLocations targets unknown auto-package: '${autoName}'`,
+        path: ["autoPackageLocations", autoName],
+      });
+    }
   }
 
   // Package overrides must target a package the resolver actually emits —

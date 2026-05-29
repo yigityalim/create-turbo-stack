@@ -16,6 +16,7 @@ import {
   AnalyticsSchema,
   CacheSchema,
   EmailSchema,
+  EnvValidationSchema,
   ErrorTrackingSchema,
   RateLimitSchema,
 } from "./options/integrations";
@@ -64,7 +65,7 @@ export const UserConfigDefaultsSchema = z.object({
       rateLimit: RateLimitSchema.optional(),
       ai: AiSchema.optional(),
       cache: CacheSchema.optional(),
-      envValidation: z.boolean().optional(),
+      envValidation: EnvValidationSchema.optional(),
     })
     .optional(),
 });
@@ -101,7 +102,7 @@ export const PolicyAllowFieldsSchema = z.object({
 
 export const PolicyRequireSchema = z.object({
   typescript: TypeScriptStrictnessSchema.optional(),
-  envValidation: z.boolean().optional(),
+  envValidation: EnvValidationSchema.optional(),
   packageManager: PackageManagerSchema.optional(),
   linter: LinterSchema.optional(),
   /**

@@ -18,6 +18,14 @@ export type Ai = z.infer<typeof AiSchema>;
 export const CacheSchema = z.enum(["upstash", "none"]);
 export type Cache = z.infer<typeof CacheSchema>;
 
+/**
+ * Env-validation provider. Promoting from a former boolean (on/off) to an
+ * enum lets us swap in different providers (`@t3-oss/env-nextjs` today, a
+ * Valibot-backed equivalent tomorrow) without another schema migration.
+ */
+export const EnvValidationSchema = z.enum(["t3-env", "none"]);
+export type EnvValidation = z.infer<typeof EnvValidationSchema>;
+
 export const IntegrationsSchema = z.object({
   analytics: AnalyticsSchema.default("none"),
   errorTracking: ErrorTrackingSchema.default("none"),
@@ -25,7 +33,7 @@ export const IntegrationsSchema = z.object({
   rateLimit: RateLimitSchema.default("none"),
   ai: AiSchema.default("none"),
   cache: CacheSchema.default("none"),
-  envValidation: z.boolean().default(true),
+  envValidation: EnvValidationSchema.default("t3-env"),
 });
 export type Integrations = z.infer<typeof IntegrationsSchema>;
 
