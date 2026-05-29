@@ -70,7 +70,7 @@ describe("preset migration — full validation flow", () => {
         rateLimit: "none",
         ai: "none",
         cache: "none",
-        envValidation: false,
+        envValidation: "none",
       },
       apps: [
         {

@@ -29,7 +29,7 @@ function makePreset(overrides: Partial<Preset> = {}): Preset {
       rateLimit: "none",
       ai: "none",
       cache: "none",
-      envValidation: false,
+      envValidation: "none",
     },
     apps: [],
     packages: [],

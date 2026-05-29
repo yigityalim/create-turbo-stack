@@ -18,14 +18,14 @@ describe("resolveAutoPackages — always present", () => {
 });
 
 describe("resolveAutoPackages — envValidation", () => {
-  it("envValidation: true → includes env", () => {
+  it('envValidation: "t3-env" → includes env', () => {
     const p = makePreset({
-      integrations: { ...makePreset().integrations, envValidation: true },
+      integrations: { ...makePreset().integrations, envValidation: "t3-env" },
     });
     expect(names(p)).toContain("env");
   });
 
-  it("envValidation: false → env absent", () => {
+  it('envValidation: "none" → env absent', () => {
     expect(names(makePreset())).not.toContain("env");
   });
 });

@@ -113,7 +113,9 @@ export function buildPackageContext(
  * `envValidation` flag + scope — no per-provider knowledge.
  */
 export function buildEnvAccess(preset: Preset): EnvAccess {
-  const enabled = preset.integrations.envValidation;
+  // `envValidation` is an enum (`"t3-env" | "none"`); coerce to a flag so the
+  // rest of this helper stays boolean-driven (workspace dep, codegen toggles).
+  const enabled = preset.integrations.envValidation !== "none";
   const scope = preset.basics.scope;
   return {
     enabled,

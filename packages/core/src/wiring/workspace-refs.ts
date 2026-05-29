@@ -17,7 +17,7 @@ export function computeWorkspaceRefs(preset: Preset): Record<string, Record<stri
     }
 
     // Auto-consumed based on selections
-    if (preset.integrations.envValidation) {
+    if (preset.integrations.envValidation !== "none") {
       appRefs[`${scope}/env`] = "workspace:*";
     }
     if (preset.api.strategy !== "none") {

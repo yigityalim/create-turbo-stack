@@ -67,13 +67,20 @@ export function getPmCommands(pm: PackageManager): PmCommands {
  * so the user writes `{{pm-install}}` once and it renders correctly for
  * bun/pnpm/npm/yarn.
  *
- * Recognised placeholders:
- *   `{{pm}}`               → "bun" | "pnpm" | "npm" | "yarn"
- *   `{{pm-install}}`       → install command
- *   `{{pm-add <pkg>}}`     → `<pm> add <pkg>` (handles -D for dev)
- *   `{{pm-add-dev <pkg>}}` → add devDependency
- *   `{{pm-run <script>}}`  → run a package.json script
- *   `{{pm-exec <cmd>}}`    → bunx / npx / pnpm dlx / yarn dlx
+ * Recognised placeholders — both no-arg and with-arg forms are supported so
+ * users can write either `{{pm-run}} dev` (prefix form) or `{{pm-run dev}}`
+ * (single placeholder form):
+ *
+ *   `{{pm}}`                → "bun" | "pnpm" | "npm" | "yarn"
+ *   `{{pm-install}}`        → install command
+ *   `{{pm-add}}`            → `<pm> add` prefix (no package)
+ *   `{{pm-add <pkg>}}`      → `<pm> add <pkg>`
+ *   `{{pm-add-dev}}`        → `<pm> add -D` prefix
+ *   `{{pm-add-dev <pkg>}}`  → add devDependency
+ *   `{{pm-run}}`            → `<pm> run` prefix (pnpm/yarn omit "run")
+ *   `{{pm-run <script>}}`   → run a package.json script
+ *   `{{pm-exec}}`           → bunx / npx / pnpm dlx / yarn dlx
+ *   `{{pm-exec <cmd>}}`     → exec the given command
  *
  * Static and safe — no code execution, no Eta. If the text has no
  * placeholders it's returned untouched.
@@ -81,11 +88,22 @@ export function getPmCommands(pm: PackageManager): PmCommands {
 export function substitutePm(text: string, pm: PackageManager): string {
   if (!text.includes("{{pm")) return text;
   const c = getPmCommands(pm);
+  // Pre-compute no-arg forms by trimming the trailing argument off the
+  // with-arg output — `bun run` from `bun run <script>`, `pnpm` from `pnpm
+  // <script>`, etc. Avoids hand-listing four PMs × two forms.
+  const runPrefix = c.run("X").replace(/\sX$/, "");
+  const addPrefix = c.add("X").replace(/\sX$/, "");
+  const addDevPrefix = c.addDev("X").replace(/\sX$/, "");
+  const execPrefix = c.exec("X").replace(/\sX$/, "");
   return text
     .replace(/\{\{pm-install\}\}/g, c.install)
     .replace(/\{\{pm-add-dev\s+([^}]+)\}\}/g, (_, p) => c.addDev(p.trim()))
+    .replace(/\{\{pm-add-dev\}\}/g, addDevPrefix)
     .replace(/\{\{pm-add\s+([^}]+)\}\}/g, (_, p) => c.add(p.trim()))
+    .replace(/\{\{pm-add\}\}/g, addPrefix)
     .replace(/\{\{pm-run\s+([^}]+)\}\}/g, (_, s) => c.run(s.trim()))
+    .replace(/\{\{pm-run\}\}/g, runPrefix)
     .replace(/\{\{pm-exec\s+([^}]+)\}\}/g, (_, e) => c.exec(e.trim()))
+    .replace(/\{\{pm-exec\}\}/g, execPrefix)
     .replace(/\{\{pm\}\}/g, c.name);
 }

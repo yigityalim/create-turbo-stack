@@ -13,15 +13,32 @@ import { activeProvider, getIntegration, INTEGRATION_CATEGORIES } from "../integ
  * the package name (`integrationPackageName`) and its `exports`. No per-category
  * branch to keep in sync — a new category appears here for free.
  */
+/** Auto-package location, defaulting to "packages" when the preset doesn't override. */
+function locOf(name: string, preset: Preset): string {
+  return preset.autoPackageLocations?.[name] ?? "packages";
+}
+
 export function resolveAutoPackages(preset: Preset): Package[] {
   const auto: Package[] = [];
 
   // Always: typescript-config
-  auto.push({ name: "typescript-config", type: "config", producesCSS: false, exports: ["."] });
+  auto.push({
+    name: "typescript-config",
+    type: "config",
+    location: locOf("typescript-config", preset),
+    producesCSS: false,
+    exports: ["."],
+  });
 
   // If env validation enabled
-  if (preset.integrations.envValidation) {
-    auto.push({ name: "env", type: "library", producesCSS: false, exports: ["."] });
+  if (preset.integrations.envValidation !== "none") {
+    auto.push({
+      name: "env",
+      type: "library",
+      location: locOf("env", preset),
+      producesCSS: false,
+      exports: ["."],
+    });
   }
 
   // Provider-backed packages (db, api, auth, analytics, monitoring, email, …)
@@ -39,6 +56,7 @@ export function resolveAutoPackages(preset: Preset): Package[] {
     auto.push({
       name,
       type: "library",
+      location: locOf(name, preset),
       producesCSS: false,
       exports: Array.from(new Set([...providerExports, ...extraExports])),
     });

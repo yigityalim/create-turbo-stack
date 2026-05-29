@@ -319,9 +319,9 @@ describe("computeCatalog — auth", () => {
 });
 
 describe("computeCatalog — integrations", () => {
-  it("envValidation: true → @t3-oss/env-nextjs + zod", () => {
+  it('envValidation: "t3-env" → @t3-oss/env-nextjs + zod', () => {
     const p = makePreset({
-      integrations: { ...makePreset().integrations, envValidation: true },
+      integrations: { ...makePreset().integrations, envValidation: "t3-env" },
     });
     const n = names(p);
     expect(n).toContain("@t3-oss/env-nextjs");
@@ -398,7 +398,7 @@ describe("computeCatalog — deduplication", () => {
   it("trpc + envValidation both need zod — no duplicate", () => {
     const p = makePreset({
       api: { strategy: "trpc", version: "v11" },
-      integrations: { ...makePreset().integrations, envValidation: true },
+      integrations: { ...makePreset().integrations, envValidation: "t3-env" },
     });
     const zodEntries = computeCatalog(p).filter((e) => e.name === "zod");
     expect(zodEntries).toHaveLength(1);

@@ -142,7 +142,7 @@ describe("resolveFileTree — saas-starter preset", () => {
     expect(paths.some((p) => p.startsWith("packages/auth/"))).toBe(true);
   });
 
-  it("auto-generates env package (envValidation: true)", () => {
+  it('auto-generates env package (envValidation: "t3-env")', () => {
     const { nodes } = resolveFileTree(clone(saasJson) as Preset);
     const paths = nodes.map((n) => n.path);
 

@@ -20,7 +20,7 @@ export function makePreset(overrides: Partial<Preset> = {}): Preset {
     css: { framework: "tailwind4", ui: "none", styling: "css-variables" },
     // Derived from the schema so every new integration field flows in with
     // its declared default — no hand-list to keep in sync.
-    integrations: IntegrationsSchema.parse({ envValidation: false }),
+    integrations: IntegrationsSchema.parse({ envValidation: "none" }),
     apps: [],
     packages: [],
     ...overrides,
@@ -30,6 +30,7 @@ export function makePreset(overrides: Partial<Preset> = {}): Preset {
 export const WEB_APP: App = {
   name: "web",
   type: "nextjs",
+  location: "apps",
   port: 3000,
   i18n: false,
   consumes: [],
@@ -38,6 +39,7 @@ export const WEB_APP: App = {
 export const UI_PKG: Package = {
   name: "ui",
   type: "ui",
+  location: "packages",
   producesCSS: true,
   exports: ["."],
 };
@@ -45,6 +47,7 @@ export const UI_PKG: Package = {
 export const UTILS_PKG: Package = {
   name: "utils",
   type: "utils",
+  location: "packages",
   producesCSS: false,
   exports: ["."],
 };
@@ -71,12 +74,13 @@ export function makeFullPreset(): Preset {
       rateLimit: "upstash",
       ai: "vercel-ai-sdk",
       cache: "upstash",
-      envValidation: true,
+      envValidation: "t3-env",
     }),
     apps: [
       {
         name: "web",
         type: "nextjs",
+        location: "apps",
         port: 3000,
         i18n: true,
         consumes: ["ui"],
@@ -84,6 +88,7 @@ export function makeFullPreset(): Preset {
       {
         name: "mobile",
         type: "expo",
+        location: "apps",
         port: 8081,
         i18n: false,
         consumes: [],

@@ -39,9 +39,9 @@ describe("computeWorkspaceRefs — app consuming packages", () => {
 });
 
 describe("computeWorkspaceRefs — auto-consumed: envValidation", () => {
-  it("envValidation: true → app refs include @scope/env", () => {
+  it('envValidation: "t3-env" → app refs include @scope/env', () => {
     const p = makePreset({
-      integrations: { ...makePreset().integrations, envValidation: true },
+      integrations: { ...makePreset().integrations, envValidation: "t3-env" },
       apps: [
         {
           name: "web",
@@ -55,7 +55,7 @@ describe("computeWorkspaceRefs — auto-consumed: envValidation", () => {
     expect(computeWorkspaceRefs(p).web?.["@test/env"]).toBe("workspace:*");
   });
 
-  it("envValidation: false → @scope/env absent", () => {
+  it('envValidation: "none" → @scope/env absent', () => {
     const p = makePreset({
       apps: [
         {

@@ -1,4 +1,5 @@
 import type { FileTreeNode, PackageManager, Preset } from "@create-turbo-stack/schema";
+import { workspaceGlobs } from "../utils/package-path";
 import { computeCatalog } from "../wiring/catalog";
 import { computeEnvChain } from "../wiring/env-chain";
 import { getLinter } from "../wiring/linters";
@@ -30,10 +31,12 @@ export function resolveRootFiles(preset: Preset): FileTreeNode[] {
   //   - npm / yarn have no catalog protocol; for now they get a plain
   //     workspaces array (the `catalog:` refs in workspace package.json
   //     files won't resolve under npm/yarn — tracked separately).
+  // Workspace globs are derived from the actual locations present in the
+  // preset — `apps/*` + `packages/*` by default, plus any custom collection
+  // a user opted into (`tooling/*`, `infrastructure/*`, `packages/billing/*`).
+  const globs = workspaceGlobs(preset);
   const workspacesField: WorkspacesField =
-    pm === "bun" && hasCatalog
-      ? { packages: ["apps/*", "packages/*"], catalog: catalogObj }
-      : ["apps/*", "packages/*"];
+    pm === "bun" && hasCatalog ? { packages: globs, catalog: catalogObj } : globs;
 
   const linter = getLinter(preset.basics.linter);
 
@@ -68,9 +71,10 @@ export function resolveRootFiles(preset: Preset): FileTreeNode[] {
     const catalogYaml = Object.entries(catalogObj)
       .map(([name, version]) => `  "${name}": "${version}"`)
       .join("\n");
+    const globsYaml = globs.map((g) => `  - "${g}"`).join("\n");
     nodes.push({
       path: "pnpm-workspace.yaml",
-      content: `packages:\n  - "apps/*"\n  - "packages/*"\ncatalog:\n${catalogYaml}\n`,
+      content: `packages:\n${globsYaml}\ncatalog:\n${catalogYaml}\n`,
       isDirectory: false,
     });
   }
@@ -142,10 +146,13 @@ coverage
     isDirectory: false,
   });
 
-  // Root vitest config — wires every package's vitest project automatically
+  // Root vitest config — wires every workspace member's vitest project. The
+  // glob list mirrors the workspace declaration so custom collections
+  // (`tooling/*`, `packages/billing/*`) are auto-discovered.
+  const vitestProjects = globs.map((g) => JSON.stringify(g)).join(", ");
   nodes.push({
     path: "vitest.config.ts",
-    content: `import { defineConfig } from "vitest/config";\n\nexport default defineConfig({\n  test: {\n    projects: ["packages/*", "apps/*"],\n  },\n});\n`,
+    content: `import { defineConfig } from "vitest/config";\n\nexport default defineConfig({\n  test: {\n    projects: [${vitestProjects}],\n  },\n});\n`,
     isDirectory: false,
   });
 

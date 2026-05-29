@@ -1,4 +1,6 @@
 import type { Preset } from "@create-turbo-stack/schema";
+import { appDirOf, packageDirByName } from "../utils/package-path";
+import { relativePath } from "../utils/path";
 
 export interface CssSourceMap {
   /** app name → list of @source directives (relative paths) */
@@ -10,8 +12,11 @@ const CSS_CAPABLE_APPS = new Set(["nextjs", "vite-react", "vite-vue", "sveltekit
 /**
  * Compute @source directives for each app's globals.css.
  *
- * Path: from apps/{app}/src/app/globals.css → packages/{pkg}/src
- * Relative: ../../../../packages/{pkg}/src
+ * Each path is `relativePath(appDir, packageDir/src)` — adapts automatically
+ * to custom app/package locations (e.g. `services/api` consuming
+ * `packages/billing/u`). The anchor is the app's root directory (not the
+ * actual globals.css file deeper down); Tailwind resolves @source relative
+ * to that anchor in our setup.
  */
 export function computeCssSourceMap(preset: Preset): CssSourceMap {
   const map: CssSourceMap = {};
@@ -25,11 +30,13 @@ export function computeCssSourceMap(preset: Preset): CssSourceMap {
     if (!CSS_CAPABLE_APPS.has(app.type)) continue;
 
     const sources: string[] = [];
+    const appDir = appDirOf(app);
 
     // Each consumed CSS-producing package
     for (const consumed of app.consumes) {
       if (cssPackages.has(consumed)) {
-        sources.push(`../../packages/${consumed}/src`);
+        const pkgDir = packageDirByName(consumed, preset);
+        sources.push(relativePath(appDir, `${pkgDir}/src`));
       }
     }
 

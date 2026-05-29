@@ -27,7 +27,7 @@ function comprehensivePreset(): Preset {
       rateLimit: "upstash",
       ai: "vercel-ai-sdk",
       cache: "upstash",
-      envValidation: true,
+      envValidation: "t3-env",
     },
     apps: [{ name: "web", type: "nextjs", port: 3000, i18n: true, consumes: ["ui"] }],
     packages: [
@@ -117,7 +117,9 @@ describe("co-located source — env + drizzle", () => {
 
 describe("env wiring — validated vs process.env fallback", () => {
   const scope = "@test";
-  const drizzle = (envValidation: boolean) =>
+  // envValidation migrated from boolean → enum. Pass "t3-env" to enable,
+  // "none" to fall back to bare `process.env` access.
+  const drizzle = (envValidation: "t3-env" | "none") =>
     makePreset({
       database: { strategy: "drizzle", driver: "postgres" },
       integrations: {
@@ -134,23 +136,23 @@ describe("env wiring — validated vs process.env fallback", () => {
     resolveFileTree(preset).nodes.find((n) => n.path === path);
 
   it("imports the validated env package when envValidation is on", () => {
-    const client = fileOf(drizzle(true), "packages/db/src/client.ts")?.content ?? "";
+    const client = fileOf(drizzle("t3-env"), "packages/db/src/client.ts")?.content ?? "";
     expect(client).toContain(`import { env } from "${scope}/env";`);
     expect(client).toContain("postgres(env.DATABASE_URL)");
     expect(client).not.toContain("process.env.DATABASE_URL");
 
-    const pkg = JSON.parse(fileOf(drizzle(true), "packages/db/package.json")?.content ?? "");
+    const pkg = JSON.parse(fileOf(drizzle("t3-env"), "packages/db/package.json")?.content ?? "");
     expect(pkg.dependencies?.[`${scope}/env`]).toBe("workspace:*");
   });
 
   it("falls back to process.env when envValidation is off", () => {
-    const client = fileOf(drizzle(false), "packages/db/src/client.ts")?.content ?? "";
+    const client = fileOf(drizzle("none"), "packages/db/src/client.ts")?.content ?? "";
     expect(client).toContain("postgres(process.env.DATABASE_URL!)");
     expect(client).not.toContain(`${scope}/env`);
 
     // No env package is generated, and db must not depend on one.
-    expect(fileOf(drizzle(false), "packages/env/src/index.ts")).toBeUndefined();
-    const pkg = JSON.parse(fileOf(drizzle(false), "packages/db/package.json")?.content ?? "");
+    expect(fileOf(drizzle("none"), "packages/env/src/index.ts")).toBeUndefined();
+    const pkg = JSON.parse(fileOf(drizzle("none"), "packages/db/package.json")?.content ?? "");
     expect(pkg.dependencies?.[`${scope}/env`]).toBeUndefined();
   });
 });

@@ -88,8 +88,9 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
     }
   }
 
-  // Env validation: a built-in pseudo-integration (boolean flag, not a provider)
-  if (preset.integrations.envValidation) {
+  // Env validation: built-in pseudo-integration. Currently the only provider
+  // is `t3-env`; the enum leaves room for additional choices.
+  if (preset.integrations.envValidation !== "none") {
     add("@t3-oss/env-nextjs", VERSIONS.t3Env);
     add("zod", VERSIONS.zod);
   }

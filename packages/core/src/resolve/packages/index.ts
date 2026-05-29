@@ -6,6 +6,7 @@ import {
   INTEGRATION_CATEGORIES,
   type IntegrationCategory,
 } from "../../integrations";
+import { packageDirOf } from "../../utils/package-path";
 import { substitutePm } from "../../wiring/pm";
 import { buildPackageContext } from "./base";
 import {
@@ -35,7 +36,7 @@ const CATEGORY_BY_PACKAGE: Record<string, IntegrationCategory> = Object.fromEntr
  * `applyPackageOverride` for the merge rules.
  */
 export function resolvePackageFiles(preset: Preset, pkg: Package): FileTreeNode[] {
-  const base = `packages/${pkg.name}`;
+  const base = packageDirOf(pkg);
   const nodes = resolveBaseNodes(preset, pkg, base);
   const override = preset.packageOverrides?.[pkg.name];
   return override ? applyPackageOverride(nodes, base, override, preset) : nodes;

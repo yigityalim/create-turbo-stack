@@ -1,4 +1,5 @@
 import type { Preset } from "@create-turbo-stack/schema";
+import { appDirOf, packageDirOf } from "../utils/package-path";
 
 export interface TsconfigTarget {
   path: string;
@@ -46,7 +47,7 @@ export function computeTsconfigChain(preset: Preset): TsconfigTarget[] {
   // User-specified packages
   for (const pkg of preset.packages) {
     targets.push({
-      path: `packages/${pkg.name}/tsconfig.json`,
+      path: `${packageDirOf(pkg)}/tsconfig.json`,
       extends: `${scope}/typescript-config/${mapPackageTypeToTsconfig(pkg.type)}`,
       compilerOptions: { outDir: "./dist", rootDir: "./src" },
       include: ["src/**/*"],
@@ -57,7 +58,7 @@ export function computeTsconfigChain(preset: Preset): TsconfigTarget[] {
   for (const app of preset.apps) {
     const isNextjs = app.type === "nextjs" || app.type === "nextjs-api-only";
     targets.push({
-      path: `apps/${app.name}/tsconfig.json`,
+      path: `${appDirOf(app)}/tsconfig.json`,
       extends: `${scope}/typescript-config/${mapAppTypeToTsconfig(app.type)}`,
       compilerOptions: isNextjs ? {} : { outDir: "./dist", rootDir: "./src" },
       include: isNextjs

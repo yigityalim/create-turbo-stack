@@ -1,5 +1,6 @@
 import type { App, FileTreeNode, Preset } from "@create-turbo-stack/schema";
 import { renderSourceFiles } from "../render/render-source";
+import { appDirOf } from "../utils/package-path";
 import { computeCssSourceMap } from "../wiring/css-source";
 import { getLinter } from "../wiring/linters";
 import { computeWorkspaceRefs } from "../wiring/workspace-refs";
@@ -41,7 +42,7 @@ export function resolveAppFiles(preset: Preset, app: App): FileTreeNode[] {
   const def = getAppTypeDefinition(app.type);
   if (!def) throw new UnsupportedAppTypeError(app.type, app.name);
 
-  const base = `apps/${app.name}`;
+  const base = appDirOf(app);
   const scope = preset.basics.scope;
   const workspaceRefs = computeWorkspaceRefs(preset);
   const appRefs = workspaceRefs[app.name] ?? {};
