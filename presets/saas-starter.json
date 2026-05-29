@@ -23,7 +23,7 @@
     "rateLimit": "none",
     "ai": "none",
     "cache": "upstash",
-    "envValidation": true
+    "envValidation": "t3-env"
   },
   "apps": [
     { "name": "web", "type": "nextjs", "port": 3000, "i18n": true, "consumes": ["ui", "api", "auth"] },

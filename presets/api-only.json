@@ -23,7 +23,7 @@
     "rateLimit": "upstash",
     "ai": "none",
     "cache": "upstash",
-    "envValidation": true
+    "envValidation": "t3-env"
   },
   "apps": [
     { "name": "api", "type": "hono-standalone", "port": 3000, "i18n": false, "consumes": [] }

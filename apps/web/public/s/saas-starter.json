@@ -26,7 +26,7 @@
     "email": "react-email-resend",
     "rateLimit": "none",
     "ai": "none",
-    "envValidation": true
+    "envValidation": "t3-env"
   },
   "apps": [
     {

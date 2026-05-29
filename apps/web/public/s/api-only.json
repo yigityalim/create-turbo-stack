@@ -22,7 +22,7 @@
     "email": "none",
     "rateLimit": "upstash",
     "ai": "none",
-    "envValidation": true
+    "envValidation": "t3-env"
   },
   "apps": [
     {
