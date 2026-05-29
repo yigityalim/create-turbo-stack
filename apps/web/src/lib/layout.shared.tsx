@@ -9,7 +9,11 @@ export const gitConfig = {
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      title: "create-turbo-stack",
+      title: (
+        <span className="font-mono font-semibold tracking-tight">
+          create-turbo-stack
+        </span>
+      ),
     },
     links: [
       { text: "Builder", url: "/builder" },
