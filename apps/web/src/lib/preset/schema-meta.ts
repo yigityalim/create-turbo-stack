@@ -284,6 +284,18 @@ const LABELS: Record<
   },
   "cache.none": { label: "None", description: "No cache layer" },
 
+  // Env validation
+  "envValidation.t3-env": {
+    label: "t3-env",
+    description:
+      "Typed env schemas via @t3-oss/env-nextjs — boot-time failure beats prod crashes",
+  },
+  "envValidation.none": {
+    label: "None",
+    description:
+      "Skip env validation — read process.env directly at your own risk",
+  },
+
   // App type
   "appType.nextjs": {
     label: "Next.js",
@@ -338,7 +350,7 @@ const LABELS: Record<
  * categories fall back to `humanize(cat)`, so adding a category needs no edit
  * here (just for polish).
  */
-const INTEGRATION_CATEGORY_LABELS: Record<string, string> = {
+export const INTEGRATION_CATEGORY_LABELS: Record<string, string> = {
   analytics: "Analytics",
   errorTracking: "Error Tracking",
   email: "Email",
@@ -346,6 +358,16 @@ const INTEGRATION_CATEGORY_LABELS: Record<string, string> = {
   ai: "AI",
   cache: "Cache",
 };
+
+/**
+ * Look up the user-facing label for a `(group, value)` pair — the same map
+ * the option cards in the configure pane use. Falls back to a humanized
+ * version of the raw value when no entry exists, so the call site never has
+ * to handle `undefined`.
+ */
+export function providerLabel(group: string, value: string): string {
+  return getOptionMeta(group, value).label;
+}
 
 function getOptionMeta(group: string, value: string): OptionMeta {
   const meta = LABELS[`${group}.${value}`];
@@ -541,15 +563,16 @@ export const CATEGORIES: CategoryMeta[] = [
           cat,
           INTEGRATION_PROVIDER_VALUES[
             cat as keyof typeof INTEGRATION_PROVIDER_VALUES
-          ] as readonly string[],
+          ] satisfies readonly string[],
           "none",
         ),
       ),
-      makeBooleanField(
+      makeEnumField(
         "envValidation",
-        "Env Validation (@t3-oss/env)",
-        true,
-        "Validate environment variables at boot with typed t3-env schemas — fail fast instead of crashing in prod.",
+        "Env Validation",
+        "envValidation",
+        ["t3-env", "none"],
+        "t3-env",
       ),
     ],
   },

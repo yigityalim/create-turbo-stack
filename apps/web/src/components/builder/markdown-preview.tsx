@@ -16,8 +16,6 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/cn";
 
-// ─── AST ──────────────────────────────────────────────────────────────────────
-
 type TableAlign = "left" | "right" | "center";
 
 type Block =
@@ -28,8 +26,6 @@ type Block =
   | { type: "blockquote"; lines: string[] }
   | { type: "table"; headers: string[]; aligns: TableAlign[]; rows: string[][] }
   | { type: "hr" };
-
-// ─── Parser ───────────────────────────────────────────────────────────────────
 
 const TABLE_SEPARATOR_RE = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/;
 const TABLE_ROW_RE = /^\s*\|.+\|\s*$/;
@@ -59,18 +55,50 @@ function parseBlocks(md: string): Block[] {
   while (i < lines.length) {
     const line = lines[i];
 
-    // Fenced code block.
-    const fence = /^```([\w-]*)\s*$/.exec(line);
+    // Fenced code block — CommonMark allows up to 3 leading spaces before
+    // the delimiter, and accepts both ``` and ~~~. The closing delimiter
+    // must match the opener's character (we capture it for that check).
+    const fence = /^ {0,3}(```|~~~)([\w-]*)\s*$/.exec(line);
     if (fence) {
-      const lang = fence[1] || "text";
+      const delim = fence[1];
+      const lang = fence[2] || "text";
+      const closeRe = new RegExp(
+        `^ {0,3}${delim.replace(/[`~]/g, "\\$&")}\\s*$`,
+      );
       const code: string[] = [];
       i += 1;
-      while (i < lines.length && !/^```\s*$/.test(lines[i])) {
+      while (i < lines.length && !closeRe.test(lines[i])) {
         code.push(lines[i]);
         i += 1;
       }
       i += 1;
       blocks.push({ type: "fence", lang, code: code.join("\n") });
+      continue;
+    }
+
+    // Indented code block (legacy markdown — 4-space or tab indent at start
+    // of line). Continues until a non-indented non-blank line. Lets users
+    // who don't reach for ``` still get a code block when they indent.
+    if (/^( {4}|\t)/.test(line) && line.trim().length > 0) {
+      const code: string[] = [];
+      while (
+        i < lines.length &&
+        (/^( {4}|\t)/.test(lines[i]) || /^\s*$/.test(lines[i]))
+      ) {
+        if (/^\s*$/.test(lines[i])) {
+          // Peek ahead — if the blank line is followed by more indented
+          // content, keep it as part of the same block; otherwise stop.
+          let j = i + 1;
+          while (j < lines.length && /^\s*$/.test(lines[j])) j++;
+          if (j >= lines.length || !/^( {4}|\t)/.test(lines[j])) break;
+          code.push("");
+          i += 1;
+          continue;
+        }
+        code.push(lines[i].replace(/^( {4}|\t)/, ""));
+        i += 1;
+      }
+      blocks.push({ type: "fence", lang: "text", code: code.join("\n") });
       continue;
     }
 
@@ -147,7 +175,8 @@ function parseBlocks(md: string): Block[] {
       i < lines.length &&
       !/^\s*$/.test(lines[i]) &&
       !/^#{1,6}\s+/.test(lines[i]) &&
-      !/^```/.test(lines[i]) &&
+      !/^ {0,3}(```|~~~)/.test(lines[i]) &&
+      !/^( {4}|\t)/.test(lines[i]) &&
       !/^-{3,}\s*$/.test(lines[i]) &&
       !/^[-*]\s+/.test(lines[i]) &&
       !/^\d+\.\s+/.test(lines[i]) &&
@@ -168,8 +197,6 @@ function parseBlocks(md: string): Block[] {
   return blocks;
 }
 
-// ─── Inline parser → React nodes ──────────────────────────────────────────────
-
 /**
  * Emit React nodes for inline markdown — `code`, **bold**, *italic*,
  * ~~strikethrough~~, and `[text](http(s)://…)` links. Plain text flows through
@@ -177,7 +204,7 @@ function parseBlocks(md: string): Block[] {
  * by single-`*` italic.
  */
 function renderInline(text: string): React.ReactNode[] {
-  const out: React.ReactNode[] = [];
+  const out = [] as Array<React.ReactNode>;
   let buf = "";
   let i = 0;
   let key = 0;
@@ -286,8 +313,6 @@ function renderInline(text: string): React.ReactNode[] {
   flush();
   return out;
 }
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 /**
  * Render parsed markdown. Sizing/spacing follows the builder's compact

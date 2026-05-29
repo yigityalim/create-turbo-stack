@@ -10,6 +10,8 @@ type OptionCardProps = {
   disabled?: boolean;
   disabledReason?: string;
   onClick: () => void;
+  /** Optional brand / type glyph rendered to the left of the label. */
+  icon?: React.ReactNode;
 };
 
 export function OptionCard({
@@ -19,6 +21,7 @@ export function OptionCard({
   disabled = false,
   disabledReason,
   onClick,
+  icon,
 }: OptionCardProps) {
   return (
     <button
@@ -27,25 +30,28 @@ export function OptionCard({
       aria-pressed={selected}
       onClick={onClick}
       className={cn(
-        "relative w-full rounded-lg p-3 text-left transition-all duration-150",
+        "relative w-full rounded-[3px] border p-3 text-left transition-all duration-150",
         selected
-          ? "bg-fd-primary/8 ring-1 ring-fd-primary/40 dark:bg-fd-primary/10 dark:ring-fd-primary/25"
+          ? "border-fd-primary bg-fd-primary/10 text-fd-primary"
           : disabled
-            ? "cursor-not-allowed bg-fd-muted/5 opacity-50 ring-1 ring-red-500/15"
-            : "bg-fd-muted/5 ring-1 ring-fd-border/20 hover:ring-fd-border/40 hover:bg-fd-muted/10",
+            ? "cursor-not-allowed border-red-500/30 bg-fd-muted/5 opacity-50"
+            : "brutal-hover border-fd-border bg-fd-muted/5 hover:text-fd-foreground",
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span
-          className={cn(
-            "font-medium text-sm",
-            selected ? "text-fd-primary" : "text-fd-foreground",
-          )}
-        >
-          {label}
-        </span>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          {icon}
+          <span
+            className={cn(
+              "truncate font-medium text-sm",
+              selected ? "text-fd-primary" : "text-fd-foreground",
+            )}
+          >
+            {label}
+          </span>
+        </div>
         {selected && (
-          <div className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-fd-primary/15">
+          <div className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-fd-primary/15">
             <Check className="h-3 w-3 shrink-0 text-fd-primary" />
           </div>
         )}

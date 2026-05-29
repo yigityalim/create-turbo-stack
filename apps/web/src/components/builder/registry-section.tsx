@@ -78,15 +78,15 @@ export function RegistrySection() {
                 })
               }
               className={cn(
-                "flex w-full items-start gap-3 rounded-lg px-3 py-2 text-left ring-1 transition-colors",
+                "flex w-full items-start gap-3 rounded-[3px] border px-3 py-2 text-left transition-colors",
                 isOn
-                  ? "bg-fd-primary/10 ring-fd-primary/50"
-                  : "bg-fd-muted/10 ring-fd-border/40 hover:ring-fd-border",
+                  ? "border-fd-primary bg-fd-primary/10"
+                  : "border-fd-border bg-fd-muted/10 hover:border-fd-primary hover:bg-fd-primary/[0.06]",
               )}
             >
               <span
                 className={cn(
-                  "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border",
+                  "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border",
                   isOn
                     ? "border-fd-primary bg-fd-primary text-fd-primary-foreground"
                     : "border-fd-border",

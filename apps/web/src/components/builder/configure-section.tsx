@@ -2,11 +2,12 @@
 
 import type { Preset } from "@create-turbo-stack/schema";
 import { Database, Palette, Puzzle, Settings, Shield, Zap } from "lucide-react";
-import { cn } from "@/lib/cn";
 import type { ValidationError } from "@/lib/hooks/use-preset-builder";
 import type { PresetAction } from "@/lib/preset/reducer";
 import type { CategoryMeta, FieldMeta } from "@/lib/preset/schema-meta";
+import { ProviderIcon } from "./icons";
 import { OptionCard } from "./option-card";
+import { Toggle } from "./toggle";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Settings,
@@ -49,19 +50,23 @@ export function ConfigureSection({
   return (
     <section className="scroll-mt-4">
       {/* Header */}
-      <div className="mb-3 flex items-center gap-2 border-fd-border border-b pb-2">
-        <Icon className="h-4 w-4 shrink-0 text-fd-primary sm:h-5 sm:w-5" />
-        <h2 className="font-mono font-semibold text-fd-foreground text-sm sm:text-base">
-          {category.label.toUpperCase()}
-        </h2>
-        <span className="font-mono text-[11px] text-fd-muted-foreground">
+      <div className="mb-5">
+        <div className="flex items-center gap-2.5">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-[3px] border border-fd-border bg-fd-card text-fd-primary">
+            <Icon className="h-4 w-4" />
+          </span>
+          <h2 className="font-mono font-semibold text-sm uppercase tracking-wide">
+            {category.label}
+          </h2>
+        </div>
+        <p className="mt-2 text-fd-muted-foreground text-xs leading-relaxed">
           {category.description}
-        </span>
+        </p>
       </div>
 
       {/* Errors */}
       {errors.length > 0 && (
-        <div className="mb-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2">
+        <div className="mb-3 rounded-[3px] border border-red-500/20 bg-red-500/10 px-3 py-2">
           {errors.map((err) => (
             <p key={err.message} className="text-xs text-red-400">
               {err.message}
@@ -71,7 +76,7 @@ export function ConfigureSection({
       )}
 
       {/* Fields */}
-      <div className="space-y-4">
+      <div className="space-y-5">
         {category.fields?.map((field) => (
           <FieldRenderer
             key={field.key}
@@ -86,7 +91,7 @@ export function ConfigureSection({
 
         {/* Variant sub-fields (appear after discriminator selection) */}
         {variantFields.length > 0 && (
-          <div className="ml-4 space-y-4 border-fd-border/40 border-l pl-4">
+          <div className="ml-4 space-y-4 border-fd-border border-l pl-4">
             {variantFields.map((field) => (
               <FieldRenderer
                 key={field.key}
@@ -142,13 +147,18 @@ function FieldRenderer({
         <p className="mb-2 font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wide">
           {field.label}
         </p>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
           {field.options.map((option) => (
             <OptionCard
               key={option.value}
               label={option.label}
               description={option.description}
               selected={value === option.value}
+              icon={
+                field.group ? (
+                  <ProviderIcon group={field.group} value={option.value} />
+                ) : null
+              }
               onClick={() => {
                 if (isDiscriminator) {
                   dispatchDiscriminatorChange(
@@ -190,27 +200,18 @@ function BooleanField({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-lg bg-fd-card px-3 py-2.5 ring-1 ring-fd-border/30">
-      <span className="font-mono text-sm text-fd-foreground">
-        {field.label}
-      </span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={value}
-        onClick={() => onChange(!value)}
-        className={cn(
-          "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors",
-          value ? "bg-fd-primary/80" : "bg-fd-muted/30 dark:bg-fd-muted/20",
+    <div className="flex items-center justify-between gap-3 rounded-[3px] border border-fd-border bg-fd-card px-3 py-2.5">
+      <div className="min-w-0">
+        <span className="font-mono text-fd-foreground text-sm">
+          {field.label}
+        </span>
+        {field.description && (
+          <p className="mt-0.5 text-fd-muted-foreground text-xs leading-relaxed">
+            {field.description}
+          </p>
         )}
-      >
-        <span
-          className={cn(
-            "pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-transform dark:bg-fd-foreground",
-            value ? "translate-x-4" : "translate-x-0",
-          )}
-        />
-      </button>
+      </div>
+      <Toggle checked={value} onChange={onChange} label={field.label} />
     </div>
   );
 }

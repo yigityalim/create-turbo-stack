@@ -1,6 +1,14 @@
 "use client";
 
-import type { FileTreeNode } from "@create-turbo-stack/schema";
+import {
+  appDirOf,
+  distinctLocations,
+  packageDirOf,
+} from "@create-turbo-stack/core/browser";
+import {
+  autoPackageNames,
+  type FileTreeNode,
+} from "@create-turbo-stack/schema";
 import {
   ChevronLeft,
   FileCode2,
@@ -12,6 +20,8 @@ import {
 import { useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { cn } from "@/lib/cn";
+import { useRegistryFiles } from "@/lib/hooks/use-registry-files";
+import { scaffoldNewFileContent } from "@/lib/preset/scaffold-new-file";
 import { useBuilder } from "./builder-provider";
 import { CodeViewer, CodeViewerEmpty } from "./code-viewer";
 import {
@@ -32,6 +42,7 @@ export function PreviewView() {
     selectedFile,
     setSelectedFile,
     navigateToSection,
+    requestAdd,
     addedPaths,
     removedPaths,
   } = useBuilder();
@@ -41,13 +52,37 @@ export function PreviewView() {
   const [showSearch, setShowSearch] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Workspace member / collection paths derived from the preset — feeds the
+  // file-explorer's context-menu detection. Schema-driven rather than
+  // depth-based so custom locations (tooling/, packages/billing/, …) work
+  // out of the box.
+  const memberPaths = useMemo(() => {
+    const m = new Map<string, { kind: "app" | "package"; name: string }>();
+    for (const app of preset.apps) {
+      m.set(appDirOf(app), { kind: "app", name: app.name });
+    }
+    for (const pkg of preset.packages) {
+      m.set(packageDirOf(pkg), { kind: "package", name: pkg.name });
+    }
+    for (const name of autoPackageNames(preset)) {
+      const loc = preset.autoPackageLocations?.[name] ?? "packages";
+      m.set(`${loc}/${name}`, { kind: "package", name });
+    }
+    return m;
+  }, [preset]);
+  const collectionPaths = useMemo(
+    () => new Set(distinctLocations(preset)),
+    [preset],
+  );
+
   const handleContextAction = (action: ContextMenuAction) => {
     switch (action.type) {
       case "add-app":
-        navigateToSection("apps");
+        // No location bound — open the form with the default ("apps").
+        requestAdd("app", "apps");
         break;
       case "add-package":
-        navigateToSection("packages");
+        requestAdd("package", "packages");
         break;
       case "remove-app": {
         const appIndex = preset.apps.findIndex((a) => a.name === action.name);
@@ -71,6 +106,37 @@ export function PreviewView() {
       case "configure-package":
         navigateToSection(`package-${action.name}`);
         break;
+      case "edit-package-file": {
+        // Auto-packages live in WorkspaceLayoutSection (engine-owned, no
+        // separate card); user packages live in PackagesSection. Route to
+        // whichever exists so the user lands somewhere useful instead of an
+        // unmatched scrollTarget.
+        const isUser = preset.packages.some((p) => p.name === action.name);
+        navigateToSection(
+          isUser ? `package-${action.name}` : `auto-package-${action.name}`,
+        );
+        break;
+      }
+      case "disable-auto-package": {
+        // Flip the integration slot to "none". Reducer is shallow-merging so a
+        // single-key payload is enough; resolver picks up the change and drops
+        // the package on the next build pass.
+        dispatch({
+          type: "SET_INTEGRATIONS",
+          payload: { [action.category]: "none" } as Partial<
+            typeof preset.integrations
+          >,
+        });
+        // If the user had this file open in the preview, clear the selection —
+        // the path will be gone on the next resolveFileTree pass anyway.
+        if (
+          selectedFile &&
+          selectedFile.split("/").some((seg) => seg === action.name)
+        ) {
+          setSelectedFile(null);
+        }
+        break;
+      }
     }
   };
 
@@ -88,20 +154,33 @@ export function PreviewView() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }, [fileTree]);
 
-  // Build nested tree from flat nodes (includes IDE-style sort — memoized on fileTree)
+  // Registry packages aren't in the resolved tree (they're materialized by
+  // `cts add` post-scaffold); fetch their files client-side and merge them in
+  // so the selection actually shows up in the preview.
+  const registryNodes = useRegistryFiles(
+    preset.registryPackages ?? [],
+    preset.basics.scope,
+    preset.basics.linter,
+  );
+
+  const allNodes = useMemo(
+    () => (fileTree ? [...fileTree.nodes, ...registryNodes] : []),
+    [fileTree, registryNodes],
+  );
+
+  // Build nested tree from flat nodes (includes IDE-style sort)
   const rootNode = useMemo(() => {
     if (!fileTree) return null;
-    return buildTreeFromFlat(fileTree.nodes, fileTree.projectName);
-  }, [fileTree]);
+    return buildTreeFromFlat(allNodes, fileTree.projectName);
+  }, [fileTree, allNodes]);
 
-  // Find selected file node
+  // Find selected file node (scaffolded or registry)
   const selectedNode = useMemo(() => {
-    if (!fileTree || !selectedFile) return null;
+    if (!selectedFile) return null;
     return (
-      fileTree.nodes.find((n) => !n.isDirectory && n.path === selectedFile) ??
-      null
+      allNodes.find((n) => !n.isDirectory && n.path === selectedFile) ?? null
     );
-  }, [fileTree, selectedFile]);
+  }, [allNodes, selectedFile]);
 
   // ─── Hotkeys (must be after selectedNode is defined) ─────────────────────────
 
@@ -144,7 +223,7 @@ export function PreviewView() {
   if (!fileTree && isResolving) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="flex items-center gap-2 rounded border border-fd-border bg-fd-muted/20 px-3 py-2 font-mono text-fd-muted-foreground text-xs">
+        <div className="flex items-center gap-2 rounded-[3px] border border-fd-border bg-fd-muted/20 px-3 py-2 font-mono text-fd-muted-foreground text-xs">
           <Loader2 className="h-4 w-4 animate-spin" />
           Rendering file tree...
         </div>
@@ -155,7 +234,7 @@ export function PreviewView() {
   if (fileTreeError && !fileTree) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="rounded border border-red-500/30 bg-red-500/10 px-3 py-2 font-mono text-red-400 text-sm">
+        <p className="rounded-[3px] border border-red-500/30 bg-red-500/10 px-3 py-2 font-mono text-red-400 text-sm">
           {fileTreeError}
         </p>
       </div>
@@ -173,13 +252,13 @@ export function PreviewView() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Stats bar */}
-      <div className="flex items-center gap-2 border-fd-border border-b bg-fd-muted/10 px-3 py-2 sm:gap-4">
+      <div className="flex items-center gap-2 border-fd-border border-b bg-fd-muted/10 px-4 py-2.5 sm:gap-4">
         {/* Mobile back button */}
         {mobileView === "code" && selectedNode && (
           <button
             type="button"
             onClick={() => setMobileView("tree")}
-            className="flex items-center gap-1 rounded px-1 py-0.5 font-mono text-xs text-fd-muted-foreground hover:text-fd-foreground sm:hidden"
+            className="flex items-center gap-1 rounded-[2px] px-1 py-0.5 font-mono text-xs text-fd-muted-foreground hover:text-fd-foreground sm:hidden"
           >
             <ChevronLeft className="h-4 w-4" />
             Files
@@ -220,7 +299,7 @@ export function PreviewView() {
                 setTimeout(() => searchInputRef.current?.focus(), 0);
               else setSearchQuery("");
             }}
-            className="hidden rounded p-1 text-fd-muted-foreground transition-colors hover:text-fd-foreground sm:block"
+            className="hidden rounded-[2px] p-1 text-fd-muted-foreground transition-colors hover:text-fd-foreground sm:block"
             title="Search files (Ctrl+P)"
           >
             <Search className="h-3.5 w-3.5" />
@@ -252,7 +331,7 @@ export function PreviewView() {
               <X className="h-3 w-3" />
             </button>
           )}
-          <kbd className="rounded border border-fd-border/50 bg-fd-muted/10 px-1 font-mono text-[10px] text-fd-muted-foreground">
+          <kbd className="rounded-[2px] border border-fd-border bg-fd-muted/10 px-1 font-mono text-[10px] text-fd-muted-foreground">
             ESC
           </kbd>
         </div>
@@ -279,6 +358,69 @@ export function PreviewView() {
             addedPaths={addedPaths}
             removedPaths={removedPaths}
             searchQuery={searchQuery}
+            memberPaths={memberPaths}
+            collectionPaths={collectionPaths}
+            onTreeCreate={(kind, location, name) => {
+              if (kind === "package") {
+                dispatch({
+                  type: "ADD_PACKAGE",
+                  payload: {
+                    name,
+                    type: "library",
+                    location,
+                    producesCSS: false,
+                    exports: ["."],
+                  },
+                });
+              } else {
+                const used = new Set(preset.apps.map((a) => a.port));
+                let port = 3000;
+                while (used.has(port)) port += 1000;
+                dispatch({
+                  type: "ADD_APP",
+                  payload: {
+                    name,
+                    type: "nextjs",
+                    location,
+                    port,
+                    i18n: false,
+                    consumes: [],
+                  },
+                });
+              }
+            }}
+            onTreeExtraFile={(packageName, path) => {
+              // Append into `packageOverrides[<pkg>].extraFiles`. Works for
+              // user AND auto-packages — the engine treats them identically.
+              const current = preset.packageOverrides?.[packageName] ?? {};
+              const files = [...(current.extraFiles ?? [])];
+              if (files.some((f) => f.path === path)) {
+                // Already exists — just focus it instead of duplicating.
+                const fullPath = resolvePackageDir(packageName, preset);
+                if (fullPath) setSelectedFile(`${fullPath}/${path}`);
+                return;
+              }
+              // Seed sample content so the file opens with a meaningful
+              // import-path comment + a valid module shape — empty .ts files
+              // feel like a bug and confuse the diff viewer.
+              const content = scaffoldNewFileContent({
+                relativePath: path,
+                packageName,
+                scope: preset.basics.scope,
+              });
+              files.push({ path, content });
+              dispatch({
+                type: "SET_PACKAGE_OVERRIDE",
+                name: packageName,
+                payload: { ...current, extraFiles: files },
+              });
+              // Focus the new file. The resolver hasn't run yet so the node
+              // isn't in `allNodes`, but `selectedFile` is path-based — the
+              // useMemo above will pick it up on the next render after the
+              // tree resolves.
+              const fullPath = resolvePackageDir(packageName, preset);
+              if (fullPath) setSelectedFile(`${fullPath}/${path}`);
+            }}
           />
         </div>
 
@@ -301,6 +443,28 @@ export function PreviewView() {
       </div>
     </div>
   );
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Resolve a package's directory in the workspace given its short name. Used
+ * when we need to construct a full tree path (e.g. for `setSelectedFile` on a
+ * just-created file, before the resolver has rebuilt the tree).
+ *
+ * Mirrors the `memberPaths` builder above but reversed (name → dir).
+ */
+function resolvePackageDir(
+  name: string,
+  preset: ReturnType<typeof useBuilder>["preset"],
+): string | null {
+  const user = preset.packages.find((p) => p.name === name);
+  if (user) return packageDirOf(user);
+  if (autoPackageNames(preset).includes(name)) {
+    const loc = preset.autoPackageLocations?.[name] ?? "packages";
+    return `${loc}/${name}`;
+  }
+  return null;
 }
 
 // ─── Tree builder ─────────────────────────────────────────────────────────────

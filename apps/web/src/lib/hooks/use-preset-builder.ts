@@ -51,17 +51,24 @@ export function usePresetBuilder(): UsePresetBuilderReturn {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
 
-    const fromURL = readPresetFromURL();
-    if (fromURL) {
-      rawDispatch({ type: "LOAD_PRESET", payload: fromURL });
-      eventBus.emit("preset:load", { source: "url" });
-      return;
-    }
+    // URL decoding is async (CompressionStream). Local storage is sync —
+    // try it first as a fast fallback, then let the async URL override.
     const fromStorage = loadPresetFromStorage();
+    let storageApplied = false;
     if (fromStorage) {
       rawDispatch({ type: "LOAD_PRESET", payload: fromStorage });
       eventBus.emit("preset:load", { source: "storage" });
+      storageApplied = true;
     }
+    void (async () => {
+      const fromURL = await readPresetFromURL();
+      if (fromURL) {
+        rawDispatch({ type: "LOAD_PRESET", payload: fromURL });
+        eventBus.emit("preset:load", { source: "url" });
+      } else if (!storageApplied) {
+        // Neither URL nor storage — DEFAULT_PRESET stays in place.
+      }
+    })();
   }, [eventBus]);
 
   // History stacks (stored in refs to avoid re-renders)
@@ -158,7 +165,9 @@ export function usePresetBuilder(): UsePresetBuilderReturn {
     clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       savePresetToStorage(preset);
-      pushPresetToURL(preset);
+      // Fire-and-forget; URL push is async (CompressionStream) but the
+      // user doesn't wait on it — failures are silent.
+      void pushPresetToURL(preset);
     }, 500);
     return () => clearTimeout(saveTimerRef.current);
   }, [preset]);

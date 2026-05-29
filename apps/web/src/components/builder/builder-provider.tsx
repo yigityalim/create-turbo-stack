@@ -17,6 +17,12 @@ import {
 } from "@/lib/hooks/use-preset-builder";
 import type { EventBus } from "@/lib/preset/events";
 import type { PresetAction } from "@/lib/preset/reducer";
+import {
+  pushExpandedSectionToURL,
+  pushSelectedFileToURL,
+  readExpandedSectionFromURL,
+  readSelectedFileFromURL,
+} from "@/lib/preset/serialization";
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
@@ -59,6 +65,27 @@ type BuilderContextValue = {
 
   scrollTarget: string | null;
   navigateToSection: (sectionId: string) => void;
+
+  /**
+   * The currently-expanded section id — matches a `data-section` attribute
+   * (`package-ui`, `auto-package-cache`, `app-web`, …). Lifted up here so
+   * Preview's "Configure" action can both scroll AND open the accordion in
+   * one go, and so the value round-trips through the URL (`?s=…`) for
+   * deep-linking. Section components read it to decide which row to
+   * unfold, and call the setter when the user toggles a row by hand.
+   */
+  expandedSection: string | null;
+  setExpandedSection: (id: string | null) => void;
+
+  /**
+   * Cross-section request to open an add form pre-filled with a workspace
+   * location. Set by the file-explorer's right-click → "Add to packages/billing"
+   * action; consumed by `PackagesSection` / `AppsSection`'s `useEffect` which
+   * opens its form, then clears the request so the same action can fire again.
+   */
+  pendingAdd: { kind: "app" | "package"; location: string } | null;
+  requestAdd: (kind: "app" | "package", location: string) => void;
+  clearPendingAdd: () => void;
 };
 
 const BuilderContext = createContext<BuilderContextValue | null>(null);
@@ -72,20 +99,82 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   const [activeView, setActiveView] = useState<"configure" | "preview">(
     "configure",
   );
+  // Hydrate from URL on first paint — refresh reopens the same file. After
+  // hydration, every `setSelectedFile` also pushes to the URL via the wrapper
+  // we expose in the context value (further down).
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const selectedFileHydrated = useRef(false);
+  useEffect(() => {
+    if (selectedFileHydrated.current) return;
+    selectedFileHydrated.current = true;
+    const fromURL = readSelectedFileFromURL();
+    if (fromURL) {
+      setSelectedFile(fromURL);
+      // Open the preview pane on hydration so the user lands on the file
+      // they had open — otherwise they refresh and see the configure pane.
+      setActiveView("preview");
+    }
+  }, []);
   const [mobileTab, setMobileTab] = useState<"build" | "preview">("build");
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastIdRef = useRef(0);
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
 
-  const navigateToSection = useCallback((sectionId: string) => {
-    setActiveView("configure");
-    setMobileTab("build");
-    // Set scroll target — ConfigureView will pick it up and scroll
-    setScrollTarget(sectionId);
-    // Clear after a tick so it can be re-triggered
-    setTimeout(() => setScrollTarget(null), 500);
+  // Expanded section — hydrate from URL on first paint (deep-link support),
+  // then keep URL in sync on every change via `setExpandedSection`.
+  const [expandedSection, setExpandedSectionState] = useState<string | null>(
+    null,
+  );
+  const expandedSectionHydrated = useRef(false);
+  useEffect(() => {
+    if (expandedSectionHydrated.current) return;
+    expandedSectionHydrated.current = true;
+    const fromURL = readExpandedSectionFromURL();
+    if (fromURL) setExpandedSectionState(fromURL);
   }, []);
+  const setExpandedSection = useCallback((id: string | null) => {
+    setExpandedSectionState(id);
+    pushExpandedSectionToURL(id);
+  }, []);
+
+  const navigateToSection = useCallback(
+    (sectionId: string) => {
+      setActiveView("configure");
+      setMobileTab("build");
+      // Set scroll target — ConfigureView will pick it up and scroll
+      setScrollTarget(sectionId);
+      // Clear after a tick so it can be re-triggered
+      setTimeout(() => setScrollTarget(null), 500);
+      // Section ids that belong to expandable accordion rows also expand
+      // the row — same id round-trips between scroll, expand, and URL.
+      if (
+        sectionId.startsWith("package-") ||
+        sectionId.startsWith("auto-package-") ||
+        sectionId.startsWith("app-")
+      ) {
+        setExpandedSection(sectionId);
+      }
+    },
+    [setExpandedSection],
+  );
+
+  const [pendingAdd, setPendingAdd] = useState<{
+    kind: "app" | "package";
+    location: string;
+  } | null>(null);
+  const requestAdd = useCallback(
+    (kind: "app" | "package", location: string) => {
+      // Take the user to the configure pane so the form they're about to see
+      // isn't behind the preview tab.
+      setActiveView("configure");
+      setMobileTab("build");
+      setScrollTarget(kind === "app" ? "apps" : "packages");
+      setTimeout(() => setScrollTarget(null), 500);
+      setPendingAdd({ kind, location });
+    },
+    [],
+  );
+  const clearPendingAdd = useCallback(() => setPendingAdd(null), []);
 
   const addToast = useCallback(
     (message: string, type: Toast["type"] = "info") => {
@@ -156,6 +245,9 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     selectedFile,
     setSelectedFile: (path) => {
       setSelectedFile(path);
+      // Mirror into the URL so refresh restores the same file. `null` clears
+      // the param. Failures are swallowed inside the helper — non-critical.
+      pushSelectedFileToURL(path);
       if (path) {
         builder.eventBus.emit("preview:file-select", { path });
       }
@@ -167,6 +259,11 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
 
     scrollTarget,
     navigateToSection,
+    expandedSection,
+    setExpandedSection,
+    pendingAdd,
+    requestAdd,
+    clearPendingAdd,
   };
 
   return <BuilderContext value={value}>{children}</BuilderContext>;

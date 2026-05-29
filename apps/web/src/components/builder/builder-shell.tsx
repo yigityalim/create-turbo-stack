@@ -2,6 +2,7 @@
 
 import {
   AlertTriangle,
+  Bookmark,
   FolderTree,
   Info,
   Keyboard,
@@ -17,6 +18,7 @@ import type { Toast } from "./builder-provider";
 import { useBuilder } from "./builder-provider";
 import { BuilderSidebar } from "./builder-sidebar";
 import { ConfigureView } from "./configure-view";
+import { PresetsDialog } from "./presets-dialog";
 import { PreviewView } from "./preview-view";
 
 export function BuilderShell() {
@@ -33,6 +35,7 @@ export function BuilderShell() {
   } = useBuilder();
 
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showPresets, setShowPresets] = useState(false);
 
   // Simple key bindings — only fire when not typing in an input
   const opts = { enableOnFormTags: false as const, preventDefault: true };
@@ -41,6 +44,7 @@ export function BuilderShell() {
   useHotkeys("shift+u", () => redo(), opts);
   useHotkeys("1", () => setActiveView("configure"), opts);
   useHotkeys("2", () => setActiveView("preview"), opts);
+  useHotkeys("p", () => setShowPresets((s) => !s), opts);
   useHotkeys("shift+/", () => setShowShortcuts((s) => !s), opts); // ? key
   useHotkeys("escape", () => setShowShortcuts(false));
 
@@ -64,10 +68,19 @@ export function BuilderShell() {
             Preview
           </TabButton>
         </TabGroup>
+        <button
+          type="button"
+          onClick={() => setShowPresets(true)}
+          className="ml-auto flex items-center gap-1.5 rounded-[2px] border border-fd-border px-2 py-1 font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wide transition-colors hover:border-fd-primary hover:text-fd-foreground"
+          title="Presets"
+        >
+          <Bookmark className="h-3 w-3" />
+          Presets
+        </button>
       </div>
 
       {/* Desktop: sidebar + main */}
-      <div className="hidden h-full flex-1 grid-cols-[24rem_minmax(0,1fr)] overflow-hidden sm:grid">
+      <div className="hidden h-full flex-1 grid-cols-[25rem_minmax(0,1fr)] overflow-hidden sm:grid">
         <BuilderSidebar />
 
         <section className="flex min-h-0 flex-col overflow-hidden">
@@ -95,9 +108,19 @@ export function BuilderShell() {
             <div className="ml-auto flex items-center gap-1">
               <button
                 type="button"
+                onClick={() => setShowPresets(true)}
+                className="flex items-center gap-1.5 rounded-[3px] border border-fd-border px-2 py-1 font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wide transition-colors hover:border-fd-primary hover:bg-fd-primary/[0.06] hover:text-fd-foreground"
+                title="Presets (P)"
+              >
+                <Bookmark className="h-3.5 w-3.5" />
+                Presets
+              </button>
+              <div className="mx-1 h-4 w-px bg-fd-border/40" />
+              <button
+                type="button"
                 onClick={undo}
                 disabled={!canUndo}
-                className="rounded p-1 text-fd-muted-foreground transition-colors hover:text-fd-foreground disabled:opacity-30"
+                className="rounded-[2px] p-1 text-fd-muted-foreground transition-colors hover:text-fd-foreground disabled:opacity-30"
                 title="Undo (U)"
               >
                 <Undo2 className="h-3.5 w-3.5" />
@@ -106,7 +129,7 @@ export function BuilderShell() {
                 type="button"
                 onClick={redo}
                 disabled={!canRedo}
-                className="rounded p-1 text-fd-muted-foreground transition-colors hover:text-fd-foreground disabled:opacity-30"
+                className="rounded-[2px] p-1 text-fd-muted-foreground transition-colors hover:text-fd-foreground disabled:opacity-30"
                 title="Redo (Shift+U)"
               >
                 <Redo2 className="h-3.5 w-3.5" />
@@ -115,7 +138,7 @@ export function BuilderShell() {
               <button
                 type="button"
                 onClick={() => setShowShortcuts((s) => !s)}
-                className="rounded p-1 text-fd-muted-foreground transition-colors hover:text-fd-foreground"
+                className="rounded-[2px] p-1 text-fd-muted-foreground transition-colors hover:text-fd-foreground"
                 title="Keyboard shortcuts (?)"
               >
                 <Keyboard className="h-3.5 w-3.5" />
@@ -134,6 +157,9 @@ export function BuilderShell() {
 
       {/* Toast notifications */}
       {toasts.length > 0 && <ToastContainer toasts={toasts} />}
+
+      {/* Presets dialog */}
+      {showPresets && <PresetsDialog onClose={() => setShowPresets(false)} />}
 
       {/* Shortcuts overlay */}
       {showShortcuts && (
@@ -167,7 +193,7 @@ function ToastContainer({ toasts }: { toasts: Toast[] }) {
           <div
             key={toast.id}
             className={cn(
-              "flex items-center gap-2 rounded-lg border px-3 py-2 shadow-lg backdrop-blur-sm animate-in slide-in-from-bottom-2 fade-in duration-200",
+              "flex items-center gap-2 rounded-[3px] border px-3 py-2 shadow-lg backdrop-blur-sm animate-in slide-in-from-bottom-2 fade-in duration-200",
               TOAST_STYLES[toast.type],
             )}
           >
@@ -186,6 +212,7 @@ function ShortcutsOverlay({ onClose }: { onClose: () => void }) {
   const shortcuts = [
     { key: "1", description: "Configure view" },
     { key: "2", description: "Preview view" },
+    { key: "P", description: "Presets" },
     { key: "S", description: "Search options (in configure)" },
     { key: "F", description: "Search files (in preview)" },
     { key: "C", description: "Copy current file code" },
@@ -197,7 +224,7 @@ function ShortcutsOverlay({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="mx-4 w-full max-w-sm rounded-xl border border-fd-border bg-fd-background p-6 shadow-2xl">
+      <div className="mx-4 w-full max-w-sm rounded-[4px] border border-fd-border bg-fd-background p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-mono text-sm font-semibold text-fd-foreground">
             Keyboard Shortcuts
@@ -216,7 +243,7 @@ function ShortcutsOverlay({ onClose }: { onClose: () => void }) {
               <span className="text-sm text-fd-muted-foreground">
                 {s.description}
               </span>
-              <kbd className="rounded border border-fd-border/60 bg-fd-muted/15 px-2 py-0.5 font-mono text-xs text-fd-foreground">
+              <kbd className="rounded-[2px] border border-fd-border/60 bg-fd-muted/15 px-2 py-0.5 font-mono text-xs text-fd-foreground">
                 {s.key}
               </kbd>
             </div>
@@ -231,7 +258,7 @@ function ShortcutsOverlay({ onClose }: { onClose: () => void }) {
 
 function TabGroup({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-1 rounded-md bg-fd-muted/20 p-1">
+    <div className="flex items-center gap-1 rounded-[3px] bg-fd-muted/20 p-1">
       {children}
     </div>
   );
@@ -251,7 +278,7 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 rounded px-2 py-1 font-mono text-[11px] uppercase tracking-wide transition-colors",
+        "flex items-center gap-1.5 rounded-[2px] px-2 py-1 font-mono text-[11px] uppercase tracking-wide transition-colors",
         active
           ? "bg-fd-primary/12 text-fd-primary"
           : "text-fd-muted-foreground hover:bg-fd-muted/30",

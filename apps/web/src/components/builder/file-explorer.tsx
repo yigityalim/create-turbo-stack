@@ -1,18 +1,24 @@
 "use client";
 
-import { INTEGRATION_PACKAGE_NAMES } from "@create-turbo-stack/schema";
+import {
+  INTEGRATION_OPTION_CATEGORIES,
+  INTEGRATION_PACKAGE_NAMES,
+  integrationPackageName,
+} from "@create-turbo-stack/schema";
 import {
   ChevronDown,
   ChevronRight,
+  FileCode2,
   Folder,
   FolderOpen,
   Plus,
+  Power,
   Settings,
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
-import { FileIcon } from "./file-icons";
+import { FileIcon } from "./icons";
 
 /**
  * Auto-package names — the two structural builtins plus every integration
@@ -26,6 +32,20 @@ const AUTO_PACKAGE_NAMES = new Set<string>([
   ...Object.values(INTEGRATION_PACKAGE_NAMES),
 ]);
 
+/**
+ * Reverse lookup `<auto-package-name> → integrations.* key` for the optional
+ * categories — the only auto-packages where switching to "none" is meaningful
+ * (auth/db/api are required, so no "Disable" affordance for those). Derived
+ * from `INTEGRATION_OPTION_CATEGORIES` so a new optional integration shows up
+ * here without edits.
+ */
+const DISABLEABLE_PKG_TO_CATEGORY = new Map<string, string>(
+  INTEGRATION_OPTION_CATEGORIES.map((cat) => [
+    integrationPackageName(cat),
+    cat,
+  ]),
+);
+
 export type TreeNode = {
   name: string;
   path: string;
@@ -37,10 +57,46 @@ export type TreeNode = {
 export type ContextMenuAction =
   | { type: "add-app" }
   | { type: "add-package" }
+  /**
+   * Internal markers: when the user picks "New package/app in <dir>/" from a
+   * tree right-click, file-explorer intercepts this and opens a VSCode-style
+   * inline input in the tree instead of forwarding to PreviewView. Same
+   * pattern for "New file/folder" inside an existing package, which writes
+   * to `packageOverrides.extraFiles` for that package. None of these need
+   * caller handling — they all stay inside the file-explorer.
+   */
+  | { type: "_inline-add-package"; location: string }
+  | { type: "_inline-add-app"; location: string }
+  | {
+      type: "_inline-new-file";
+      dirPath: string;
+      packageName: string;
+      relativePath: string;
+    }
+  | {
+      type: "_inline-new-folder";
+      dirPath: string;
+      packageName: string;
+      relativePath: string;
+    }
   | { type: "remove-app"; name: string }
   | { type: "remove-package"; name: string }
   | { type: "configure-app"; name: string }
-  | { type: "configure-package"; name: string };
+  | { type: "configure-package"; name: string }
+  /**
+   * Right-click on a file inside a (user or auto) package → jump to its
+   * configure card / WorkspaceLayout row with the Customize accordion in
+   * focus. The full inline editor lives in the next iteration.
+   */
+  | { type: "edit-package-file"; name: string }
+  /**
+   * Disable an integration auto-package by flipping its `integrations.*` slot
+   * to "none". Only surfaced for the optional categories (analytics,
+   * errorTracking, email, rateLimit, ai, cache); structural ones (auth/db/api)
+   * never expose this. The handler dispatches `SET_INTEGRATIONS` which causes
+   * the resolver to drop the package on the next build.
+   */
+  | { type: "disable-auto-package"; name: string; category: string };
 
 type FileExplorerProps = {
   root: TreeNode;
@@ -50,6 +106,40 @@ type FileExplorerProps = {
   addedPaths?: Set<string>;
   removedPaths?: Set<string>;
   searchQuery?: string;
+  /**
+   * Map of workspace-member root directories → kind+name. Schema-driven —
+   * the caller (preview-view) derives this from the preset so the explorer
+   * doesn't have to guess from path depth. With custom locations a member
+   * can live anywhere (`tooling/foo`, `packages/billing/p1`); depth-based
+   * detection would either over- or under-match.
+   */
+  memberPaths?: Map<string, { kind: "app" | "package"; name: string }>;
+  /**
+   * Top-level "add" target directories — `apps/`, `packages/`, plus any
+   * custom collection (`tooling/`, `infrastructure/`, …). Right-clicking
+   * one of these surfaces an "Add …" action. Derived by the caller from
+   * the same source as `memberPaths`.
+   */
+  collectionPaths?: Set<string>;
+  /**
+   * VSCode-style inline creation: when the user right-clicks a workspace
+   * collection in the tree, an input row appears inline (no jump to the
+   * configure pane). On Enter, this callback fires with `(kind, location,
+   * name)` and the caller dispatches the right ADD action with sensible
+   * defaults (type, port, exports, …). On Esc / blur the input cancels.
+   */
+  onTreeCreate?: (
+    kind: "app" | "package",
+    location: string,
+    name: string,
+  ) => void;
+  /**
+   * Append a file to `packageOverrides[<pkgName>].extraFiles`. Used by the
+   * tree-inline "New file" / "New folder" right-click actions. `path` is
+   * package-relative (no leading slash). For folders, the caller has already
+   * suffixed `/.gitkeep` so the directory shows up in the resolved tree.
+   */
+  onTreeExtraFile?: (packageName: string, path: string) => void;
 };
 
 export function FileExplorer({
@@ -60,11 +150,72 @@ export function FileExplorer({
   addedPaths,
   removedPaths,
   searchQuery,
+  memberPaths,
+  collectionPaths,
+  onTreeCreate,
+  onTreeExtraFile,
 }: FileExplorerProps) {
+  // Inline-add state. Covers all four VSCode-style create flows:
+  //   - new app at a collection root (apps / services / demos)
+  //   - new package at a collection root (packages / tooling / packages/billing)
+  //   - new file inside an existing package's directory
+  //   - new folder inside an existing package's directory
+  // The first two land via `onTreeCreate`; the file/folder forms land via
+  // `onTreeExtraFile` which writes a packageOverrides entry.
+  const [inlineAdd, setInlineAdd] = useState<
+    | { dirPath: string; kind: "app" | "package" }
+    | {
+        dirPath: string;
+        kind: "file" | "folder";
+        packageName: string;
+        relativePath: string;
+      }
+    | null
+  >(null);
+
+  const onInlineSubmit = useCallback(
+    (name: string) => {
+      if (!inlineAdd) return;
+      // Discriminated dispatch on `kind`. Switch keeps each case body
+      // narrowed to a single union arm — the previous OR / else-if form
+      // widened back to the full union and lost `packageName` access.
+      switch (inlineAdd.kind) {
+        case "app":
+        case "package":
+          if (onTreeCreate) {
+            onTreeCreate(inlineAdd.kind, inlineAdd.dirPath, name);
+          }
+          break;
+        case "file":
+        case "folder": {
+          // Folder = a `.gitkeep` placeholder so the directory shows up in
+          // the tree until the user adds real content. File = the literal
+          // name the user typed.
+          if (onTreeExtraFile) {
+            const joinedRel = inlineAdd.relativePath
+              ? `${inlineAdd.relativePath}/${name}`
+              : name;
+            const path =
+              inlineAdd.kind === "folder" ? `${joinedRel}/.gitkeep` : joinedRel;
+            onTreeExtraFile(inlineAdd.packageName, path);
+          }
+          break;
+        }
+      }
+      setInlineAdd(null);
+    },
+    [inlineAdd, onTreeCreate, onTreeExtraFile],
+  );
+  const onInlineCancel = useCallback(() => setInlineAdd(null), []);
   const initialExpanded = useMemo(() => {
     const set = new Set<string>();
     function walk(node: TreeNode, depth: number) {
       if (depth < 2 && node.isDirectory) {
+        // Dotfile-prefixed directories (`.github/`, `.husky/`, `.vscode/`)
+        // are tool / metadata folders — auto-collapse so the structural
+        // packages and apps catch the user's eye first. They expand on
+        // click like any other directory.
+        if (depth > 0 && node.name.startsWith(".")) return;
         set.add(node.path);
         for (const child of node.children) {
           walk(child, depth + 1);
@@ -155,7 +306,7 @@ export function FileExplorer({
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, node: TreeNode) => {
-      if (!onContextAction || !node.isDirectory) return;
+      if (!onContextAction) return;
 
       const items: {
         label: string;
@@ -163,61 +314,201 @@ export function FileExplorer({
         action: ContextMenuAction;
       }[] = [];
 
-      // "apps" root folder
-      if (node.path === "apps") {
-        items.push({
-          label: "Add App",
-          icon: Plus,
-          action: { type: "add-app" },
-        });
+      // FILE branch — walk parent paths back to the nearest member directory.
+      // Both user packages and engine-owned auto-packages get the action; the
+      // handler in PreviewView routes to the right Configure / Workspace
+      // Layout target based on which kind of package owns the file.
+      if (!node.isDirectory) {
+        if (memberPaths) {
+          const segs = node.path.split("/");
+          for (let i = segs.length - 1; i >= 1; i--) {
+            const ancestor = segs.slice(0, i).join("/");
+            const m = memberPaths.get(ancestor);
+            if (m?.kind === "package") {
+              const isAuto = AUTO_PACKAGE_NAMES.has(m.name);
+              items.push({
+                label: isAuto
+                  ? `Customize ${m.name} (auto)`
+                  : `Edit content in ${m.name}`,
+                icon: Settings,
+                action: { type: "edit-package-file", name: m.name },
+              });
+              break;
+            }
+          }
+        }
+        if (items.length === 0) return;
+        e.preventDefault();
+        setContextMenu({ x: e.clientX, y: e.clientY, items });
+        return;
       }
-      // "packages" root folder
-      else if (node.path === "packages") {
-        items.push({
-          label: "Add Package",
-          icon: Plus,
-          action: { type: "add-package" },
-        });
+
+      // Walk up the path to find the nearest package this directory belongs
+      // to. If found AND the directory isn't the package root itself, we can
+      // offer "New file" / "New folder" inside it via packageOverrides.
+      // Skip the package-root case because we already surface Configure/
+      // Remove (user) or Customize (auto) there, and a "New file" at the
+      // package root has the same effect as right-clicking `src/` after.
+      let ownerPkg: { name: string; rootPath: string } | null = null;
+      if (memberPaths) {
+        const segs = node.path.split("/");
+        // Start one segment up — we want strictly ancestor packages so the
+        // package's own root row gets its existing menu.
+        for (let i = segs.length - 1; i >= 1; i--) {
+          const ancestor = segs.slice(0, i).join("/");
+          const m = memberPaths.get(ancestor);
+          if (m?.kind === "package") {
+            ownerPkg = { name: m.name, rootPath: ancestor };
+            break;
+          }
+        }
       }
-      // Direct child of "apps/" (e.g., "apps/web")
-      else if (
-        node.path.startsWith("apps/") &&
-        node.path.split("/").length === 2
-      ) {
-        const appName = node.path.split("/")[1];
+
+      // Collection root folder ("apps", "packages", "tooling", "services",
+      // "packages/billing", …). VSCode-style inline create: clicking surfaces
+      // an input row in the tree itself (no redirect to the configure pane).
+      // Apps-shaped collections create apps; everything else creates packages.
+      const member = memberPaths?.get(node.path);
+      const isCollectionRoot = collectionPaths?.has(node.path) ?? false;
+      if (isCollectionRoot && onTreeCreate) {
+        const isAppsCollection =
+          node.path === "apps" ||
+          node.path === "services" ||
+          node.path === "demos";
+        items.push({
+          label: isAppsCollection
+            ? `New app in ${node.path}/`
+            : `New package in ${node.path}/`,
+          icon: Plus,
+          action: isAppsCollection
+            ? { type: "_inline-add-app", location: node.path }
+            : { type: "_inline-add-package", location: node.path },
+        });
+      } else if (ownerPkg && onTreeCreate) {
+        // Inside (not at the root of) a known package — offer file/folder
+        // creation. The new content lands in
+        // `packageOverrides[<pkgName>].extraFiles` with the right relative
+        // path; the engine emits it on the next resolveFileTree pass. Same
+        // for user packages and auto-packages (engine treats overrides
+        // identically), so the UX stays consistent.
+        const relativePath = node.path.slice(ownerPkg.rootPath.length + 1);
+        items.push(
+          {
+            label: "New file",
+            icon: Plus,
+            action: {
+              type: "_inline-new-file",
+              dirPath: node.path,
+              packageName: ownerPkg.name,
+              relativePath,
+            },
+          },
+          {
+            label: "New folder",
+            icon: Plus,
+            action: {
+              type: "_inline-new-folder",
+              dirPath: node.path,
+              packageName: ownerPkg.name,
+              relativePath,
+            },
+          },
+        );
+      } else if (member?.kind === "app") {
         items.push(
           {
             label: "Configure",
             icon: Settings,
-            action: { type: "configure-app", name: appName },
+            action: { type: "configure-app", name: member.name },
           },
           {
             label: "Remove",
             icon: Trash2,
-            action: { type: "remove-app", name: appName },
+            action: { type: "remove-app", name: member.name },
           },
         );
-      }
-      // Direct child of "packages/" (e.g., "packages/ui")
-      else if (
-        node.path.startsWith("packages/") &&
-        node.path.split("/").length === 2
-      ) {
-        const pkgName = node.path.split("/")[1];
-        // Auto-packages (cache, monitoring, db, env, …) are derived from preset
-        // selections — they have no standalone identity to configure/remove
-        // here. Use the integration prompts instead.
-        if (!AUTO_PACKAGE_NAMES.has(pkgName)) {
+      } else if (member?.kind === "package") {
+        const isAuto = AUTO_PACKAGE_NAMES.has(member.name);
+        if (isAuto) {
+          // Auto-packages are engine-owned — no Remove for structural ones
+          // (typescript-config, env, db, auth, api). For optional integration
+          // packages (analytics, monitoring, email, rate-limit, ai, cache),
+          // surface a "Disable" affordance that flips the relevant
+          // `integrations.*` slot to "none" — the resolver drops the package
+          // on the next build. Customize still works the same way through
+          // packageOverrides for both flavours.
+          const disableableCategory = DISABLEABLE_PKG_TO_CATEGORY.get(
+            member.name,
+          );
+          items.push(
+            {
+              label: `Customize ${member.name} (auto)`,
+              icon: Settings,
+              action: { type: "edit-package-file", name: member.name },
+            },
+            {
+              label: "New file",
+              icon: Plus,
+              action: {
+                type: "_inline-new-file",
+                dirPath: node.path,
+                packageName: member.name,
+                relativePath: "",
+              },
+            },
+            {
+              label: "New folder",
+              icon: Plus,
+              action: {
+                type: "_inline-new-folder",
+                dirPath: node.path,
+                packageName: member.name,
+                relativePath: "",
+              },
+            },
+          );
+          if (disableableCategory) {
+            items.push({
+              label: "Disable (set to none)",
+              icon: Power,
+              action: {
+                type: "disable-auto-package",
+                name: member.name,
+                category: disableableCategory,
+              },
+            });
+          }
+        } else {
           items.push(
             {
               label: "Configure",
               icon: Settings,
-              action: { type: "configure-package", name: pkgName },
+              action: { type: "configure-package", name: member.name },
+            },
+            {
+              label: "New file",
+              icon: Plus,
+              action: {
+                type: "_inline-new-file",
+                dirPath: node.path,
+                packageName: member.name,
+                relativePath: "",
+              },
+            },
+            {
+              label: "New folder",
+              icon: Plus,
+              action: {
+                type: "_inline-new-folder",
+                dirPath: node.path,
+                packageName: member.name,
+                relativePath: "",
+              },
             },
             {
               label: "Remove",
               icon: Trash2,
-              action: { type: "remove-package", name: pkgName },
+              action: { type: "remove-package", name: member.name },
             },
           );
         }
@@ -228,7 +519,7 @@ export function FileExplorer({
       e.preventDefault();
       setContextMenu({ x: e.clientX, y: e.clientY, items });
     },
-    [onContextAction],
+    [onContextAction, memberPaths, collectionPaths],
   );
 
   // Close context menu on click outside or scroll
@@ -263,6 +554,10 @@ export function FileExplorer({
           searchMatchPaths={searchMatchPaths}
           contentOnlyMatches={contentOnlyMatches}
           isSearching={isSearching}
+          inlineAdd={inlineAdd}
+          onInlineSubmit={onInlineSubmit}
+          onInlineCancel={onInlineCancel}
+          memberPaths={memberPaths}
         />
       </div>
 
@@ -273,6 +568,43 @@ export function FileExplorer({
           y={contextMenu.y}
           items={contextMenu.items}
           onSelect={(action) => {
+            // Inline-add actions are handled locally: pop an input row in the
+            // tree at the requested location, auto-expand that directory so
+            // the input is visible, and don't propagate to the parent. The
+            // parent never sees these markers (they're an explorer concern).
+            if (
+              action.type === "_inline-add-package" ||
+              action.type === "_inline-add-app"
+            ) {
+              const kind: "app" | "package" =
+                action.type === "_inline-add-app" ? "app" : "package";
+              setInlineAdd({ dirPath: action.location, kind });
+              setExpanded((prev) => {
+                const next = new Set(prev);
+                next.add(action.location);
+                return next;
+              });
+              setContextMenu(null);
+              return;
+            }
+            if (
+              action.type === "_inline-new-file" ||
+              action.type === "_inline-new-folder"
+            ) {
+              setInlineAdd({
+                dirPath: action.dirPath,
+                kind: action.type === "_inline-new-file" ? "file" : "folder",
+                packageName: action.packageName,
+                relativePath: action.relativePath,
+              });
+              setExpanded((prev) => {
+                const next = new Set(prev);
+                next.add(action.dirPath);
+                return next;
+              });
+              setContextMenu(null);
+              return;
+            }
             onContextAction?.(action);
             setContextMenu(null);
           }}
@@ -367,6 +699,21 @@ type SharedNodeProps = {
   searchMatchPaths?: Set<string> | null;
   contentOnlyMatches?: Set<string> | null;
   isSearching: boolean;
+  inlineAdd:
+    | { dirPath: string; kind: "app" | "package" }
+    | {
+        dirPath: string;
+        kind: "file" | "folder";
+        packageName: string;
+        relativePath: string;
+      }
+    | null;
+  onInlineSubmit: (name: string) => void;
+  onInlineCancel: () => void;
+  /** Threaded down so the directory rows can show an "auto" pill on engine-
+   *  owned package roots — visual cue that the row isn't user-editable in the
+   *  same way (no Remove, but Customize still works). */
+  memberPaths?: Map<string, { kind: "app" | "package"; name: string }>;
 };
 
 /**
@@ -422,6 +769,10 @@ function TreeNodeComponent({
   searchMatchPaths,
   contentOnlyMatches,
   isSearching,
+  inlineAdd,
+  onInlineSubmit,
+  onInlineCancel,
+  memberPaths,
 }: {
   node: TreeNode;
   /** File-nesting children (e.g. `index.test.ts` under `index.ts`). */
@@ -482,6 +833,18 @@ function TreeNodeComponent({
           <span className="truncate font-mono text-[13px] text-fd-foreground">
             {node.name}
           </span>
+          {/* Auto-package marker — engine-owned (db, env, cache, …). Visual
+              cue that the row is read-only-feeling but Customize via right-
+              click still works. Keeps users from thinking it's a bug when
+              Remove isn't there. */}
+          {(() => {
+            const m = memberPaths?.get(node.path);
+            return m?.kind === "package" && AUTO_PACKAGE_NAMES.has(m.name) ? (
+              <span className="ml-auto shrink-0 rounded-[2px] bg-fd-primary/15 px-1 py-px font-mono text-[9px] text-fd-primary/70">
+                auto
+              </span>
+            ) : null;
+          })()}
           {/* Hint for interactive folders */}
           {isInteractive &&
             (node.path === "apps" || node.path === "packages") && (
@@ -490,6 +853,15 @@ function TreeNodeComponent({
         </button>
         {isExpanded && (
           <div className="space-y-0.5">
+            {inlineAdd?.dirPath === node.path && (
+              <InlineAddRow
+                depth={depth + 1}
+                kind={inlineAdd.kind}
+                existing={(node.children ?? []).map((c) => c.name)}
+                onSubmit={onInlineSubmit}
+                onCancel={onInlineCancel}
+              />
+            )}
             <ChildList
               items={node.children}
               depth={depth + 1}
@@ -503,6 +875,10 @@ function TreeNodeComponent({
               searchMatchPaths={searchMatchPaths}
               contentOnlyMatches={contentOnlyMatches}
               isSearching={isSearching}
+              inlineAdd={inlineAdd}
+              onInlineSubmit={onInlineSubmit}
+              onInlineCancel={onInlineCancel}
+              memberPaths={memberPaths}
             />
           </div>
         )}
@@ -543,6 +919,7 @@ function TreeNodeComponent({
           <button
             type="button"
             onClick={() => onSelectFile(node)}
+            onContextMenu={(e) => onContextMenu(e, node)}
             // gap-1.5 here matches the directory's gap; chevron pr-1.5 above
             // already provides the spacing so we don't double up.
             className="flex min-w-0 flex-1 items-center gap-1.5 py-1 pr-1.5 text-left"
@@ -589,6 +966,10 @@ function TreeNodeComponent({
                 searchMatchPaths={searchMatchPaths}
                 contentOnlyMatches={contentOnlyMatches}
                 isSearching={isSearching}
+                inlineAdd={inlineAdd}
+                onInlineSubmit={onInlineSubmit}
+                onInlineCancel={onInlineCancel}
+                memberPaths={memberPaths}
               />
             ))}
           </div>
@@ -601,6 +982,7 @@ function TreeNodeComponent({
     <button
       type="button"
       onClick={() => onSelectFile(node)}
+      onContextMenu={(e) => onContextMenu(e, node)}
       className={cn(
         "flex w-full items-center gap-1.5 rounded-[2px] px-1.5 py-1 text-left transition-colors",
         isSelected
@@ -752,4 +1134,108 @@ function splitChildren(children: TreeNode[]): {
   const dirs = children.filter((c) => c.isDirectory);
   const files = children.filter((c) => !c.isDirectory);
   return { dirs, groups: nestFiles(files) };
+}
+
+// ─── Inline add row (VSCode-style new file/folder prompt) ───────────────────
+
+/**
+ * One-line input that appears at the top of a directory when the user picks
+ * "New …" from the right-click menu. Auto-focuses, Enter commits with the
+ * parent's `onSubmit`, Esc cancels. Empty or duplicate names cancel too.
+ * Four kinds use the same row so VSCode-style creation feels uniform:
+ *
+ *   - `app` / `package` — names are kebab-case (workspace member); icon is
+ *     a folder.
+ *   - `file` — name accepts a dot-extension (e.g. `README.md`); icon shifts
+ *     to a generic file marker.
+ *   - `folder` — kebab-case directory name; folder icon.
+ */
+function InlineAddRow({
+  depth,
+  kind,
+  existing,
+  onSubmit,
+  onCancel,
+}: {
+  depth: number;
+  kind: "app" | "package" | "file" | "folder";
+  existing: string[];
+  onSubmit: (name: string) => void;
+  onCancel: () => void;
+}) {
+  const [value, setValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Focus on mount — single-line VSCode-style.
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  const trimmed = value.trim();
+  // Files accept dot-extensions and slashes (path-ish: `lib/helper.ts`);
+  // packages/apps/folders are kebab-case only. Keeps inputs predictable.
+  const isFile = kind === "file";
+  const nameRe = isFile ? /^[a-z0-9./_-]+$/ : /^[a-z0-9-]+$/;
+  const error =
+    trimmed.length === 0
+      ? null
+      : !nameRe.test(trimmed)
+        ? isFile
+          ? "Lowercase, digits, dots, slashes, hyphens, underscores"
+          : "Lowercase, digits, and hyphens only"
+        : trimmed.includes("..")
+          ? "Path traversal not allowed"
+          : existing.includes(trimmed)
+            ? "Already exists in this folder"
+            : null;
+  const canSubmit = trimmed.length > 0 && !error;
+
+  const Icon = isFile ? FileCode2 : Folder;
+  const placeholder =
+    kind === "app"
+      ? "new-app"
+      : kind === "package"
+        ? "new-package"
+        : kind === "folder"
+          ? "new-folder"
+          : "README.md";
+
+  return (
+    <div
+      className="flex items-center gap-1.5 rounded-[2px] px-1.5 py-1"
+      style={{ paddingLeft: depth * 16 + 6 }}
+    >
+      <Icon className="h-3.5 w-3.5 shrink-0 text-fd-primary/60" />
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value.toLowerCase())}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            if (canSubmit) onSubmit(trimmed);
+            else onCancel();
+          } else if (e.key === "Escape") {
+            onCancel();
+          }
+        }}
+        onBlur={() => {
+          if (!canSubmit) onCancel();
+        }}
+        placeholder={placeholder}
+        className={cn(
+          "flex-1 rounded-[2px] border bg-fd-background px-1.5 py-0.5 font-mono text-[12px] text-fd-foreground focus:outline-none",
+          error ? "border-red-500" : "border-fd-primary",
+        )}
+      />
+      {error && (
+        <span
+          className="ml-1 truncate font-mono text-[10px] text-red-400"
+          title={error}
+        >
+          {error}
+        </span>
+      )}
+    </div>
+  );
 }

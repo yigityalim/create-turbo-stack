@@ -33,6 +33,21 @@ export type PresetAction =
   | { type: "UPDATE_PACKAGE"; index: number; payload: Partial<Package> }
   | { type: "REMOVE_PACKAGE"; index: number }
   | { type: "TOGGLE_REGISTRY_PACKAGE"; payload: string }
+  | {
+      type: "SET_AUTO_PACKAGE_LOCATIONS";
+      payload: Preset["autoPackageLocations"];
+    }
+  | {
+      /**
+       * Set or clear a single package's override block. `payload: undefined`
+       * removes the override entirely; a partial object replaces just that
+       * package's slot. The reducer normalizes — empty inner objects collapse
+       * so the URL codec's default-stripping has nothing left to find.
+       */
+      type: "SET_PACKAGE_OVERRIDE";
+      name: string;
+      payload: NonNullable<Preset["packageOverrides"]>[string] | undefined;
+    }
   | { type: "LOAD_PRESET"; payload: Preset }
   | { type: "RESET"; payload: Preset };
 
@@ -156,6 +171,20 @@ export function presetReducer(state: Preset, action: PresetAction): Preset {
         ? current.filter((r) => r !== action.payload)
         : [...current, action.payload];
       return { ...state, registryPackages };
+    }
+
+    case "SET_AUTO_PACKAGE_LOCATIONS":
+      return { ...state, autoPackageLocations: action.payload };
+
+    case "SET_PACKAGE_OVERRIDE": {
+      const current = { ...(state.packageOverrides ?? {}) };
+      if (action.payload === undefined) {
+        delete current[action.name];
+      } else {
+        current[action.name] = action.payload;
+      }
+      const next = Object.keys(current).length > 0 ? current : undefined;
+      return { ...state, packageOverrides: next };
     }
 
     case "LOAD_PRESET":

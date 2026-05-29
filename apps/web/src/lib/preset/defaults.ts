@@ -8,7 +8,8 @@ export const DEFAULT_PRESET: Preset = {
   schemaVersion: "1.0",
   name: "my-turborepo",
   version: "1.0.0",
-  description: "",
+  // `description` is optional in the schema; omitted here so the URL codec
+  // doesn't have to encode/restore an empty placeholder.
 
   basics: {
     projectName: "my-turborepo",
@@ -36,13 +37,14 @@ export const DEFAULT_PRESET: Preset = {
     rateLimit: "none",
     ai: "none",
     cache: "none",
-    envValidation: true,
+    envValidation: "t3-env",
   },
 
   apps: [
     {
       name: "web",
       type: "nextjs",
+      location: "apps",
       port: 3000,
       i18n: false,
       consumes: [],
@@ -101,13 +103,14 @@ export const BUILTIN_PRESETS: {
         rateLimit: "none",
         ai: "none",
         cache: "upstash",
-        envValidation: true,
+        envValidation: "t3-env",
       },
 
       apps: [
         {
           name: "web",
           type: "nextjs",
+          location: "apps",
           port: 3000,
           i18n: true,
           consumes: [],
@@ -118,6 +121,7 @@ export const BUILTIN_PRESETS: {
         {
           name: "ui",
           type: "ui",
+          location: "packages",
           producesCSS: true,
           exports: ["."],
         },
@@ -160,13 +164,14 @@ export const BUILTIN_PRESETS: {
         rateLimit: "upstash",
         ai: "none",
         cache: "upstash",
-        envValidation: true,
+        envValidation: "t3-env",
       },
 
       apps: [
         {
           name: "api",
           type: "hono-standalone",
+          location: "apps",
           port: 4000,
           i18n: false,
           consumes: [],

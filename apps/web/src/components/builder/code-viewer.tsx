@@ -305,11 +305,20 @@ function ShikiCode({ code, lang }: { code: string; lang: string }) {
 
   return (
     <div
+      // `line-numbered` lives in global.css; Tailwind arbitrary values can't
+      // express `counter(line)` (parens confuse the parser), and a global
+      // class keeps the rule list in one place for Shiki AND PlainCode.
+      // `pl-14` opens up gutter space for the numbers; the CSS uses negative
+      // `left` to put `::before` inside that strip.
       className={cn(
-        "shiki-code select-text p-3",
+        "shiki-code line-numbered select-text py-3 pr-3 pl-14",
+        // Reset Shiki's own pre/code chrome (background / margin / padding).
+        // Font-size + line-height intentionally live on `.line` in
+        // global.css, NOT here on `<code>`. Setting them on `<code>` causes
+        // the literal `\n` text nodes between `<span class="line">` siblings
+        // to render at full height — visually doubling every code row.
         "[&_pre]:!bg-transparent [&_pre]:!m-0 [&_pre]:!p-0",
-        "[&_code]:font-mono [&_code]:!text-[12.5px] [&_code]:!leading-5",
-        "[&_.line]:inline-block [&_.line]:w-full",
+        "[&_code]:font-mono",
       )}
       // biome-ignore lint/security/noDangerouslySetInnerHtml: Shiki tokenises into HTML spans; output is library-controlled, not user-controlled markup.
       dangerouslySetInnerHTML={{ __html: html }}
@@ -317,23 +326,20 @@ function ShikiCode({ code, lang }: { code: string; lang: string }) {
   );
 }
 
-/** Plain-text fallback when Shiki fails to load (e.g. offline preview). */
+/** Plain-text fallback when Shiki fails to load (e.g. offline preview).
+ *  Same `line-numbered` gutter as ShikiCode — `data-line` is what the CSS
+ *  selector hooks into when there's no Shiki `.line` span. */
 function PlainCode({ code }: { code: string }) {
   const lines = code.split("\n");
   return (
-    <pre className="p-3">
+    <pre className="line-numbered py-3 pr-3 pl-14">
       <code className="font-mono text-[12.5px] leading-5">
-        {lines.map((text, idx) => {
-          const n = idx + 1;
-          return (
-            <div key={`line-${n}`} className="flex">
-              <span className="mr-4 inline-block w-8 select-none text-right text-fd-muted-foreground/40">
-                {n}
-              </span>
-              <span className="text-fd-foreground">{text || " "}</span>
-            </div>
-          );
-        })}
+        {lines.map((text, idx) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: ordered source lines, position IS the identity — there's no other stable key for a single text body.
+          <div key={`line-${idx + 1}`} data-line>
+            <span className="text-fd-foreground">{text || " "}</span>
+          </div>
+        ))}
       </code>
     </pre>
   );

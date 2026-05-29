@@ -9,11 +9,11 @@ import { useBuilder } from "./builder-provider";
 import { ConfigureSection } from "./configure-section";
 import { PackagesSection } from "./packages-section";
 import { RegistrySection } from "./registry-section";
+import { WorkspaceLayoutSection } from "./workspace-layout-section";
 
 export function ConfigureView() {
   const { preset, dispatch, validationErrors, scrollTarget } = useBuilder();
   const [searchQuery, setSearchQuery] = useState("");
-  const [showSearch, setShowSearch] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -34,26 +34,10 @@ export function ConfigureView() {
     }
   }, [scrollTarget]);
 
-  // S — toggle search in configure view
-  useHotkeys(
-    "s",
-    () => {
-      if (showSearch) {
-        setShowSearch(false);
-        setSearchQuery("");
-      } else {
-        setShowSearch(true);
-        setTimeout(() => searchInputRef.current?.focus(), 0);
-      }
-    },
-    { enableOnFormTags: false, preventDefault: true },
-  );
-
-  useHotkeys("escape", () => {
-    if (showSearch) {
-      setShowSearch(false);
-      setSearchQuery("");
-    }
+  // S — focus the options filter (it's always visible)
+  useHotkeys("s", () => searchInputRef.current?.focus(), {
+    enableOnFormTags: false,
+    preventDefault: true,
   });
 
   const normalizedQuery = searchQuery.toLowerCase().trim();
@@ -114,57 +98,44 @@ export function ConfigureView() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Search bar */}
-      {showSearch && (
-        <div className="flex items-center gap-2 border-fd-border border-b bg-fd-background px-4 py-2">
-          <Search className="h-3.5 w-3.5 shrink-0 text-fd-muted-foreground" />
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search categories, options..."
-            className="flex-1 bg-transparent font-mono text-xs text-fd-foreground placeholder:text-fd-muted-foreground/50 focus:outline-none"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              className="text-fd-muted-foreground hover:text-fd-foreground"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-          <kbd className="rounded border border-fd-border/50 bg-fd-muted/10 px-1 font-mono text-[10px] text-fd-muted-foreground">
-            ESC
+      {/* Always-on options filter — distinct from the preview's file search */}
+      <div className="sticky top-0 z-10 flex items-center gap-2 border-fd-border border-b bg-fd-background px-4 py-2.5">
+        <Search className="h-3.5 w-3.5 shrink-0 text-fd-muted-foreground" />
+        <input
+          ref={searchInputRef}
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              setSearchQuery("");
+              e.currentTarget.blur();
+            }
+          }}
+          placeholder="Filter options…"
+          className="flex-1 bg-transparent font-mono text-fd-foreground text-xs placeholder:text-fd-muted-foreground/50 focus:outline-none"
+        />
+        {searchQuery ? (
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            className="text-fd-muted-foreground transition-colors hover:text-fd-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        ) : (
+          <kbd className="rounded-[2px] border border-fd-border bg-fd-muted/10 px-1.5 py-0.5 font-mono text-[10px] text-fd-muted-foreground">
+            S
           </kbd>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Scrollable content */}
       <div
         ref={scrollContainerRef}
         className="flex-1 overflow-auto scroll-smooth"
       >
-        <div className="mx-auto max-w-4xl space-y-6 p-4">
-          {/* Search toggle hint */}
-          {!showSearch && (
-            <button
-              type="button"
-              onClick={() => {
-                setShowSearch(true);
-                setTimeout(() => searchInputRef.current?.focus(), 0);
-              }}
-              className="flex w-full items-center gap-2 rounded-lg bg-fd-muted/5 px-3 py-2 text-fd-muted-foreground/50 ring-1 ring-fd-border/15 transition-colors hover:ring-fd-border/30"
-            >
-              <Search className="h-3.5 w-3.5" />
-              <span className="font-mono text-xs">Search options...</span>
-              <kbd className="ml-auto rounded border border-fd-border/30 bg-fd-muted/10 px-1.5 py-0.5 font-mono text-[10px]">
-                S
-              </kbd>
-            </button>
-          )}
-
+        <div className="mx-auto max-w-5xl space-y-10 p-6 sm:p-8">
           {filteredCategories.map((category) => (
             <ConfigureSection
               key={category.key}
@@ -185,6 +156,11 @@ export function ConfigureView() {
           {showPackages && (
             <div data-section="packages">
               <PackagesSection />
+            </div>
+          )}
+          {showPackages && (
+            <div data-section="workspace-layout">
+              <WorkspaceLayoutSection />
             </div>
           )}
           {showRegistry && <RegistrySection />}

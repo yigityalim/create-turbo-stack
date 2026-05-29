@@ -1,43 +1,141 @@
 "use client";
 
-import type { App } from "@create-turbo-stack/schema";
-import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type App, autoPackageNames } from "@create-turbo-stack/schema";
+import {
+  AppWindow,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Eye,
+  Folder,
+  FolderOpen,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/cn";
 import { APP_FIELDS } from "@/lib/preset/schema-meta";
 import { useBuilder } from "./builder-provider";
+import { ProviderIcon } from "./icons";
+import { LocationEditor, validateLocation } from "./location-editor";
 import { OptionCard } from "./option-card";
+import { Toggle } from "./toggle";
+import { WorkspaceTreeView } from "./workspace-tree-view";
+
+/** Group apps by location — `apps` first, then alphabetical. Mirrors `groupByLocation` in packages-section. */
+function groupAppsByLocation(apps: App[]) {
+  const map = new Map<string, { app: App; originalIndex: number }[]>();
+  for (let i = 0; i < apps.length; i++) {
+    const a = apps[i];
+    if (!a) continue;
+    if (!map.has(a.location)) map.set(a.location, []);
+    // biome-ignore lint/style/noNonNullAssertion: just set above
+    map.get(a.location)!.push({ app: a, originalIndex: i });
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => {
+      if (a === "apps") return -1;
+      if (b === "apps") return 1;
+      return a.localeCompare(b);
+    })
+    .map(([location, entries]) => ({ location, entries }));
+}
 
 export function AppsSection() {
-  const { preset, dispatch, validationErrors } = useBuilder();
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const {
+    preset,
+    dispatch,
+    validationErrors,
+    pendingAdd,
+    clearPendingAdd,
+    expandedSection,
+    setExpandedSection,
+  } = useBuilder();
+  // Apps expansion shares the lifted-up `expandedSection` so Preview ↔
+  // Configure navigation can both scroll AND open the row in one call, and
+  // so the URL deep-links survive refresh.
+  const toggleApp = (name: string) => {
+    const id = `app-${name}`;
+    setExpandedSection(expandedSection === id ? null : id);
+  };
+  // Mirrors PackagesSection — group "+" buttons set this so the form opens
+  // pre-filled. `null` ⇒ form closed.
+  const [pendingLocation, setPendingLocation] = useState<string | null>(null);
+  const [showTree, setShowTree] = useState(false);
+  const showAddForm = pendingLocation !== null;
+  const openAddForm = (loc = "apps") => setPendingLocation(loc);
+  const closeAddForm = () => setPendingLocation(null);
+
+  // Pick up cross-section "Add to <location>" requests (file-explorer right-
+  // click). Same shape as PackagesSection's listener.
+  useEffect(() => {
+    if (pendingAdd?.kind === "app") {
+      setPendingLocation(pendingAdd.location);
+      clearPendingAdd();
+    }
+  }, [pendingAdd, clearPendingAdd]);
 
   const appErrors = validationErrors.filter((e) => e.path[0] === "apps");
 
   return (
     <section className="scroll-mt-4">
-      <div className="mb-3 flex items-center justify-between border-fd-border border-b pb-2">
-        <div className="flex items-center gap-2">
-          <h2 className="font-mono font-semibold text-fd-foreground text-sm sm:text-base">
-            APPS
-          </h2>
-          <span className="font-mono text-[11px] text-fd-muted-foreground">
-            {preset.apps.length} app{preset.apps.length !== 1 ? "s" : ""}
-          </span>
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-[3px] border border-fd-border bg-fd-card text-fd-primary">
+              <AppWindow className="h-4 w-4" />
+            </span>
+            <h2 className="font-mono font-semibold text-sm uppercase tracking-wide">
+              Apps
+            </h2>
+            <span className="font-mono text-[11px] text-fd-muted-foreground tabular-nums">
+              {preset.apps.length}
+            </span>
+          </div>
+          <p className="mt-2 text-fd-muted-foreground text-xs leading-relaxed">
+            Applications in the monorepo — each gets its own port and wiring.
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-1 rounded-md bg-fd-primary/10 px-2 py-1 font-mono text-[11px] text-fd-primary transition-colors hover:bg-fd-primary/20"
-        >
-          <Plus className="h-3 w-3" />
-          Add App
-        </button>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setShowTree(!showTree)}
+            className={cn(
+              "flex items-center gap-1 rounded-[3px] border px-2.5 py-1.5 font-mono text-[11px] transition-colors",
+              showTree
+                ? "border-fd-primary bg-fd-primary/10 text-fd-primary"
+                : "border-fd-border bg-fd-card text-fd-muted-foreground hover:border-fd-primary hover:text-fd-foreground",
+            )}
+            title="View workspace tree"
+          >
+            <Eye className="h-3 w-3" />
+            View
+          </button>
+          {preset.apps.length === 0 && (
+            <button
+              type="button"
+              onClick={() => openAddForm("apps")}
+              className="brutal-hover flex items-center gap-1 rounded-[3px] border border-fd-primary bg-fd-primary/10 px-2.5 py-1.5 font-mono text-[11px] text-fd-primary"
+            >
+              <Plus className="h-3 w-3" />
+              Add App
+            </button>
+          )}
+        </div>
       </div>
 
+      {showTree && (
+        <div className="mb-4">
+          <WorkspaceTreeView
+            preset={preset}
+            kind="apps"
+            onClose={() => setShowTree(false)}
+          />
+        </div>
+      )}
+
       {appErrors.length > 0 && (
-        <div className="mb-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2">
+        <div className="mb-3 rounded-[3px] border border-red-500/20 bg-red-500/10 px-3 py-2">
           {appErrors.map((err) => (
             <p key={err.message} className="text-xs text-red-400">
               {err.message}
@@ -46,34 +144,217 @@ export function AppsSection() {
         </div>
       )}
 
+      <AppGroupedList
+        groups={useMemo(() => groupAppsByLocation(preset.apps), [preset.apps])}
+        expandedSection={expandedSection}
+        onToggle={toggleApp}
+        canRemove={preset.apps.length > 1}
+        onRequestAdd={openAddForm}
+        pendingLocation={pendingLocation}
+        renderForm={(forLocation) => (
+          <AddAppForm
+            existingNames={preset.apps.map((a) => a.name)}
+            existingPorts={preset.apps.map((a) => a.port)}
+            initialLocation={forLocation}
+            onAdd={(app) => {
+              dispatch({ type: "ADD_APP", payload: app });
+              closeAddForm();
+            }}
+            onCancel={closeAddForm}
+          />
+        )}
+      />
+
+      {/* Empty-section form (no apps yet — schema requires apps.min(1), but
+          we still defensively support empty UI state for symmetry). */}
+      {showAddForm && preset.apps.length === 0 && (
+        <div className="mt-3">
+          <AddAppForm
+            existingNames={[]}
+            existingPorts={[]}
+            initialLocation={pendingLocation ?? "apps"}
+            onAdd={(app) => {
+              dispatch({ type: "ADD_APP", payload: app });
+              closeAddForm();
+            }}
+            onCancel={closeAddForm}
+          />
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ─── Grouped list (collapsible folders per location) ────────────────────────
+
+function AppGroupedList({
+  groups,
+  expandedSection,
+  onToggle,
+  canRemove,
+  onRequestAdd,
+  pendingLocation,
+  renderForm,
+}: {
+  groups: ReturnType<typeof groupAppsByLocation>;
+  expandedSection: string | null;
+  onToggle: (name: string) => void;
+  canRemove: boolean;
+  onRequestAdd: (location: string) => void;
+  pendingLocation: string | null;
+  renderForm: (forLocation: string) => React.ReactNode;
+}) {
+  const hideFolders = groups.length === 1 && groups[0]?.location === "apps";
+  const pendingMatchesExisting =
+    pendingLocation != null &&
+    groups.some((g) => g.location === pendingLocation);
+  const showGhostGroup =
+    pendingLocation != null && !pendingMatchesExisting && !hideFolders;
+
+  return (
+    <div className="space-y-3">
+      {groups.map(({ location, entries }) => (
+        <AppGroup
+          key={location}
+          location={location}
+          entries={entries}
+          hideHeader={hideFolders}
+          expandedSection={expandedSection}
+          onToggle={onToggle}
+          canRemove={canRemove}
+          onRequestAdd={onRequestAdd}
+          form={pendingLocation === location ? renderForm(location) : null}
+        />
+      ))}
+      {showGhostGroup && (
+        <div className="rounded-[3px] border border-fd-primary border-dashed bg-fd-primary/[0.03] p-2">
+          <p className="mb-2 px-1 font-mono text-[11px] text-fd-primary uppercase tracking-wider">
+            New workspace · {pendingLocation}/
+          </p>
+          {renderForm(pendingLocation)}
+        </div>
+      )}
+      {!hideFolders && groups.length > 0 && (
+        <button
+          type="button"
+          onClick={() => onRequestAdd("apps")}
+          className="flex w-full items-center justify-center gap-1.5 rounded-[3px] border border-dashed border-fd-border bg-transparent px-3 py-2 font-mono text-[11px] text-fd-muted-foreground transition-colors hover:border-fd-primary hover:bg-fd-primary/[0.04] hover:text-fd-foreground"
+        >
+          <Plus className="h-3 w-3" />
+          Add app
+        </button>
+      )}
+    </div>
+  );
+}
+
+function AppGroup({
+  location,
+  entries,
+  hideHeader,
+  expandedSection,
+  onToggle,
+  canRemove,
+  onRequestAdd,
+  form,
+}: {
+  location: string;
+  entries: { app: App; originalIndex: number }[];
+  hideHeader: boolean;
+  expandedSection: string | null;
+  onToggle: (name: string) => void;
+  canRemove: boolean;
+  onRequestAdd: (location: string) => void;
+  form: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(true);
+  const effectivelyOpen = open || form !== null;
+
+  if (hideHeader) {
+    return (
       <div className="space-y-2">
-        {preset.apps.map((app, index) => (
+        {entries.map(({ app, originalIndex }) => (
           <div key={app.name} data-section={`app-${app.name}`}>
             <AppCard
               app={app}
-              index={index}
-              expanded={expandedIndex === index}
-              onToggle={() =>
-                setExpandedIndex(expandedIndex === index ? null : index)
-              }
-              canRemove={preset.apps.length > 1}
+              index={originalIndex}
+              expanded={expandedSection === `app-${app.name}`}
+              onToggle={() => onToggle(app.name)}
+              canRemove={canRemove}
             />
           </div>
         ))}
+        {form}
+        {!form && (
+          <button
+            type="button"
+            onClick={() => onRequestAdd(location)}
+            className="flex w-full items-center justify-center gap-1.5 rounded-[3px] border border-dashed border-fd-border bg-transparent px-3 py-2 font-mono text-[11px] text-fd-muted-foreground transition-colors hover:border-fd-primary hover:bg-fd-primary/[0.04] hover:text-fd-foreground"
+          >
+            <Plus className="h-3 w-3" />
+            Add to {location}/
+          </button>
+        )}
       </div>
+    );
+  }
 
-      {showAddForm && (
-        <AddAppForm
-          existingNames={preset.apps.map((a) => a.name)}
-          existingPorts={preset.apps.map((a) => a.port)}
-          onAdd={(app) => {
-            dispatch({ type: "ADD_APP", payload: app });
-            setShowAddForm(false);
-          }}
-          onCancel={() => setShowAddForm(false)}
-        />
+  return (
+    <div
+      className={cn(
+        "rounded-[3px] border border-fd-border bg-fd-muted/[0.04]",
+        form !== null && "border-fd-primary",
       )}
-    </section>
+    >
+      <div className="flex items-center justify-between gap-2 px-3 py-2 transition-colors hover:bg-fd-muted/[0.06]">
+        <button
+          type="button"
+          onClick={() => setOpen(!effectivelyOpen)}
+          className="flex flex-1 items-center gap-2 text-left"
+        >
+          {effectivelyOpen ? (
+            <ChevronDown className="h-3 w-3 text-fd-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-3 w-3 text-fd-muted-foreground" />
+          )}
+          {effectivelyOpen ? (
+            <FolderOpen className="h-3.5 w-3.5 text-fd-primary" />
+          ) : (
+            <Folder className="h-3.5 w-3.5 text-fd-muted-foreground" />
+          )}
+          <span className="font-mono text-[12px] text-fd-foreground">
+            {location}/
+          </span>
+          <span className="font-mono text-[10px] text-fd-muted-foreground">
+            {entries.length} app{entries.length === 1 ? "" : "s"}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onRequestAdd(location)}
+          title={`Add app to ${location}/`}
+          className="rounded-[2px] p-1 text-fd-muted-foreground transition-colors hover:bg-fd-primary/10 hover:text-fd-primary"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      {effectivelyOpen && (
+        <div className="space-y-2 border-fd-border/40 border-t bg-fd-card/40 p-2">
+          {form}
+          {entries.map(({ app, originalIndex }) => (
+            <div key={app.name} data-section={`app-${app.name}`}>
+              <AppCard
+                app={app}
+                index={originalIndex}
+                expanded={expandedSection === `app-${app.name}`}
+                onToggle={() => onToggle(app.name)}
+                canRemove={canRemove}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -95,8 +376,8 @@ function AppCard({
   const { dispatch } = useBuilder();
 
   return (
-    <div className="rounded-lg bg-fd-muted/10 ring-1 ring-fd-border/40">
-      <div className="flex items-center justify-between px-3 py-2">
+    <div className="rounded-[3px] border border-fd-border bg-fd-card">
+      <div className="flex items-center justify-between px-4 py-2.5">
         <button
           type="button"
           onClick={onToggle}
@@ -110,9 +391,17 @@ function AppCard({
           <span className="font-mono text-sm font-medium text-fd-foreground">
             {app.name}
           </span>
-          <span className="rounded bg-fd-muted/20 px-1.5 py-0.5 font-mono text-[10px] text-fd-muted-foreground">
+          <span className="rounded-[2px] bg-fd-muted/20 px-1.5 py-0.5 font-mono text-[10px] text-fd-muted-foreground">
             {app.type}
           </span>
+          {app.location !== "apps" && (
+            <span
+              title={`Lives at ${app.location}/${app.name}`}
+              className="rounded-[2px] bg-fd-primary/10 px-1.5 py-0.5 font-mono text-[10px] text-fd-primary"
+            >
+              {app.location}/
+            </span>
+          )}
           <span className="font-mono text-[10px] text-fd-muted-foreground">
             :{app.port}
           </span>
@@ -121,7 +410,7 @@ function AppCard({
           <button
             type="button"
             onClick={() => dispatch({ type: "REMOVE_APP", index })}
-            className="rounded p-1 text-fd-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400"
+            className="rounded-[2px] p-1 text-fd-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -129,19 +418,27 @@ function AppCard({
       </div>
 
       {expanded && (
-        <div className="border-fd-border/40 border-t px-3 py-3 space-y-3">
+        <div className="space-y-5 border-fd-border border-t px-4 py-4">
           {/* App type */}
           <div>
-            <p className="mb-2 font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wide">
-              Type
+            <p className="mb-2 font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wider">
+              App type
             </p>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
               {APP_FIELDS.type.options?.map((opt) => (
                 <OptionCard
                   key={opt.value}
                   label={opt.label}
                   description={opt.description}
                   selected={app.type === opt.value}
+                  icon={
+                    APP_FIELDS.type.group ? (
+                      <ProviderIcon
+                        group={APP_FIELDS.type.group}
+                        value={opt.value}
+                      />
+                    ) : null
+                  }
                   onClick={() =>
                     dispatch({
                       type: "UPDATE_APP",
@@ -154,11 +451,26 @@ function AppCard({
             </div>
           </div>
 
-          {/* Port */}
-          <div>
+          {/* Location (workspace glob) */}
+          <LocationEditor
+            value={app.location}
+            onChange={(loc) =>
+              dispatch({
+                type: "UPDATE_APP",
+                index,
+                payload: { location: loc },
+              })
+            }
+            defaultValue="apps"
+            nameForPreview={app.name}
+            help="Anything other than 'apps' adds a sibling glob to the workspace declaration (e.g. services/*, demos/*)."
+          />
+
+          {/* Port + localization */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="flex flex-col">
-              <span className="mb-1 font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wide">
-                Port
+              <span className="mb-1.5 font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wider">
+                Dev port
               </span>
               <input
                 type="number"
@@ -172,39 +484,30 @@ function AppCard({
                     payload: { port: Number(e.target.value) },
                   })
                 }
-                className="w-32 rounded-lg border border-fd-border/60 bg-fd-background px-2.5 py-1.5 font-mono text-sm text-fd-foreground focus:border-fd-primary focus:outline-none"
+                className="w-full rounded-[3px] border border-fd-border bg-fd-background px-2.5 py-1.5 font-mono text-fd-foreground text-sm focus:border-fd-primary focus:outline-none"
               />
             </label>
-          </div>
-
-          {/* i18n */}
-          <div className="flex items-center justify-between rounded-lg bg-fd-muted/10 px-3 py-2">
-            <span className="font-mono text-sm text-fd-foreground">i18n</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={app.i18n}
-              onClick={() =>
-                dispatch({
-                  type: "UPDATE_APP",
-                  index,
-                  payload: { i18n: !app.i18n },
-                })
-              }
-              className={cn(
-                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors",
-                app.i18n
-                  ? "bg-fd-primary/80"
-                  : "bg-fd-muted/30 dark:bg-fd-muted/20",
-              )}
-            >
-              <span
-                className={cn(
-                  "pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-transform dark:bg-fd-foreground",
-                  app.i18n ? "translate-x-4" : "translate-x-0",
-                )}
-              />
-            </button>
+            <div className="flex flex-col">
+              <span className="mb-1.5 font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wider">
+                Localization
+              </span>
+              <div className="flex flex-1 items-center justify-between rounded-[3px] border border-fd-border bg-fd-background px-3 py-1.5">
+                <span className="font-mono text-fd-foreground text-sm">
+                  i18n
+                </span>
+                <Toggle
+                  checked={app.i18n}
+                  onChange={(v) =>
+                    dispatch({
+                      type: "UPDATE_APP",
+                      index,
+                      payload: { i18n: v },
+                    })
+                  }
+                  label="i18n"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Consumes (package dependencies) */}
@@ -217,39 +520,48 @@ function AppCard({
 
 // ─── Consumes Field ───────────────────────────────────────────────────────────
 
+/**
+ * Packages that `computeWorkspaceRefs` (in @cts/core) adds to an app's
+ * package.json automatically when the relevant preset slot is non-"none",
+ * regardless of `app.consumes`. Kept in sync by hand because duplicating the
+ * tiny rule beats pulling the wiring layer into the browser bundle just for
+ * UI affordance.
+ *
+ *   env  ← integrations.envValidation !== "none"
+ *   api  ← api.strategy !== "none"
+ *   auth ← auth.provider !== "none"
+ */
+function implicitlyWiredPackages(
+  preset: ReturnType<typeof useBuilder>["preset"],
+): Set<string> {
+  const set = new Set<string>();
+  if (preset.integrations.envValidation !== "none") set.add("env");
+  if (preset.api.strategy !== "none") set.add("api");
+  if (preset.auth.provider !== "none") set.add("auth");
+  return set;
+}
+
 function ConsumesField({ app, index }: { app: App; index: number }) {
   const { preset, dispatch } = useBuilder();
 
-  // Available packages: user packages + auto-packages based on preset config
+  // Auto-packages from schema (single source of truth — same helper the cross-
+  // field validator uses) + user-declared packages. Schema-only so no Eta
+  // ever reaches the client bundle.
   const availablePackages = useMemo(() => {
-    const pkgs: { name: string; label: string; auto: boolean }[] = [];
-
-    // Auto-packages
-    pkgs.push({
-      name: "typescript-config",
-      label: "typescript-config",
+    const auto = autoPackageNames(preset).map((name) => ({
+      name,
+      label: name,
       auto: true,
-    });
-    if (preset.integrations.envValidation) {
-      pkgs.push({ name: "env", label: "env", auto: true });
-    }
-    if (preset.database.strategy !== "none") {
-      pkgs.push({ name: "db", label: "db", auto: true });
-    }
-    if (preset.api.strategy !== "none") {
-      pkgs.push({ name: "api", label: "api", auto: true });
-    }
-    if (preset.auth.provider !== "none") {
-      pkgs.push({ name: "auth", label: "auth", auto: true });
-    }
-
-    // User packages
-    for (const pkg of preset.packages) {
-      pkgs.push({ name: pkg.name, label: pkg.name, auto: false });
-    }
-
-    return pkgs;
+    }));
+    const user = preset.packages.map((p) => ({
+      name: p.name,
+      label: p.name,
+      auto: false,
+    }));
+    return [...auto, ...user];
   }, [preset]);
+
+  const implicit = useMemo(() => implicitlyWiredPackages(preset), [preset]);
 
   function toggleConsume(pkgName: string) {
     const current = app.consumes;
@@ -261,24 +573,44 @@ function ConsumesField({ app, index }: { app: App; index: number }) {
 
   if (availablePackages.length === 0) return null;
 
+  // Total packages that will actually land in the emitted package.json:
+  // explicit `consumes` ∪ implicit (auto-wired). Matches what the resolver
+  // computes so the count agrees with reality on disk.
+  const effective = new Set([...app.consumes, ...implicit]);
+
   return (
     <div>
-      <p className="mb-2 font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wide">
+      <p className="mb-2 font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wider">
         Consumes
+        <span className="ml-2 text-fd-muted-foreground/60 lowercase tracking-normal">
+          ~ = auto-package · dashed = auto-wired (always added)
+        </span>
       </p>
       <div className="flex flex-wrap gap-1.5">
         {availablePackages.map((pkg) => {
-          const isConsumed = app.consumes.includes(pkg.name);
+          const isExplicit = app.consumes.includes(pkg.name);
+          const isImplicit = implicit.has(pkg.name);
+          // Three visual states:
+          //   explicit  → solid primary fill (user added it)
+          //   implicit  → dashed primary outline (resolver will add it)
+          //   neither   → muted card (available but inert)
           return (
             <button
               key={pkg.name}
               type="button"
               onClick={() => toggleConsume(pkg.name)}
+              title={
+                isImplicit && !isExplicit
+                  ? `Auto-wired from integrations; toggling makes it explicit too.`
+                  : undefined
+              }
               className={cn(
-                "rounded-md px-2 py-1 font-mono text-[11px] transition-colors ring-1",
-                isConsumed
-                  ? "bg-fd-primary/10 text-fd-primary ring-fd-primary/30"
-                  : "bg-fd-card text-fd-muted-foreground ring-fd-border/30 hover:ring-fd-border/60",
+                "rounded-[3px] border px-2 py-1 font-mono text-[11px] transition-colors",
+                isExplicit
+                  ? "border-fd-primary bg-fd-primary/10 text-fd-primary"
+                  : isImplicit
+                    ? "border-dashed border-fd-primary/60 bg-fd-primary/[0.04] text-fd-primary/80"
+                    : "border-fd-border bg-fd-card text-fd-muted-foreground hover:border-fd-primary hover:bg-fd-primary/[0.06] hover:text-fd-foreground",
                 pkg.auto && "italic",
               )}
             >
@@ -287,10 +619,16 @@ function ConsumesField({ app, index }: { app: App; index: number }) {
           );
         })}
       </div>
-      {app.consumes.length > 0 && (
+      {effective.size > 0 && (
         <p className="mt-1.5 font-mono text-[10px] text-fd-muted-foreground">
-          {app.consumes.length} package{app.consumes.length !== 1 ? "s" : ""}{" "}
-          consumed
+          {effective.size} package{effective.size !== 1 ? "s" : ""} in
+          package.json
+          {app.consumes.length !== effective.size && (
+            <span className="ml-1 text-fd-muted-foreground/70">
+              ({app.consumes.length} explicit +{" "}
+              {effective.size - app.consumes.length} auto-wired)
+            </span>
+          )}
         </p>
       )}
     </div>
@@ -302,16 +640,19 @@ function ConsumesField({ app, index }: { app: App; index: number }) {
 function AddAppForm({
   existingNames,
   existingPorts,
+  initialLocation,
   onAdd,
   onCancel,
 }: {
   existingNames: string[];
   existingPorts: number[];
+  initialLocation: string;
   onAdd: (app: App) => void;
   onCancel: () => void;
 }) {
   const [name, setName] = useState("");
   const [type, setType] = useState<App["type"]>("nextjs");
+  const [location, setLocation] = useState(initialLocation);
   const [port, setPort] = useState(() => {
     // Find next available port
     let p = 3000;
@@ -328,10 +669,11 @@ function AddAppForm({
           ? "Name already in use"
           : null;
 
-  const canSubmit = name.length > 0 && !nameError;
+  const locationError = validateLocation(location);
+  const canSubmit = name.length > 0 && !nameError && !locationError;
 
   return (
-    <div className="mt-3 rounded-lg border border-fd-primary/30 bg-fd-primary/5 p-4 space-y-3">
+    <div className="mt-3 rounded-[3px] border border-fd-primary bg-fd-primary/5 p-4 space-y-3">
       <p className="font-mono text-sm font-medium text-fd-foreground">
         Add New App
       </p>
@@ -347,10 +689,10 @@ function AddAppForm({
             onChange={(e) => setName(e.target.value.toLowerCase())}
             placeholder="api"
             className={cn(
-              "rounded-lg border bg-fd-background px-2.5 py-1.5 font-mono text-sm text-fd-foreground focus:outline-none",
+              "rounded-[3px] border bg-fd-background px-2.5 py-1.5 font-mono text-sm text-fd-foreground focus:outline-none",
               nameError
                 ? "border-red-500"
-                : "border-fd-border/60 focus:border-fd-primary",
+                : "border-fd-border focus:border-fd-primary",
             )}
           />
           {nameError && (
@@ -368,10 +710,18 @@ function AddAppForm({
             max={65535}
             value={port}
             onChange={(e) => setPort(Number(e.target.value))}
-            className="rounded-lg border border-fd-border/60 bg-fd-background px-2.5 py-1.5 font-mono text-sm text-fd-foreground focus:border-fd-primary focus:outline-none"
+            className="rounded-[3px] border border-fd-border bg-fd-background px-2.5 py-1.5 font-mono text-sm text-fd-foreground focus:border-fd-primary focus:outline-none"
           />
         </label>
       </div>
+
+      <LocationEditor
+        value={location}
+        onChange={setLocation}
+        defaultValue="apps"
+        nameForPreview={name}
+        help="Pick anything other than 'apps' to slot this app under a sibling workspace glob (e.g. services, demos)."
+      />
 
       <div>
         <p className="mb-2 font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wide">
@@ -384,6 +734,14 @@ function AddAppForm({
               label={opt.label}
               description={opt.description}
               selected={type === opt.value}
+              icon={
+                APP_FIELDS.type.group ? (
+                  <ProviderIcon
+                    group={APP_FIELDS.type.group}
+                    value={opt.value}
+                  />
+                ) : null
+              }
               onClick={() => setType(opt.value as App["type"])}
             />
           ))}
@@ -398,19 +756,20 @@ function AddAppForm({
             onAdd({
               name,
               type,
+              location,
               port,
               i18n: false,
               consumes: [],
             })
           }
-          className="rounded-md bg-fd-primary px-3 py-1.5 font-mono text-xs text-fd-primary-foreground transition-colors hover:bg-fd-primary/90 disabled:opacity-50"
+          className="rounded-[3px] bg-fd-primary px-3 py-1.5 font-mono text-xs text-fd-primary-foreground transition-colors hover:bg-fd-primary/90 disabled:opacity-50"
         >
           Add
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-md bg-fd-muted/20 px-3 py-1.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:bg-fd-muted/30"
+          className="rounded-[3px] border border-fd-border bg-fd-muted/20 px-3 py-1.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:border-fd-primary hover:bg-fd-primary/[0.06] hover:text-fd-foreground"
         >
           Cancel
         </button>

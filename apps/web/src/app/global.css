@@ -7,15 +7,126 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Brutalist Vercel theme — mono base + a single electric-blue accent.
+
+   The whole app already routes its one accent through `fd-primary` (ASCII
+   art, terminal prompts, builder selected states, file tree, docs links).
+   Recoloring that token cascades the accent everywhere with zero markup
+   churn. The mono base comes from the neutral background/card/border/
+   foreground tokens; we only sharpen the borders so structure reads.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --color-fd-primary: #2f6bf6;
+  --color-fd-primary-foreground: #ffffff;
+  --color-fd-background: hsl(0, 0%, 99%);
+  --color-fd-card: hsl(0, 0%, 100%);
+  --color-fd-border: hsl(0, 0%, 86%);
+  --color-fd-muted-foreground: hsl(0, 0%, 42%);
+  --color-fd-ring: var(--color-fd-primary);
+}
+
+.dark {
+  --color-fd-primary: #3b82f6;
+  --color-fd-primary-foreground: #ffffff;
+  --color-fd-background: hsl(0, 0%, 4%); /* near-black */
+  --color-fd-card: hsl(0, 0%, 6.7%);
+  --color-fd-secondary: hsl(0, 0%, 11%);
+  --color-fd-border: hsl(0, 0%, 16.5%); /* visible structural lines */
+  --color-fd-muted-foreground: hsl(0, 0%, 62%);
+  --color-fd-ring: var(--color-fd-primary);
+}
+
 ::selection {
-  background-color: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
+  background-color: var(--color-fd-primary);
+  color: var(--color-fd-primary-foreground);
 }
 
 .ascii-art {
   letter-spacing: 0;
-  font-family: "Courier New", monospace;
+  font-family: var(--font-mono), "Courier New", monospace;
   line-height: 1;
+}
+
+/* ─── Brutalist primitives ──────────────────────────────────────────────────
+   Hard-offset hover for standalone bordered surfaces (buttons, cards that are
+   NOT part of a contiguous matrix — matrices shift if their cells translate).
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.brutal-hover {
+  transition:
+    transform 130ms cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 130ms cubic-bezier(0.2, 0, 0, 1),
+    border-color 130ms ease-out,
+    background-color 130ms ease-out;
+}
+
+.brutal-hover:hover {
+  transform: translate(-2px, -2px);
+  border-color: var(--color-fd-primary);
+  box-shadow: 4px 4px 0 0 var(--color-fd-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brutal-hover,
+  .brutal-hover:hover {
+    transform: none;
+    transition: border-color 130ms ease-out;
+  }
+}
+
+/* Subtle structural grid backdrop for the hero. */
+.grid-bg {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in oklab, var(--color-fd-foreground) 7%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--color-fd-foreground) 7%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(
+    ellipse 75% 55% at 50% 0%,
+    #000 35%,
+    transparent 78%
+  );
+  mask-image: radial-gradient(
+    ellipse 75% 55% at 50% 0%,
+    #000 35%,
+    transparent 78%
+  );
+}
+
+/* Typewriter cursor in the hero terminal */
+.term-cursor {
+  display: inline-block;
+  animation: term-blink 1s steps(1) infinite;
+}
+
+@keyframes term-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Align the home navbar with the bordered content column below it: same
+   max width (--fd-layout-width is pinned to 72rem on .home-shell) plus the
+   matching vertical borders, so the structural lines run nav → content. */
+@media (min-width: 640px) {
+  .home-shell #nd-nav nav {
+    border-left: 1px solid var(--color-fd-border);
+    border-right: 1px solid var(--color-fd-border);
+  }
 }
 
 /* Shiki dual theme: light by default, dark when html has class="dark" */
@@ -35,4 +146,70 @@
 .shiki-code * {
   user-select: text;
   -webkit-user-select: text;
+}
+
+/*
+ * Line numbers (Shiki + PlainCode fallback).
+ *
+ * Counter-driven gutter — zero DOM cost, copy-clean. The container provides
+ * the left padding so the text shifts right; each `.line` / `[data-line]`
+ * gets a `::before` positioned with NEGATIVE `left` so it lives inside the
+ * container's padding area without affecting the line's own width.
+ *
+ * Why the negative-left trick: putting `padding-left` on each `.line` fights
+ * with Tailwind's `p-3`/`p-*` shorthand on the parent — same specificity,
+ * cascade order decides. Container-padding-plus-negative-offset is rock-
+ * solid; the lines stay full-width and Shiki's selection / wrapping doesn't
+ * shift around when the rule loads.
+ *
+ * Two selector lists because Shiki emits `<span class="line">` per row, and
+ * the plain-text fallback emits `<div data-line>` per row.
+ */
+.line-numbered {
+  counter-reset: line;
+}
+/*
+ * Shiki emits `<span class="line">...</span>\n<span class="line">...</span>`
+ * inside a `<pre>`. The `<pre>` preserves whitespace, so the `\n` between
+ * line spans renders as a real newline. Once `.line` is `display: block`,
+ * every code row gets stacked twice — once from the block transition, once
+ * from the preserved `\n`.
+ *
+ * Fix: collapse the wrapper's font-size to zero so those `\n` text nodes
+ * occupy zero height, and put the real font-size on `.line` itself. The
+ * Tailwind `[&_code]:!text-[12.5px]` override on the container's code child
+ * was previously winning the cascade and reintroducing the double space —
+ * code-viewer no longer ships those utilities, leaving this rule
+ * authoritative for both Shiki (`.line`) and PlainCode (`[data-line]`).
+ */
+.line-numbered pre,
+.line-numbered code {
+  font-size: 0;
+  line-height: 0;
+}
+.line-numbered .line,
+.line-numbered [data-line] {
+  counter-increment: line;
+  position: relative;
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.line-numbered .line::before,
+.line-numbered [data-line]::before {
+  content: counter(line);
+  position: absolute;
+  /*
+   * Container provides `pl-14` (3.5rem). ::before lives -3rem..-1.25rem
+   * from .line so number-right and code-left have a ~1.25rem gap — enough
+   * to comfortably accommodate 3-digit line counts without crowding.
+   */
+  left: -3rem;
+  width: 1.75rem;
+  text-align: right;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  color: color-mix(in oklch, var(--color-fd-muted-foreground) 50%, transparent);
 }
