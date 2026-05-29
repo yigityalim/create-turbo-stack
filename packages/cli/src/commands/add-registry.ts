@@ -209,6 +209,9 @@ export async function addRegistryCommand(
     config.packages.push({
       name: item.name,
       type: "library",
+      // Registry-installed packages land at the default workspace location;
+      // the user can relocate via the builder or by editing `.turbo-stack.json`.
+      location: "packages",
       producesCSS: false,
       exports: item.exports,
       ...(source ? { registry: source } : {}),

@@ -5,6 +5,7 @@ import pc from "picocolors";
 import { addCommand } from "./commands/add";
 import { analyzeCommand } from "./commands/analyze";
 import { createCommand } from "./commands/create";
+import { customizeCommand } from "./commands/customize";
 import { doctorCommand } from "./commands/doctor";
 import { infoCommand } from "./commands/info";
 import { initCommand } from "./commands/init";
@@ -159,6 +160,30 @@ export async function run() {
     .description("Run environment + project sanity checks")
     .option("--json", "Emit machine-readable JSON")
     .action((options) => doctorCommand(options));
+
+  program
+    .command("customize [package]")
+    .description(
+      "Edit a package's override (deps, scripts, extra files) without opening the web builder",
+    )
+    .option(
+      "--add-dep <spec...>",
+      "Add a dependency. Format: name@version or name=version (e.g. zod@^4.0.0)",
+    )
+    .option("--add-dev-dep <spec...>", "Add a devDependency. Same format as --add-dep")
+    .option(
+      "--add-script <spec...>",
+      "Add a script. Format: name=command (e.g. bench=vitest bench)",
+    )
+    .option(
+      "--add-file <path...>",
+      "Add an extra file (created empty; edit content later via the builder)",
+    )
+    .option("--remove-dep <name...>", "Remove a dependency or devDependency by name")
+    .option("--remove-script <name...>", "Remove a script by name")
+    .option("--remove-file <path...>", "Remove an extra file by path")
+    .option("--list", "Show the current override without prompting")
+    .action((packageName, options) => customizeCommand(packageName, options));
 
   program
     .command("mcp")

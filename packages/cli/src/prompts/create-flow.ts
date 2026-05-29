@@ -318,6 +318,7 @@ export async function runCreatePrompts(
     apps.push({
       name: appName,
       type: appType as Preset["apps"][number]["type"],
+      location: "apps",
       port,
       i18n,
       consumes: [],
@@ -349,6 +350,7 @@ export async function runCreatePrompts(
     packages.push({
       name: "ui",
       type: "react-library",
+      location: "packages",
       producesCSS: true,
       exports: ["."],
     });
@@ -408,6 +410,7 @@ export async function runCreatePrompts(
       packages.push({
         name: pkgName,
         type: pkgType as Preset["packages"][number]["type"],
+        location: "packages",
         producesCSS,
         exports: ["."],
       });

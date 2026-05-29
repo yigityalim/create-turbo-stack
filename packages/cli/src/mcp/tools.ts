@@ -48,6 +48,10 @@ export function registerTools(server: McpServer, ctx: McpContext): void {
         const newApp: App = {
           name,
           type,
+          // MCP currently hardcodes the default workspace location. Exposing
+          // it as a tool argument is queued for the next iteration once we
+          // wire location autocomplete through the agent surface.
+          location: "apps",
           port,
           i18n: i18n ?? false,
           consumes: consumes ?? [],
@@ -80,6 +84,9 @@ export function registerTools(server: McpServer, ctx: McpContext): void {
         const newPkg: Package = {
           name,
           type,
+          // See `add_app` comment — location is currently hardcoded to the
+          // default workspace until the MCP surface exposes it as an arg.
+          location: "packages",
           producesCSS: producesCSS ?? false,
           exports: exports ?? ["."],
         };

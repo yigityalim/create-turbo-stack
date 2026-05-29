@@ -29,6 +29,15 @@ export async function createCommand(
 ) {
   let preset: Preset;
 
+  // Smart positional: if the project name matches a built-in preset AND no
+  // explicit `--preset` was given, treat it as the shortcut form
+  //   `npx create-turbo-stack@latest saas-starter`
+  // The web builder advertises this same form when the working preset hasn't
+  // diverged from a built-in, so the two paths stay in sync.
+  if (!options.preset && projectName && BUILTIN_PRESETS[projectName]) {
+    options.preset = projectName;
+  }
+
   if (options.preset) {
     // Resolve the preset: a built-in name (bundled, offline), a URL, or a path.
     let raw: string;

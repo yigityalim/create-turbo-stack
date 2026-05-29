@@ -26,10 +26,20 @@ export const BUILTIN_PRESETS: Record<string, unknown> = {
       rateLimit: "none",
       ai: "none",
       cache: "none",
-      envValidation: true,
+      envValidation: "t3-env",
     },
-    apps: [{ name: "web", type: "nextjs", port: 3000, i18n: false, consumes: ["ui"] }],
-    packages: [{ name: "ui", type: "react-library", producesCSS: true, exports: ["."] }],
+    apps: [
+      { name: "web", type: "nextjs", location: "apps", port: 3000, i18n: false, consumes: ["ui"] },
+    ],
+    packages: [
+      {
+        name: "ui",
+        type: "react-library",
+        location: "packages",
+        producesCSS: true,
+        exports: ["."],
+      },
+    ],
   },
   "saas-starter": {
     $schema: "https://create-turbo-stack.dev/schema/preset.json",
@@ -56,15 +66,35 @@ export const BUILTIN_PRESETS: Record<string, unknown> = {
       rateLimit: "none",
       ai: "none",
       cache: "upstash",
-      envValidation: true,
+      envValidation: "t3-env",
     },
     apps: [
-      { name: "web", type: "nextjs", port: 3000, i18n: true, consumes: ["ui", "api", "auth"] },
-      { name: "api", type: "nextjs-api-only", port: 3001, i18n: false, consumes: ["api", "auth"] },
+      {
+        name: "web",
+        type: "nextjs",
+        location: "apps",
+        port: 3000,
+        i18n: true,
+        consumes: ["ui", "api", "auth"],
+      },
+      {
+        name: "api",
+        type: "nextjs-api-only",
+        location: "apps",
+        port: 3001,
+        i18n: false,
+        consumes: ["api", "auth"],
+      },
     ],
     packages: [
-      { name: "ui", type: "react-library", producesCSS: true, exports: ["."] },
-      { name: "utils", type: "utils", producesCSS: false, exports: ["."] },
+      {
+        name: "ui",
+        type: "react-library",
+        location: "packages",
+        producesCSS: true,
+        exports: ["."],
+      },
+      { name: "utils", type: "utils", location: "packages", producesCSS: false, exports: ["."] },
     ],
   },
   "api-only": {
@@ -92,10 +122,21 @@ export const BUILTIN_PRESETS: Record<string, unknown> = {
       rateLimit: "upstash",
       ai: "none",
       cache: "upstash",
-      envValidation: true,
+      envValidation: "t3-env",
     },
-    apps: [{ name: "api", type: "hono-standalone", port: 3000, i18n: false, consumes: [] }],
-    packages: [{ name: "utils", type: "utils", producesCSS: false, exports: ["."] }],
+    apps: [
+      {
+        name: "api",
+        type: "hono-standalone",
+        location: "apps",
+        port: 3000,
+        i18n: false,
+        consumes: [],
+      },
+    ],
+    packages: [
+      { name: "utils", type: "utils", location: "packages", producesCSS: false, exports: ["."] },
+    ],
   },
 };
 

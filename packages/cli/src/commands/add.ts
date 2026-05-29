@@ -192,7 +192,14 @@ async function addApp(userConfig?: UserConfig, options: AddOptions = {}, name?: 
     return finalizeApp(
       cwd,
       config,
-      { name, type: appType, port, i18n: !!options.i18n, consumes },
+      {
+        name,
+        type: appType,
+        location: "apps",
+        port,
+        i18n: !!options.i18n,
+        consumes,
+      },
       userConfig,
       options,
     );
@@ -256,7 +263,14 @@ async function addApp(userConfig?: UserConfig, options: AddOptions = {}, name?: 
   return finalizeApp(
     cwd,
     config,
-    { name: appName, type: appType, port: Number(port), i18n, consumes },
+    {
+      name: appName,
+      type: appType,
+      location: "apps",
+      port: Number(port),
+      i18n,
+      consumes,
+    },
     userConfig,
     options,
   );
@@ -332,6 +346,7 @@ async function addPackage(userConfig?: UserConfig, options: AddOptions = {}, nam
       {
         name,
         type: pkgType,
+        location: "packages",
         producesCSS: options.css ?? (pkgType === "ui" || pkgType === "react-library"),
         exports: exports.length > 0 ? exports : ["."],
       },
@@ -379,7 +394,13 @@ async function addPackage(userConfig?: UserConfig, options: AddOptions = {}, nam
   return finalizePackage(
     cwd,
     config,
-    { name: pkgName, type: pkgType, producesCSS, exports: exports.length > 0 ? exports : ["."] },
+    {
+      name: pkgName,
+      type: pkgType,
+      location: "packages",
+      producesCSS,
+      exports: exports.length > 0 ? exports : ["."],
+    },
     targetApps,
     userConfig,
     options,
