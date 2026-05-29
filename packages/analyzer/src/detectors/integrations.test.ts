@@ -214,7 +214,7 @@ describe("detectIntegrations", () => {
       },
     });
     const r = await detectIntegrations(tmp);
-    expect(r.integrations.envValidation).toBe(true);
+    expect(r.integrations.envValidation).toBe("t3-env");
     expect(r.detections.envValidation.confidence).toBe("certain");
   });
 
@@ -225,13 +225,15 @@ describe("detectIntegrations", () => {
       },
     });
     const r = await detectIntegrations(tmp);
-    expect(r.integrations.envValidation).toBe(true);
+    // envValidation migrated from boolean → enum; detection now reports the
+    // provider name ("t3-env") instead of a presence flag.
+    expect(r.integrations.envValidation).toBe("t3-env");
   });
 
-  it("returns false envValidation when not found", async () => {
+  it("returns 'none' envValidation when not found", async () => {
     tmp = await createFixture({ "package.json": { name: "bare" } });
     const r = await detectIntegrations(tmp);
-    expect(r.integrations.envValidation).toBe(false);
+    expect(r.integrations.envValidation).toBe("none");
   });
 
   // Cross-package scanning

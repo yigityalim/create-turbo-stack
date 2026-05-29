@@ -84,10 +84,10 @@ describe("analyze() — MINIMAL fixture", () => {
     expect(preset.auth.provider).toBe("none");
   });
 
-  it("integrations.envValidation is false", async () => {
+  it("integrations.envValidation is 'none'", async () => {
     tmp = await createFixture(MINIMAL_FIXTURE);
     const { preset } = await analyze(tmp);
-    expect(preset.integrations.envValidation).toBe(false);
+    expect(preset.integrations.envValidation).toBe("none");
   });
 
   it("preset.name is set from root package.json name", async () => {
@@ -210,10 +210,10 @@ describe("analyze() — SAAS_FULL fixture", () => {
     expect(preset.integrations.ai).toBe("vercel-ai-sdk");
   });
 
-  it("preset.integrations.envValidation is true", async () => {
+  it("preset.integrations.envValidation is 't3-env'", async () => {
     tmp = await createFixture(SAAS_FULL_FIXTURE);
     const { preset } = await analyze(tmp);
-    expect(preset.integrations.envValidation).toBe(true);
+    expect(preset.integrations.envValidation).toBe("t3-env");
   });
 
   it("web app has i18n: true (next-intl present)", async () => {
@@ -302,7 +302,7 @@ describe("analyze() — API_ONLY fixture", () => {
     expect(preset.apps.find((a) => a.type === "hono-standalone")).toBeTruthy();
   });
 
-  it("integrations are all none/false for api-only project", async () => {
+  it("integrations are all 'none' for api-only project", async () => {
     tmp = await createFixture(API_ONLY_FIXTURE);
     const { preset } = await analyze(tmp);
     expect(preset.integrations.analytics).toBe("none");
@@ -310,7 +310,7 @@ describe("analyze() — API_ONLY fixture", () => {
     expect(preset.integrations.email).toBe("none");
     expect(preset.integrations.rateLimit).toBe("none");
     expect(preset.integrations.ai).toBe("none");
-    expect(preset.integrations.envValidation).toBe(false);
+    expect(preset.integrations.envValidation).toBe("none");
   });
 
   it("gitInit is always true", async () => {

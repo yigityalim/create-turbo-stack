@@ -28,6 +28,9 @@ export async function detectApps(
     apps.push({
       name,
       type: type.value as App["type"],
+      // Analyzer is currently single-location (apps/); the user can move the
+      // app later by editing `location` in the generated preset.
+      location: "apps",
       port,
       i18n,
       consumes,

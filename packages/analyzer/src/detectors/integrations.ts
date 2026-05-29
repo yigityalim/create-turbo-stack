@@ -27,7 +27,9 @@ export async function detectIntegrations(root: string): Promise<{
       rateLimit: rateLimit.value as Integrations["rateLimit"],
       ai: ai.value as Integrations["ai"],
       cache: cache.value as Integrations["cache"],
-      envValidation: envValidation.value === "true",
+      // envValidation migrated from boolean → enum: "true" → "t3-env" (the
+      // only provider we currently scaffold) and anything else → "none".
+      envValidation: envValidation.value === "true" ? "t3-env" : "none",
     },
     detections: {
       analytics,

@@ -40,6 +40,9 @@ export async function detectPackages(
     packages.push({
       name,
       type: type.value as Package["type"],
+      // Analyzer reads `packages/<name>/` so this is always "packages" today.
+      // Multi-location detection lives on the wider analyzer-rewrite track.
+      location: "packages",
       producesCSS,
       exports,
     });
