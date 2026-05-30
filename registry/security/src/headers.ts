@@ -39,7 +39,7 @@ export function contentSecurityPolicy(): string {
  *
  * ```ts
  * // next.config.ts
- * import { securityHeadersConfig } from "@scope/security";
+ * import { securityHeadersConfig } from "{{scope}}/security";
  * export default { async headers() { return securityHeadersConfig(); } };
  * ```
  */

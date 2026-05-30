@@ -24,6 +24,11 @@ export type {
   MaterializeResult,
 } from "./materialize.js";
 export { materializeRegistryItem } from "./materialize.js";
+export type { ResolveContext, ResolveOutput } from "./resolve.js";
+export {
+  indexItemsBySlotVariant,
+  resolveRegistryItems,
+} from "./resolve.js";
 export type { ItemRequest } from "./select.js";
 export { selectRegistryItems } from "./select.js";
 export type {

@@ -22,6 +22,26 @@ export {
   type PresetMigration,
   registerPresetMigration,
 } from "./migrations";
+// Registry-first rendering pipeline. Mirrors browser.ts exports — Node-side
+// consumers get the same surface so cts add / cts customize and the
+// resolver hook all go through one substituter.
+export {
+  type ItemRequest,
+  indexItemsBySlotVariant,
+  KNOWN_PLACEHOLDERS,
+  type KnownPlaceholder,
+  type MaterializeContext,
+  type MaterializeDiagnostic,
+  type MaterializeOptions,
+  type MaterializeResult,
+  materializeRegistryItem,
+  type ResolveContext,
+  type ResolveOutput,
+  resolveRegistryItems,
+  type SubstitutionContext,
+  selectRegistryItems,
+  substituteRegistryItem,
+} from "./registry";
 // Registry supply-chain integrity
 export {
   canonicalizeItem,

@@ -1,4 +1,4 @@
-import { randomToken, sha256 } from "@scope/crypto";
+import { randomToken, sha256 } from "{{scope}}/crypto";
 
 /** A new opaque, secure session id (256 bits of entropy, hex). */
 export function createSessionId(): string {

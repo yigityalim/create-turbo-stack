@@ -40,10 +40,11 @@ export {
   type PresetMigration,
   registerPresetMigration,
 } from "./migrations";
-// Registry-first rendering pipeline (Phase 2 — not yet wired into the
+// Registry-first rendering pipeline (Phase 2 + 3a — not yet wired into the
 // resolver; exported here for the web builder and tests to consume early).
 export {
   type ItemRequest,
+  indexItemsBySlotVariant,
   KNOWN_PLACEHOLDERS,
   type KnownPlaceholder,
   type MaterializeContext,
@@ -51,6 +52,9 @@ export {
   type MaterializeOptions,
   type MaterializeResult,
   materializeRegistryItem,
+  type ResolveContext,
+  type ResolveOutput,
+  resolveRegistryItems,
   type SubstitutionContext,
   selectRegistryItems,
   substituteRegistryItem,

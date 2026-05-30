@@ -1,6 +1,6 @@
 import * as p from "@clack/prompts";
-import type { getLinter } from "@create-turbo-stack/core";
-import type { FileTreeNode, PackageRegistryItem } from "@create-turbo-stack/schema";
+import { type getLinter, substituteRegistryItem } from "@create-turbo-stack/core";
+import type { FileTreeNode, PackageManager, PackageRegistryItem } from "@create-turbo-stack/schema";
 import pc from "picocolors";
 import { depPackageName, parseDep, type ResolvedItem } from "./resolve";
 
@@ -102,6 +102,12 @@ export function materializeItem(
   item: PackageRegistryItem,
   scope: string,
   linter: ReturnType<typeof getLinter>,
+  /**
+   * Package manager — only used by `{{pm-*}}` placeholders inside item
+   * sources. Optional with a `"bun"` default because add-on items rarely
+   * embed PM commands (they're libraries, not config files).
+   */
+  pm: PackageManager = "bun",
 ): FileTreeNode[] {
   const base = `packages/${item.name}`;
   const nodes: FileTreeNode[] = [];
@@ -172,11 +178,19 @@ export function materializeItem(
 
   for (const f of linter.packageConfigFiles(base)) nodes.push(f);
 
+  // Substitution context for the registry-first placeholder pipeline. The
+  // closed vocabulary covers {{scope}}, {{pkg-name}}, {{pkg-import}}, plus
+  // {{pm-*}} for the rare add-on that embeds a PM command.
+  const ctx = { scope, pkgName: item.name, pm } as const;
+
   for (const file of item.files) {
     const target = file.target ?? file.path;
-    // `@scope/` is the placeholder for sibling registry packages → rewrite
-    // to the project's actual scope (e.g. `@my-app/`).
-    const content = (file.content ?? "").replaceAll("@scope/", `${scope}/`);
+    // Run the closed-vocabulary substituter first, then fall back to the
+    // legacy `@scope/` rewrite for items still using the pre-unification
+    // syntax. The fallback is a deprecation window — once every shipped
+    // item is on `{{scope}}` we'll delete this line.
+    const substituted = substituteRegistryItem(file.content ?? "", ctx);
+    const content = substituted.replaceAll("@scope/", `${scope}/`);
     nodes.push({ path: `${base}/${target}`, content, isDirectory: false });
   }
 

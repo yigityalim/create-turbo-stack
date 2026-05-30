@@ -84,8 +84,9 @@ package. Just drop a new folder with a `registry-item.json` and it's in.
 ### Composing packages (`registryDependencies`)
 
 A package can build on another. Declare the dependency and import siblings
-through the **`@scope/` placeholder** — `cts add` rewrites it to the user's
-real scope (`@their-project/`) on write and wires `workspace:*` automatically.
+through the **`{{scope}}` placeholder** — the resolver rewrites it to the
+user's real scope (`@their-project/`) on materialize and wires
+`workspace:*` automatically.
 
 ```jsonc
 // registry/session/registry-item.json
@@ -94,11 +95,16 @@ real scope (`@their-project/`) on write and wires `workspace:*` automatically.
 
 ```ts
 // registry/session/src/index.ts
-import { randomToken, sha256 } from "@scope/crypto"; // ← @scope/, not a real pkg
+import { randomToken, sha256 } from "{{scope}}/crypto"; // ← placeholder, substituted at install
 ```
 
-`cts add session` pulls `crypto` first, writes both packages, and the session
-package.json gets `"@their-project/crypto": "workspace:*"`.
+`cts add session` pulls `crypto` first, writes both packages, and the
+session package.json gets `"@their-project/crypto": "workspace:*"`.
+
+> **Note on `@scope/`** — older versions of this guide used `@scope/` as the
+> sibling-import placeholder. That's been unified onto `{{scope}}` so add-on
+> and slot-filling items share one substitution vocabulary. Existing items
+> are migrated; new items use `{{scope}}` exclusively.
 
 **Runtime sharing rule:** if your package consumes a Web-API source package
 (e.g. one with `lib: ["ES2022","WebWorker"]`), declare the same `lib` so the
@@ -144,8 +150,8 @@ bun install && bun run type-check
 
 ## Checklist for a new package
 
-1. `registry/<name>/src/*.ts` — write the working source. Use `@scope/<dep>`
-   for any sibling registry import.
+1. `registry/<name>/src/*.ts` — write the working source. Use
+   `{{scope}}/<dep>` for any sibling registry import.
 2. `registry/<name>/registry-item.json` — manifest: `name`, `description`,
    `exports` (one per file you expose), `dependencies`, and `environment`/`lib`
    only if needed. Add `docs` and `categories`.
@@ -157,7 +163,7 @@ bun install && bun run type-check
 
 - `security/` — Web-API (`lib: WebWorker`), multiple exports, no deps.
 - `crypto/` — Web Crypto helpers, multiple exports.
-- `session/` — composes `crypto` via `registryDependencies` + `@scope/` import.
+- `session/` — composes `crypto` via `registryDependencies` + `{{scope}}/` import.
 
 For a `node`-environment package and the private/signed flow, the same manifest
 shape applies — set `"environment": "node"` and serve it from a gated registry.
