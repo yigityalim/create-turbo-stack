@@ -52,6 +52,41 @@ export type PackageBuildMode = z.infer<typeof PackageBuildModeSchema>;
 export const PackageEnvironmentSchema = z.enum(["node", "browser", "universal"]);
 export type PackageEnvironment = z.infer<typeof PackageEnvironmentSchema>;
 
+/**
+ * Slot an item fills inside a preset. Drives the registry-first
+ * resolver: when the preset says `database.strategy = "drizzle"` +
+ * `driver = "postgres"`, the engine looks for the item with
+ * `slot: "db"` and `variant: "drizzle-postgres"`.
+ *
+ * Items WITHOUT a slot (the default) are "add-ons" — pure `cts add`
+ * targets like the existing `crypto` / `security` / `session` packages.
+ * Items WITH a slot are "first-party": engine pulls them in based on
+ * preset choices, never via `cts add`.
+ *
+ * `app` covers framework skeletons (Next.js, Expo, SvelteKit, …), one
+ * per `App["type"]`. `auth`, `db`, `api`, `env`, and the optional
+ * integrations (`email`, `monitoring`, `analytics`, `rate-limit`, `ai`,
+ * `cache`) cover their matching preset slots — the variant identifies
+ * the specific provider/driver inside the slot. `typescript-config`
+ * and `ui` are structural slots not driven by an enum.
+ */
+export const PackageSlotSchema = z.enum([
+  "app",
+  "auth",
+  "db",
+  "api",
+  "env",
+  "email",
+  "monitoring",
+  "analytics",
+  "rate-limit",
+  "ai",
+  "cache",
+  "typescript-config",
+  "ui",
+]);
+export type PackageSlot = z.infer<typeof PackageSlotSchema>;
+
 export const PackageRegistryItemSchema = z.object({
   $schema: z.string().optional(),
   name: z
@@ -91,6 +126,23 @@ export const PackageRegistryItemSchema = z.object({
   environment: PackageEnvironmentSchema.optional(),
   /** Internal (source export) by default; "tsup" for publishable packages. */
   build: PackageBuildModeSchema.default("none"),
+  /**
+   * Preset slot this item fills (first-party items only — leave unset for
+   * `cts add` add-ons). See `PackageSlotSchema`.
+   */
+  slot: PackageSlotSchema.optional(),
+  /**
+   * Variant within the slot. The engine resolves a preset to an item by
+   * matching `(slot, variant)` to the preset's enum value — e.g.
+   * `auth.provider = "better-auth"` → look for `slot: "auth", variant:
+   * "better-auth"`. For app slots, variant matches `App["type"]`. For
+   * `typescript-config` / structural slots that have no enum, omit.
+   * Kebab-case.
+   */
+  variant: z
+    .string()
+    .regex(/^[a-z0-9][a-z0-9-]*$/, "variant must be kebab-case")
+    .optional(),
   /** Browse-page grouping labels, e.g. ["security", "auth"]. */
   categories: z.array(z.string()).default([]),
   /** Markdown usage note printed after `cts add` and shown on the browse page. */

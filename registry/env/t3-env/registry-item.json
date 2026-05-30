@@ -1,0 +1,22 @@
+{
+  "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
+  "name": "env-t3",
+  "type": "registry:package",
+  "slot": "env",
+  "variant": "t3-env",
+  "title": "Env (t3-env)",
+  "description": "Type-safe environment variables via @t3-oss/env-nextjs. Validates server and client env at boot, fails loudly on missing or malformed values. The generated `env` package becomes the single import path the rest of the workspace reads from — never `process.env` directly.",
+  "author": "create-turbo-stack",
+  "dependencies": ["@t3-oss/env-nextjs", "zod"],
+  "exports": ["."],
+  "environment": "universal",
+  "categories": ["foundation"],
+  "docs": "Set the values listed in `.env.example` (the file `cts` appended on install) inside a real `.env.local` at the repo root. The validated env is available as `import { env } from \"{{scope}}/env\"` from anywhere in the workspace.",
+  "files": [
+    {
+      "path": "src/index.ts",
+      "type": "registry:source",
+      "target": "src/index.ts"
+    }
+  ]
+}
