@@ -40,6 +40,21 @@ export {
   type PresetMigration,
   registerPresetMigration,
 } from "./migrations";
+// Registry-first rendering pipeline (Phase 2 — not yet wired into the
+// resolver; exported here for the web builder and tests to consume early).
+export {
+  type ItemRequest,
+  KNOWN_PLACEHOLDERS,
+  type KnownPlaceholder,
+  type MaterializeContext,
+  type MaterializeDiagnostic,
+  type MaterializeOptions,
+  type MaterializeResult,
+  materializeRegistryItem,
+  type SubstitutionContext,
+  selectRegistryItems,
+  substituteRegistryItem,
+} from "./registry";
 // Runtime template registry (plugins ship inline templates here)
 export {
   getRegisteredTemplates,

@@ -278,6 +278,34 @@ generated `env` package, say), declare it via `registryDependencies` and
 import via `{{scope}}/<sibling>`. The resolver guarantees the sibling lands
 first.
 
+## Integration items — one template, six slots
+
+`email/`, `monitoring/`, `analytics/`, `rate-limit/`, `ai/`, `cache/` all
+follow the **same recipe** — they're optional integrations the user picks
+via `preset.integrations.<category>`. There is no per-slot README for these
+because the shape is identical; the only thing that changes is which
+provider's SDK you're wrapping.
+
+Recipe for any integration item (`<slot>/<variant>/`):
+
+1. `slot: "<one of email|monitoring|analytics|rate-limit|ai|cache>"`,
+   `variant: "<provider-name>"` (e.g. `"resend"`, `"sentry"`, `"posthog"`).
+2. Expose a small, single-purpose API from `<scope>/<slot>`:
+   - `email` → `sendEmail({ to, subject, react })`
+   - `monitoring` → SDK init at boot + a `captureException` helper
+   - `analytics` → `capture(event, props)` server + client wrappers
+   - `rate-limit` → configured `ratelimit` instance + `withRateLimit` HOF
+   - `ai` → configured client + a streaming route handler example
+   - `cache` → configured client + `cached(key, ttl, fn)` helper
+3. Declare provider secrets in `envVars` (e.g. `{ "RESEND_API_KEY": "re_…" }`).
+4. `registryDependencies: ["env-t3"]` always — these items read env.
+5. `environment: "node"` for HTTP-client based providers (most of them);
+   `"universal"` only for edge-compatible clients like Upstash REST.
+
+If a registry author finds themselves wanting to extend the manifest or
+introduce a new placeholder for an integration item, that's the signal to
+pause and reach out — these slots are deliberately uniform.
+
 ## Authoring checklist for an agent
 
 Given a slot and a variant (e.g. "write `auth/better-auth`"):
