@@ -1,4 +1,10 @@
-import type { FileTreeNode, Package, PackageOverride, Preset } from "@create-turbo-stack/schema";
+import type {
+  FileTreeNode,
+  Package,
+  PackageOverride,
+  PackageRegistryItem,
+  Preset,
+} from "@create-turbo-stack/schema";
 import { integrationPackageName } from "@create-turbo-stack/schema";
 import {
   activeProvider,
@@ -6,6 +12,8 @@ import {
   INTEGRATION_CATEGORIES,
   type IntegrationCategory,
 } from "../../integrations";
+import { materializeAsAutoPackage } from "../../registry/package-adapter";
+import { selectRegistryItems } from "../../registry/select";
 import { packageDirOf } from "../../utils/package-path";
 import { substitutePm } from "../../wiring/pm";
 import { buildPackageContext } from "./base";
@@ -35,14 +43,46 @@ const CATEGORY_BY_PACKAGE: Record<string, IntegrationCategory> = Object.fromEntr
  * Any `preset.packageOverrides[pkg.name]` is applied as a final pass — see
  * `applyPackageOverride` for the merge rules.
  */
-export function resolvePackageFiles(preset: Preset, pkg: Package): FileTreeNode[] {
+export function resolvePackageFiles(
+  preset: Preset,
+  pkg: Package,
+  /**
+   * Available registry items keyed by `(slot, variant)`. When a request from
+   * `selectRegistryItems(preset)` matches one of these, the resolver uses the
+   * registry-first path (rules from engine + content from item) instead of
+   * the Eta path. Defaults to empty for callers that haven't migrated yet —
+   * behaviour stays identical to before in that case.
+   */
+  items: ReadonlyArray<PackageRegistryItem> = [],
+): FileTreeNode[] {
   const base = packageDirOf(pkg);
-  const nodes = resolveBaseNodes(preset, pkg, base);
+  const nodes = resolveBaseNodes(preset, pkg, base, items);
   const override = preset.packageOverrides?.[pkg.name];
   return override ? applyPackageOverride(nodes, base, override, preset) : nodes;
 }
 
-function resolveBaseNodes(preset: Preset, pkg: Package, base: string): FileTreeNode[] {
+function resolveBaseNodes(
+  preset: Preset,
+  pkg: Package,
+  base: string,
+  items: ReadonlyArray<PackageRegistryItem>,
+): FileTreeNode[] {
+  // Registry-first path. Look up the (slot, variant) request that maps to
+  // this package — when a matching item is in `items`, materialize it
+  // through the adapter. Eta fallback runs only when no item is available
+  // for this slot, so we can migrate one slot at a time without breaking
+  // presets that touch slots we haven't moved yet.
+  if (items.length > 0) {
+    const request = selectRegistryItems(preset).find((r) => r.pkgName === pkg.name);
+    if (request) {
+      const item = items.find((i) => i.slot === request.slot && i.variant === request.variant);
+      if (item) {
+        return materializeAsAutoPackage(preset, pkg, base, item);
+      }
+    }
+  }
+
+  // Eta fallback — exact same dispatch the engine has always used.
   if (pkg.name === "typescript-config") return resolveTypescriptConfigPackage(preset, base);
   if (pkg.name === "env") return resolveEnvPackage(preset, pkg, base);
 
