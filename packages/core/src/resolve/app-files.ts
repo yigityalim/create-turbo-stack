@@ -1,11 +1,8 @@
-import type { App, FileTreeNode, Preset } from "@create-turbo-stack/schema";
-import { renderSourceFiles } from "../render/render-source";
+import type { App, FileTreeNode, PackageRegistryItem, Preset } from "@create-turbo-stack/schema";
+import { materializeAsApp } from "../registry/app-adapter";
+import { selectRegistryItems } from "../registry/select";
 import { appDirOf } from "../utils/package-path";
-import { computeCssSourceMap } from "../wiring/css-source";
-import { getLinter } from "../wiring/linters";
-import { computeWorkspaceRefs } from "../wiring/workspace-refs";
-import { getAppTypeDefinition, listSupportedAppTypes } from "./app-types";
-import { toJsonFile } from "./manifest-types";
+import { listSupportedAppTypes } from "./app-types";
 
 /**
  * App types that have a registered scaffold implementation.
@@ -33,56 +30,25 @@ export class UnsupportedAppTypeError extends Error {
 }
 
 /**
- * Resolve the FileTreeNode[] for a single app by dispatching to the
- * registered AppTypeDefinition. Common boilerplate (workspace refs,
- * css source map, package.json + tsconfig writes) lives here so plugin
- * code stays minimal.
+ * Resolve the FileTreeNode[] for a single app. Looks up the
+ * (slot: "app", variant: app.type) request in `items` and materializes
+ * through `materializeAsApp`. When no matching item is provided, the app
+ * produces no files — the registry-first migration is complete and there's
+ * no Eta fallback left to serve content.
  */
-export function resolveAppFiles(preset: Preset, app: App): FileTreeNode[] {
-  const def = getAppTypeDefinition(app.type);
-  if (!def) throw new UnsupportedAppTypeError(app.type, app.name);
+export function resolveAppFiles(
+  preset: Preset,
+  app: App,
+  items: ReadonlyArray<PackageRegistryItem> = [],
+): FileTreeNode[] {
+  // Match the selector's app request to the available items.
+  const request = selectRegistryItems(preset).find(
+    (r) => r.slot === "app" && r.pkgName === app.name,
+  );
+  if (!request) return [];
+  const item = items.find((i) => i.slot === request.slot && i.variant === request.variant);
+  if (!item) return [];
 
   const base = appDirOf(app);
-  const scope = preset.basics.scope;
-  const workspaceRefs = computeWorkspaceRefs(preset);
-  const appRefs = workspaceRefs[app.name] ?? {};
-  const cssSourceMap = computeCssSourceMap(preset);
-  const cssDirectives = cssSourceMap[app.name] ?? [];
-
-  const ctx = { base, scope, appRefs, cssDirectives };
-  const nodes: FileTreeNode[] = [];
-
-  // Linter wiring is centralized here, not in each app type: inject the
-  // lint script + linter devDep + per-package config so every framework
-  // stays consistent and app types describe only their own toolchain.
-  const linter = getLinter(preset.basics.linter);
-  const pkgJson = def.buildPackageJson(preset, app, ctx);
-  pkgJson.scripts = { ...pkgJson.scripts, lint: linter.lintScript };
-  pkgJson.devDependencies = { ...pkgJson.devDependencies, ...linter.packageDevDeps };
-
-  nodes.push({
-    path: `${base}/package.json`,
-    content: toJsonFile(pkgJson),
-    isDirectory: false,
-  });
-
-  nodes.push({
-    path: `${base}/tsconfig.json`,
-    content: toJsonFile(def.buildTsconfig(preset, app, ctx)),
-    isDirectory: false,
-  });
-
-  nodes.push(...linter.packageConfigFiles(base));
-
-  // Templated source files
-  nodes.push(
-    ...renderSourceFiles(def.templateCategory, base, def.buildTemplateContext(preset, app, ctx)),
-  );
-
-  // Optional extras
-  if (def.buildExtraFiles) {
-    nodes.push(...def.buildExtraFiles(preset, app, ctx));
-  }
-
-  return nodes;
+  return materializeAsApp(preset, app, base, item);
 }

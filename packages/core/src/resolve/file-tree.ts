@@ -47,7 +47,7 @@ export function resolveFileTree(
   }
 
   for (const app of preset.apps) {
-    nodes.push(...resolveAppFiles(preset, app));
+    nodes.push(...resolveAppFiles(preset, app, items));
   }
 
   // Strip content if not needed (preview mode)

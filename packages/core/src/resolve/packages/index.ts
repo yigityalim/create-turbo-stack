@@ -5,40 +5,22 @@ import type {
   PackageRegistryItem,
   Preset,
 } from "@create-turbo-stack/schema";
-import { integrationPackageName } from "@create-turbo-stack/schema";
-import {
-  activeProvider,
-  getIntegration,
-  INTEGRATION_CATEGORIES,
-  type IntegrationCategory,
-} from "../../integrations";
 import { materializeAsAutoPackage } from "../../registry/package-adapter";
 import { selectRegistryItems } from "../../registry/select";
 import { packageDirOf } from "../../utils/package-path";
 import { substitutePm } from "../../wiring/pm";
-import { buildPackageContext } from "./base";
-import {
-  resolveEnvPackage,
-  resolveGenericPackage,
-  resolveTypescriptConfigPackage,
-} from "./builtins";
+import { resolveGenericPackage } from "./generic";
 
 /**
- * Package name → integration category. Inverts the shared package-name map
- * (so monitoring→errorTracking, rate-limit→rateLimit, db→database) — when a
- * package has a matching active provider, that provider's `resolvePackageFiles`
- * owns the scaffold, with no per-package switch to maintain.
- */
-const CATEGORY_BY_PACKAGE: Record<string, IntegrationCategory> = Object.fromEntries(
-  INTEGRATION_CATEGORIES.map((category) => [integrationPackageName(category), category]),
-);
-
-/**
- * Resolve files for a single package. Dispatch order:
- *   1. typescript-config / env — structural built-ins, no provider
- *   2. provider-backed auto-packages (db, api, auth, analytics, ...)
- *      delegate to the active integration's resolvePackageFiles
- *   3. everything else is a plain user package
+ * Resolve files for a single package via the registry path. The
+ * `selectRegistryItems(preset)` request for this package is looked up in
+ * `items`; the matching item (if any) is materialized through the
+ * `materializeAsAutoPackage` adapter. User-declared packages that don't have
+ * a slot request (plain libraries, UI packages, …) fall through to the
+ * generic package builder — just package.json + tsconfig, no Eta. Items
+ * that selectRegistryItems requests but `items` doesn't contain produce no
+ * files; the caller (CLI / web) is responsible for surfacing missing slot
+ * coverage.
  *
  * Any `preset.packageOverrides[pkg.name]` is applied as a final pass — see
  * `applyPackageOverride` for the merge rules.
@@ -46,13 +28,6 @@ const CATEGORY_BY_PACKAGE: Record<string, IntegrationCategory> = Object.fromEntr
 export function resolvePackageFiles(
   preset: Preset,
   pkg: Package,
-  /**
-   * Available registry items keyed by `(slot, variant)`. When a request from
-   * `selectRegistryItems(preset)` matches one of these, the resolver uses the
-   * registry-first path (rules from engine + content from item) instead of
-   * the Eta path. Defaults to empty for callers that haven't migrated yet —
-   * behaviour stays identical to before in that case.
-   */
   items: ReadonlyArray<PackageRegistryItem> = [],
 ): FileTreeNode[] {
   const base = packageDirOf(pkg);
@@ -67,36 +42,25 @@ function resolveBaseNodes(
   base: string,
   items: ReadonlyArray<PackageRegistryItem>,
 ): FileTreeNode[] {
-  // Registry-first path. Look up the (slot, variant) request that maps to
-  // this package — when a matching item is in `items`, materialize it
-  // through the adapter. Eta fallback runs only when no item is available
-  // for this slot, so we can migrate one slot at a time without breaking
-  // presets that touch slots we haven't moved yet.
-  if (items.length > 0) {
-    const request = selectRegistryItems(preset).find((r) => r.pkgName === pkg.name);
-    if (request) {
-      const item = items.find((i) => i.slot === request.slot && i.variant === request.variant);
-      if (item) {
-        return materializeAsAutoPackage(preset, pkg, base, item);
-      }
+  // selectRegistryItems emits a request for every auto-package the preset
+  // implies (env, db, auth, …). If this package matches one of those
+  // requests, route through the registry adapter — that's the only source
+  // of auto-package content now that Eta is gone.
+  const request = selectRegistryItems(preset).find((r) => r.pkgName === pkg.name);
+  if (request) {
+    const item = items.find((i) => i.slot === request.slot && i.variant === request.variant);
+    if (item) {
+      return materializeAsAutoPackage(preset, pkg, base, item);
     }
+    // Missing item for a slot the preset implies. Return empty so the
+    // package directory simply doesn't exist; surfacing this hole is the
+    // caller's job (the CLI reports `unmet` via `resolveRegistryItems`).
+    return [];
   }
 
-  // Eta fallback — exact same dispatch the engine has always used.
-  if (pkg.name === "typescript-config") return resolveTypescriptConfigPackage(preset, base);
-  if (pkg.name === "env") return resolveEnvPackage(preset, pkg, base);
-
-  const category = CATEGORY_BY_PACKAGE[pkg.name];
-  if (category) {
-    const provider = activeProvider(preset, category);
-    if (provider) {
-      const integration = getIntegration(category, provider);
-      if (integration?.resolvePackageFiles) {
-        return integration.resolvePackageFiles(preset, buildPackageContext(preset, pkg, base));
-      }
-    }
-  }
-
+  // No slot request — this is a user-declared package. Engine still emits
+  // its package.json + tsconfig boilerplate so the workspace stays
+  // consistent; the user fills in `src/` themselves.
   return resolveGenericPackage(preset, pkg, base);
 }
 
