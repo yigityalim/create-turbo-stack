@@ -40,9 +40,14 @@ export {
   type PresetMigration,
   registerPresetMigration,
 } from "./migrations";
-// Registry-first rendering pipeline (Phase 2 + 3a — not yet wired into the
-// resolver; exported here for the web builder and tests to consume early).
+// Registry-first rendering pipeline. The web builder imports
+// BUILTIN_REGISTRY_ITEMS and passes it to resolveFileTree so slots with
+// shipped items materialize through the registry path; slots without items
+// keep going through Eta. Browser-safe — the bundle is a pure data constant
+// generated at build time, no fs imports.
 export {
+  BUILTIN_REGISTRY_ITEM_COUNT,
+  BUILTIN_REGISTRY_ITEMS,
   type ItemRequest,
   indexItemsBySlotVariant,
   KNOWN_PLACEHOLDERS,

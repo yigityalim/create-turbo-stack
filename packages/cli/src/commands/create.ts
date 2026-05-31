@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import * as p from "@clack/prompts";
 import {
+  BUILTIN_REGISTRY_ITEMS,
   computeCatalog,
   computeCssSourceMap,
   migratePreset,
@@ -112,7 +113,13 @@ export async function createCommand(
   s.start("Generating project files");
   let tree: FileTree;
   try {
-    tree = resolveFileTree(validated);
+    // Pass the bundled registry items so slot-filling items take precedence
+    // over the Eta path. Slots WITHOUT a matching item still go through Eta
+    // until their item ships — back-compat is total.
+    tree = resolveFileTree(validated, {
+      includeContent: true,
+      items: BUILTIN_REGISTRY_ITEMS,
+    });
   } catch (err) {
     s.stop("Generation failed");
     if (err instanceof UnsupportedAppTypeError) {

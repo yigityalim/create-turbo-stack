@@ -26,6 +26,8 @@ export {
 // consumers get the same surface so cts add / cts customize and the
 // resolver hook all go through one substituter.
 export {
+  BUILTIN_REGISTRY_ITEM_COUNT,
+  BUILTIN_REGISTRY_ITEMS,
   type ItemRequest,
   indexItemsBySlotVariant,
   KNOWN_PLACEHOLDERS,

@@ -17,6 +17,10 @@
  * these, one slot at a time.
  */
 
+export {
+  BUILTIN_REGISTRY_ITEM_COUNT,
+  BUILTIN_REGISTRY_ITEMS,
+} from "./builtin-items.js";
 export type {
   MaterializeContext,
   MaterializeDiagnostic,
