@@ -2,7 +2,6 @@ import { defineAppType } from "./types";
 
 export const honoStandaloneAppType = defineAppType({
   type: "hono-standalone",
-  templateCategory: "app/hono-standalone",
 
   buildPackageJson(_preset, app, { scope, appRefs }) {
     const deps: Record<string, string> = {
@@ -43,14 +42,6 @@ export const honoStandaloneAppType = defineAppType({
       },
       include: ["src/**/*"],
       exclude: ["node_modules", "dist"],
-    };
-  },
-
-  buildTemplateContext(preset, app, { scope }) {
-    return {
-      app,
-      scope,
-      api: preset.api,
     };
   },
 });

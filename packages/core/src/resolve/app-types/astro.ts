@@ -2,7 +2,6 @@ import { defineAppType } from "./types";
 
 export const astroAppType = defineAppType({
   type: "astro",
-  templateCategory: "app/astro",
 
   buildPackageJson(preset, app, { appRefs }) {
     const hasReactPackages = app.consumes.some((c) =>
@@ -52,17 +51,6 @@ export const astroAppType = defineAppType({
       extends: "astro/tsconfigs/strict",
       include: [".astro/types.d.ts", "**/*"],
       exclude: ["dist"],
-    };
-  },
-
-  buildTemplateContext(preset, app, { scope }) {
-    const hasReactPackages = app.consumes.some((c) =>
-      preset.packages.some((p) => p.name === c && (p.type === "ui" || p.type === "react-library")),
-    );
-    return {
-      app,
-      scope,
-      hasReactPackages,
     };
   },
 });

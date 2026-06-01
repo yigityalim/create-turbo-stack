@@ -113,9 +113,10 @@ export async function createCommand(
   s.start("Generating project files");
   let tree: FileTree;
   try {
-    // Pass the bundled registry items so slot-filling items take precedence
-    // over the Eta path. Slots WITHOUT a matching item still go through Eta
-    // until their item ships — back-compat is total.
+    // Registry-only pipeline: each slot's content comes from a built-in
+    // item. Slots without a matching item produce empty output — there's
+    // no Eta fallback anymore. Missing items are a registry bug, not a
+    // runtime degradation.
     tree = resolveFileTree(validated, {
       includeContent: true,
       items: BUILTIN_REGISTRY_ITEMS,

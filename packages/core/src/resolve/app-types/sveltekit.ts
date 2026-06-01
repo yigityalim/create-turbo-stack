@@ -2,7 +2,6 @@ import { defineAppType } from "./types";
 
 export const sveltekitAppType = defineAppType({
   type: "sveltekit",
-  templateCategory: "app/sveltekit",
 
   buildPackageJson(_preset, app, { appRefs }) {
     const deps: Record<string, string> = {
@@ -56,13 +55,6 @@ export const sveltekitAppType = defineAppType({
         strict: true,
         moduleResolution: "bundler",
       },
-    };
-  },
-
-  buildTemplateContext(_preset, app, { scope }) {
-    return {
-      app,
-      scope,
     };
   },
 });

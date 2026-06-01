@@ -12,16 +12,18 @@
  *   2. Copy this file to `app-types/<framework>.ts` and rename the
  *      exported value (e.g. `nuxtAppType`).
  *
- *   3. Implement the three `build*` methods. Common context is
+ *   3. Implement the two `build*` methods. Common context is
  *      pre-computed for you in `AppResolveContext`:
  *      - `base`           absolute output directory (e.g. "apps/web")
  *      - `scope`           preset basics scope (e.g. "@my-saas")
  *      - `appRefs`         workspace deps the app `consumes`
  *      - `cssDirectives`   `@source` lines for Tailwind 4 CSS
  *
- *   4. Create `.eta` source templates in
- *      `packages/templates/src/app/<framework>/` then run
- *      `bun run build:templates` to regenerate `templates-map.ts`.
+ *   4. Ship the framework's source files as a registry item under
+ *      `registry/apps/<framework>/<variant>/` with `slot: "app"` and
+ *      `variant: "<framework>"`. The item's `files[]` becomes the
+ *      app's source tree; this file owns the package.json + tsconfig
+ *      rules around it.
  *
  *   5. Append the new export to `BUILT_IN_APP_TYPES` in
  *      `app-types/index.ts`. Order matters only for prompt display.
@@ -39,7 +41,6 @@ import { defineAppType } from "./types";
 export const templateAppType = defineAppType({
   // ── Identity ──────────────────────────────────────────────────────
   type: "tauri", // ← real schema enum value; must exist in AppTypeSchema
-  templateCategory: "app/tauri", // ← matches packages/templates/src/<this>/
 
   // ── package.json ──────────────────────────────────────────────────
   // Note: the `lint` script, linter devDep, and any per-package linter
@@ -83,18 +84,9 @@ export const templateAppType = defineAppType({
     };
   },
 
-  // ── Template context ──────────────────────────────────────────────
-  // Variables here are available in your .eta templates as `it.*`.
-  // Keep this minimal — only what your templates actually read.
-  buildTemplateContext(_preset, app, { cssDirectives }) {
-    return {
-      app,
-      wiring: { cssSourceDirectives: cssDirectives },
-    };
-  },
-
-  // ── Optional: extra files outside the templated directory ─────────
-  // Use only when a file genuinely doesn't fit as a .eta template.
+  // ── Optional: extra files outside the registry item's source ─────
+  // Use only when a file genuinely can't be expressed as a static
+  // registry-item source file (e.g. generated platform configs).
   // buildExtraFiles(preset, app, { base }) {
   //   return [{ path: `${base}/some-config.toml`, content: "...", isDirectory: false }];
   // },

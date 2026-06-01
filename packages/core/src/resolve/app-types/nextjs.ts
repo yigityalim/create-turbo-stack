@@ -1,13 +1,13 @@
 import { defineAppType } from "./types";
 
 /**
- * Next.js app (full-stack) and Next.js API-only variant share the same shape;
- * the only difference is the template category they pull source from.
+ * Next.js app (full-stack) and Next.js API-only variant share the same
+ * package.json + tsconfig shape; the variant only changes which registry
+ * item (`apps/nextjs` vs `apps/nextjs-api-only`) supplies the source files.
  */
-function build(templateCategory: "app/nextjs" | "app/nextjs-api-only") {
+function build(type: "nextjs" | "nextjs-api-only") {
   return defineAppType({
-    type: templateCategory === "app/nextjs" ? "nextjs" : "nextjs-api-only",
-    templateCategory,
+    type,
 
     buildPackageJson(preset, app, { scope, appRefs }) {
       const deps: Record<string, string> = {
@@ -66,21 +66,8 @@ function build(templateCategory: "app/nextjs" | "app/nextjs-api-only") {
         exclude: ["node_modules"],
       };
     },
-
-    buildTemplateContext(preset, app, { scope, cssDirectives }) {
-      return {
-        app,
-        scope,
-        packageManager: preset.basics.packageManager,
-        css: preset.css,
-        packages: preset.packages,
-        auth: preset.auth,
-        integrations: preset.integrations,
-        wiring: { cssSourceDirectives: cssDirectives },
-      };
-    },
   });
 }
 
-export const nextjsAppType = build("app/nextjs");
-export const nextjsApiOnlyAppType = build("app/nextjs-api-only");
+export const nextjsAppType = build("nextjs");
+export const nextjsApiOnlyAppType = build("nextjs-api-only");

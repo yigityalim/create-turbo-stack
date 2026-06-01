@@ -1,5 +1,6 @@
 /**
- * Registry-first rendering pipeline. Browser-safe — no node:* / no eta.
+ * Registry-only rendering pipeline. Browser-safe — no node:*, no template
+ * engine. This is the sole content path; there is no Eta fallback layer.
  *
  * `selectRegistryItems(preset)` → list of `(slot, variant, pkgName)`
  *   requests the resolver will look up.
@@ -11,10 +12,10 @@
  *   exported separately for use cases that touch raw strings (preview
  *   surface, registry CLI, …).
  *
- * Phase 2: these three are SHIPPED but NOT wired into `resolveFileTree`.
- * Phase 3 (next session): replace the Eta-driven branches of
- * `resolve/auto-packages.ts` and `resolve/app-files.ts` with calls to
- * these, one slot at a time.
+ * Wired into `resolveFileTree` via `resolve/auto-packages.ts` and
+ * `resolve/app-files.ts`. Slots without a matching item produce empty
+ * output — a missing item is a registry bug surfaced by the resolver's
+ * `unmet` diagnostic, not a soft-failure path.
  */
 
 export {

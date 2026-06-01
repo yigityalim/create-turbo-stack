@@ -2,7 +2,6 @@ import { defineAppType } from "./types";
 
 export const viteReactAppType = defineAppType({
   type: "vite-react",
-  templateCategory: "app/vite-react",
 
   buildPackageJson(preset, app, { scope, appRefs }) {
     const deps: Record<string, string> = {
@@ -55,16 +54,6 @@ export const viteReactAppType = defineAppType({
       },
       include: ["src/**/*"],
       exclude: ["node_modules", "dist"],
-    };
-  },
-
-  buildTemplateContext(preset, app, { scope, cssDirectives }) {
-    return {
-      app,
-      scope,
-      css: preset.css,
-      packages: preset.packages,
-      wiring: { cssSourceDirectives: cssDirectives },
     };
   },
 });

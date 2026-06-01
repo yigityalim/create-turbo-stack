@@ -1,24 +1,21 @@
 /**
- * Registry-first resolver hook.
+ * Registry-only resolver hook.
  *
  * Bridges `selectRegistryItems(preset)` (what does the preset want?) and
- * `materializeRegistryItem(item, ctx)` (turn an item into files) into a
- * single call the broader resolver can plug in next to its existing Eta
- * path:
+ * `materializeRegistryItem(item, ctx)` (turn an item into files):
  *
  *   const { nodes, unmet } = resolveRegistryItems(preset, items, ctx);
  *   // nodes  → ready for the FileTree
- *   // unmet  → slot/variant pairs the resolver should fall back to Eta for
+ *   // unmet  → slot/variant pairs with no shipped item (registry gap)
  *
  * The "items" input is whatever the caller has loaded — bundled built-ins
  * in the CLI, a fetched registry JSON in the web builder, a test fixture
  * in unit tests. This module does NOT load items from disk; it's a pure
  * function so it stays browser-safe.
  *
- * The transitional design (fallback to Eta when an item is missing) lets
- * us migrate one slot at a time without breaking presets that touch slots
- * we haven't moved yet. Once every shipped slot has at least one item, the
- * Eta path can be deleted and `unmet` should always be empty.
+ * `unmet` is a diagnostic only: there is no fallback path. A non-empty
+ * list means the registry has a gap the resolver couldn't fill, which is
+ * something CI should flag rather than something runtime should hide.
  */
 
 import type {
@@ -56,8 +53,9 @@ export interface ResolveOutput {
   /** Materialized FileTreeNodes ready to merge into the larger tree. */
   nodes: FileTreeNode[];
   /**
-   * Requests for which no matching item was found in `items`. The caller's
-   * Eta fallback should serve these. Empty when every slot has an item.
+   * Requests for which no matching item was found in `items`. Diagnostic
+   * only — there is no fallback path. Empty when every requested slot is
+   * covered by a shipped item.
    */
   unmet: ItemRequest[];
   /**

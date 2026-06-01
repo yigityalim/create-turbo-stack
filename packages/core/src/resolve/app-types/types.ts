@@ -25,34 +25,17 @@ export interface AppTypeDefinition {
   /** Schema discriminant (must exist in AppTypeSchema). */
   type: App["type"];
 
-  /** Template directory key passed to renderSourceFiles. */
-  templateCategory: string;
-
-  /**
-   * Optional inline templates for this app type. Keys are paths
-   * relative to the rendered app's base directory (e.g.
-   * `"src/main.ts.eta"`); values are raw Eta source. Plugins use this
-   * to ship templates alongside the framework definition without
-   * forking the templates package.
-   *
-   * Built-in app types leave this empty — their templates live in
-   * `packages/templates/src/app/<framework>/` and are loaded from the
-   * baked map.
-   */
-  templates?: Record<string, string>;
-
   /** Build the app's package.json. */
   buildPackageJson(preset: Preset, app: App, ctx: AppResolveContext): PackageJson;
 
   /** Build the app's tsconfig.json. */
   buildTsconfig(preset: Preset, app: App, ctx: AppResolveContext): TsConfig;
 
-  /** Variables available to .eta templates as `it.*`. */
-  buildTemplateContext(preset: Preset, app: App, ctx: AppResolveContext): Record<string, unknown>;
-
   /**
-   * Optional: extra files beyond package.json + tsconfig.json + rendered templates.
-   * Use sparingly; prefer adding .eta templates to `templateCategory`.
+   * Optional: extra files beyond package.json + tsconfig.json + the
+   * registry item's source files. Use sparingly — prefer shipping app
+   * source via a registry item under `registry/apps/<framework>/` so the
+   * content stays declarative.
    */
   buildExtraFiles?(preset: Preset, app: App, ctx: AppResolveContext): FileTreeNode[];
 }
