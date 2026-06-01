@@ -1,7 +1,0 @@
-<% if (it.app.i18n) { %>{
-  "Home": {
-    "title": "<%= it.app.name %>",
-    "welcome": "Welcome"
-  }
-}
-<% } %>

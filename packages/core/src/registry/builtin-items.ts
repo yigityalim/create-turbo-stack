@@ -17,49 +17,6 @@ import type { PackageRegistryItem } from "@create-turbo-stack/schema";
 export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
   {
     "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
-    "name": "cache-upstash-redis",
-    "type": "registry:package",
-    "title": "Cache (Upstash Redis)",
-    "description": "Serverless Redis cache via @upstash/redis. A shared HTTP/REST client built from validated env, plus a read-through `cached(key, ttlSeconds, fn)` helper. Edge-compatible — no TCP socket, works in Node, serverless, and edge runtimes.",
-    "author": "create-turbo-stack",
-    "dependencies": [
-      "@upstash/redis"
-    ],
-    "devDependencies": [],
-    "registryDependencies": [
-      "env-t3"
-    ],
-    "envVars": {
-      "UPSTASH_REDIS_REST_URL": "https://your-db.upstash.io",
-      "UPSTASH_REDIS_REST_TOKEN": "your-rest-token"
-    },
-    "exports": [
-      "."
-    ],
-    "lib": [
-      "ES2022",
-      "WebWorker"
-    ],
-    "environment": "universal",
-    "build": "none",
-    "slot": "cache",
-    "variant": "upstash-redis",
-    "categories": [
-      "foundation",
-      "cache"
-    ],
-    "docs": "Create a Redis database in the Upstash console, copy its REST URL and token into `.env.local`, then import `{ redis, cached } from \"{{scope}}/cache\"`. Use `cached(key, ttlSeconds, fn)` for read-through caching; reach for `redis` directly for anything else.",
-    "files": [
-      {
-        "path": "src/index.ts",
-        "target": "src/index.ts",
-        "type": "registry:source",
-        "content": "// {{pkg-import}}\n\nimport { Redis } from \"@upstash/redis\";\nimport { env } from \"{{scope}}/env\";\n\n/**\n * A shared Upstash Redis client, built from validated env. Upstash speaks\n * HTTP/REST, so this works in Node, edge runtimes, and serverless — no TCP\n * socket, no connection pooling to manage.\n *\n * Reads `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` through the\n * workspace's validated env (never `process.env` directly, and never\n * `Redis.fromEnv()` — both bypass the type-safe env layer).\n */\nexport const redis = new Redis({\n  url: env.UPSTASH_REDIS_REST_URL,\n  token: env.UPSTASH_REDIS_REST_TOKEN,\n});\n\n/**\n * Read-through cache. Returns the value stored at `key`; on a miss, runs\n * `fn`, stores its result under `key` with a `ttlSeconds` expiry, and\n * returns it.\n *\n * The Upstash client (de)serializes JSON automatically, so `T` round-trips\n * without manual `JSON.parse` / `JSON.stringify`.\n *\n * Errors propagate: if Redis or `fn` throws, the caller sees it — a broken\n * cache should not be silently swallowed.\n *\n * Note: a `null` return from `fn` will not be persistently cached —\n * subsequent calls re-run `fn` until a non-null value lands.\n *\n * @example\n * const profile = await cached(\"user:42\", 60, async () => {\n *   return db.users.findUnique({ where: { id: 42 } });\n * });\n */\nexport async function cached<T>(\n  key: string,\n  ttlSeconds: number,\n  fn: () => Promise<T>,\n): Promise<T> {\n  const hit = await redis.get<T>(key);\n  if (hit !== null) return hit;\n\n  const fresh = await fn();\n  await redis.setex(key, ttlSeconds, fresh);\n  return fresh;\n}\n"
-      }
-    ]
-  },
-  {
-    "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
     "name": "env-t3",
     "type": "registry:package",
     "title": "Env (t3-env)",
@@ -155,4 +112,4 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
 ] as const;
 
 /** Number of items the engine has available. Logged by `cts doctor`. */
-export const BUILTIN_REGISTRY_ITEM_COUNT = 3;
+export const BUILTIN_REGISTRY_ITEM_COUNT = 2;

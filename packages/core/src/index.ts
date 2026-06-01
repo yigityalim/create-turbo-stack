@@ -3,17 +3,6 @@
 
 // Diff engine (for add mode)
 export { applyMutations, diffTree, type FileMutation, type TreeDiff } from "./diff/tree-diff";
-// Integration plugin system
-export {
-  type CatalogEntrySpec,
-  defineIntegration,
-  type EnvVarSpec,
-  getIntegration,
-  type IntegrationCategory,
-  type IntegrationDefinition,
-  listIntegrations,
-  registerIntegration,
-} from "./integrations";
 // Preset migration registry
 export {
   definePresetMigration,
@@ -51,14 +40,6 @@ export {
   signChecksum,
   verifySignature,
 } from "./registry/integrity";
-// Template rendering
-export { buildTemplateContext, type TemplateContext } from "./render/template-context";
-export { renderTemplate } from "./render/template-engine";
-export {
-  getRegisteredTemplates,
-  listRegisteredCategories,
-  registerTemplates,
-} from "./render/template-registry";
 export {
   SUPPORTED_APP_TYPES,
   type SupportedAppType,

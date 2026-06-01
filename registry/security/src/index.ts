@@ -1,6 +1,17 @@
+export type { HSTSOptions, SecurityHeadersOptions } from "./headers";
 export {
-  contentSecurityPolicy,
-  securityHeaders,
-  securityHeadersConfig,
+  getSecurityHeaders,
+  applySecurityHeaders,
+  stripFingerprintHeaders,
 } from "./headers";
-export { assertTrustedOrigin, isTrustedOrigin } from "./middleware";
+
+export type { CSPSource, CSPDirectives } from "./csp";
+export {
+  CSP_HEADER,
+  CSP_REPORT_ONLY_HEADER,
+  buildCSP,
+  generateNonce,
+  strictCspWithNonce,
+} from "./csp";
+
+export { isTrustedOrigin, assertTrustedOrigin } from "./origin";

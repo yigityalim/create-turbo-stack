@@ -1,48 +1,29 @@
 // Resolves npm-named plugins against the project's `node_modules` and
 // registers their default export. Failures degrade to warnings so a
 // missing dev-only plugin doesn't break the CLI.
+//
+// Post Eta-removal: plugins can register `AppTypeDefinition` only.
+// Third-party integration providers (auth/db/api/email/…) now ship as
+// registry items consumed via the bundled-items pipeline — there's no
+// runtime "integration plugin" interface anymore.
 
 import { createRequire } from "node:module";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import * as p from "@clack/prompts";
-import {
-  type AppTypeDefinition,
-  type IntegrationDefinition,
-  registerAppType,
-  registerIntegration,
-} from "@create-turbo-stack/core";
+import { type AppTypeDefinition, registerAppType } from "@create-turbo-stack/core";
 import pc from "picocolors";
 
-type AnyDefinition = AppTypeDefinition | IntegrationDefinition;
-
 function isAppType(def: unknown): def is AppTypeDefinition {
-  return (
-    typeof def === "object" &&
-    def !== null &&
-    "templateCategory" in def &&
-    "buildPackageJson" in def
-  );
+  return typeof def === "object" && def !== null && "type" in def && "buildPackageJson" in def;
 }
 
-function isIntegration(def: unknown): def is IntegrationDefinition {
-  return (
-    typeof def === "object" &&
-    def !== null &&
-    "category" in def &&
-    "provider" in def &&
-    "catalogEntries" in def
-  );
-}
-
-function registerOne(def: AnyDefinition, source: string): void {
+function registerOne(def: unknown, source: string): void {
   if (isAppType(def)) {
     registerAppType(def);
-  } else if (isIntegration(def)) {
-    registerIntegration(def);
   } else {
     p.log.warn(
-      `Plugin ${pc.cyan(source)} exported a value that is neither AppTypeDefinition nor IntegrationDefinition; skipping`,
+      `Plugin ${pc.cyan(source)} exported a value that is not an AppTypeDefinition; skipping`,
     );
   }
 }
@@ -89,9 +70,9 @@ export async function loadPlugins(
       const exported = mod.default;
 
       if (Array.isArray(exported)) {
-        for (const entry of exported) registerOne(entry as AnyDefinition, name);
+        for (const entry of exported) registerOne(entry, name);
       } else if (exported) {
-        registerOne(exported as AnyDefinition, name);
+        registerOne(exported, name);
       } else {
         p.log.warn(`Plugin ${pc.cyan(name)} has no default export; skipping`);
         failed.push(name);

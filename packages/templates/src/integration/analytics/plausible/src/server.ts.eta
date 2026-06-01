@@ -1,3 +1,0 @@
-// Plausible is client-side only — use the Events API for server-side tracking
-// See: https://plausible.io/docs/events-api
-export {};

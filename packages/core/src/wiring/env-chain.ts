@@ -1,5 +1,4 @@
-import type { Preset } from "@create-turbo-stack/schema";
-import { activeProvider, getIntegration, INTEGRATION_CATEGORIES } from "../integrations";
+import type { PackageRegistryItem, Preset } from "@create-turbo-stack/schema";
 
 export interface EnvChain {
   base: { server: EnvVar[]; client: EnvVar[] };
@@ -15,17 +14,45 @@ export interface EnvVar {
   description: string;
 }
 
-export function computeEnvChain(preset: Preset): EnvChain {
+/**
+ * Compute the union of env vars the project needs. Two sources:
+ *
+ *   1. **Items** — each selected registry item declares the env vars it
+ *      reads at runtime via `item.envVars: { name → example }`. The engine
+ *      defaults the zod type to `z.string()` for every var (the right
+ *      validation for the vast majority of API keys / URLs); items can
+ *      override by emitting their own env helper later.
+ *
+ *   2. **Apps** — the engine knows app-type-specific vars (Next.js wants a
+ *      `NEXT_PUBLIC_APP_URL` per app). These come from the preset, not
+ *      items, because they're per-app rules, not per-provider content.
+ *
+ * Items declaring the same var de-dupe on first occurrence — supabase
+ * declaring `SUPABASE_URL` from both `slot: db` and `slot: auth` is
+ * legitimate and produces a single entry.
+ */
+export function computeEnvChain(
+  preset: Preset,
+  items: ReadonlyArray<PackageRegistryItem> = [],
+): EnvChain {
   const base: EnvChain["base"] = { server: [], client: [] };
 
-  for (const category of INTEGRATION_CATEGORIES) {
-    const provider = activeProvider(preset, category);
-    if (!provider) continue;
-    const integration = getIntegration(category, provider);
-    if (!integration?.envVars) continue;
-    const vars = integration.envVars(preset);
-    if (vars.server) base.server.push(...vars.server);
-    if (vars.client) base.client.push(...vars.client);
+  const seen = new Set<string>();
+  for (const item of items) {
+    for (const [name, example] of Object.entries(item.envVars)) {
+      if (seen.has(name)) continue;
+      seen.add(name);
+      const target = name.startsWith("NEXT_PUBLIC_") ? base.client : base.server;
+      target.push({
+        name,
+        // Most env vars are opaque strings; URLs and ints aren't worth the
+        // complexity of inferring here. Item authors who want stricter
+        // validation can override in `src/index.ts` of the env package.
+        zodType: "z.string()",
+        example,
+        description: "",
+      });
+    }
   }
 
   const apps: EnvChain["apps"] = {};

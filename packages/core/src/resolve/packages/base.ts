@@ -1,5 +1,4 @@
 import type { FileTreeNode, Package, Preset } from "@create-turbo-stack/schema";
-import type { EnvAccess, PackageResolveContext } from "../../integrations/types";
 import { computeExportsMap } from "../../wiring/exports-map";
 import { getLinter } from "../../wiring/linters";
 import {
@@ -85,45 +84,4 @@ export function makeBasePackageFiles(
   });
 
   return nodes;
-}
-
-/**
- * Build the context object passed to a provider's `resolvePackageFiles`.
- * Binds `makeBase` to the package + preset so providers call it without
- * re-threading those args.
- */
-export function buildPackageContext(
-  preset: Preset,
-  pkg: Package,
-  base: string,
-): PackageResolveContext {
-  const scope = preset.basics.scope;
-  return {
-    pkg,
-    base,
-    scope,
-    makeBase: (o = {}) =>
-      makeBasePackageFiles(preset, pkg, base, o.deps ?? {}, o.devDeps ?? {}, { react: o.react }),
-    env: buildEnvAccess(preset),
-  };
-}
-
-/**
- * Resolve the env wiring for a package. Pure function of the preset's
- * `envValidation` flag + scope — no per-provider knowledge.
- */
-export function buildEnvAccess(preset: Preset): EnvAccess {
-  // `envValidation` is an enum (`"t3-env" | "none"`); coerce to a flag so the
-  // rest of this helper stays boolean-driven (workspace dep, codegen toggles).
-  const enabled = preset.integrations.envValidation !== "none";
-  const scope = preset.basics.scope;
-  return {
-    enabled,
-    workspaceDep: enabled ? { [`${scope}/env`]: "workspace:*" } : {},
-    context: {
-      envImport: enabled ? `import { env } from "${scope}/env";` : "",
-      envRef: (name) => (enabled ? `env.${name}` : `process.env.${name}!`),
-      envRefOpt: (name) => (enabled ? `env.${name}` : `process.env.${name}`),
-    },
-  };
 }

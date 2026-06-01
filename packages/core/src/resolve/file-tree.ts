@@ -35,7 +35,7 @@ export function resolveFileTree(
   const nodes: FileTreeNode[] = [];
   const items = options.items ?? [];
 
-  nodes.push(...resolveRootFiles(preset));
+  nodes.push(...resolveRootFiles(preset, items));
 
   const autoPackages = resolveAutoPackages(preset);
   for (const pkg of autoPackages) {

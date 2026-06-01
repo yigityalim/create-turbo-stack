@@ -1,14 +1,13 @@
 {
-  "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
   "name": "session",
   "type": "registry:package",
-  "title": "Session",
-  "description": "Secure session id helpers — composes the crypto package.",
+  "environment": "universal",
+  "build": "none",
+  "lib": ["ES2022", "WebWorker"],
+  "dependencies": [],
   "registryDependencies": ["crypto"],
   "exports": ["."],
-  "lib": ["ES2022", "WebWorker"],
-  "environment": "universal",
-  "categories": ["security", "auth"],
-  "docs": "Store `hashSessionId(id)`, never the raw id. Compare incoming ids by\nre-hashing and matching the stored hash, so a leaked database never\nexposes usable session tokens.",
-  "files": [{ "path": "src/index.ts", "type": "registry:source", "target": "src/index.ts" }]
+  "categories": ["foundation", "security", "auth"],
+  "docs": "Generate a secure session ID, hash it for at-rest storage, and verify incoming tokens — not an auth system; projects using better-auth, Supabase Auth, or Clerk do not need this.",
+  "files": [{ "path": "src/index.ts", "type": "registry:source" }]
 }

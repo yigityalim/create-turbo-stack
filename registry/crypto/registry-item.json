@@ -1,17 +1,18 @@
 {
-  "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
   "name": "crypto",
   "type": "registry:package",
-  "title": "Crypto",
-  "description": "Web Crypto helpers: SHA-256 / HMAC hashing and secure random tokens.",
-  "dependencies": [],
-  "exports": [".", "./hash", "./random"],
-  "lib": ["ES2022", "WebWorker"],
   "environment": "universal",
-  "categories": ["security", "crypto"],
+  "build": "none",
+  "lib": ["ES2022", "WebWorker"],
+  "dependencies": [],
+  "exports": [".", "./hash", "./hmac", "./random", "./encoding"],
+  "categories": ["foundation", "security", "crypto"],
+  "docs": "SHA-256/512 hashing, HMAC-SHA256 with timing-safe verification, CSPRNG utilities, and base encoding helpers. Backed entirely by the native Web Crypto API — no runtime dependencies, runs unmodified in Node 20+, Vercel/Cloudflare Edge, and modern browsers. Does not include AES, asymmetric crypto, password hashing, JWT, TOTP, or anything requiring server-only APIs.",
   "files": [
-    { "path": "src/index.ts", "type": "registry:source", "target": "src/index.ts" },
-    { "path": "src/hash.ts", "type": "registry:source", "target": "src/hash.ts" },
-    { "path": "src/random.ts", "type": "registry:source", "target": "src/random.ts" }
+    { "path": "src/index.ts", "type": "registry:source" },
+    { "path": "src/hash.ts", "type": "registry:source" },
+    { "path": "src/hmac.ts", "type": "registry:source" },
+    { "path": "src/random.ts", "type": "registry:source" },
+    { "path": "src/encoding.ts", "type": "registry:source" }
   ]
 }

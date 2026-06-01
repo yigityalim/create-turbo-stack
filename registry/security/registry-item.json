@@ -1,17 +1,18 @@
 {
-  "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
   "name": "security",
   "type": "registry:package",
-  "title": "Security",
-  "description": "Security headers (CSP, HSTS, X-Frame-Options, …) plus an origin/CSRF guard for Next.js and Web-API handlers.",
-  "dependencies": [],
-  "exports": [".", "./headers", "./middleware"],
-  "lib": ["ES2022", "WebWorker"],
   "environment": "universal",
-  "categories": ["security"],
+  "build": "none",
+  "lib": ["ES2022", "WebWorker"],
+  "dependencies": [],
+  "registryDependencies": ["crypto"],
+  "exports": [".", "./headers", "./csp", "./origin"],
+  "categories": ["foundation", "security"],
+  "docs": "OWASP OSHP security response headers, nonce-based CSP builder with strict-dynamic, and origin/CSRF guard. Backed by the Fetch API and Web Crypto (via the crypto package) — no runtime dependencies. Does not include rate limiting, auth, session management, or input sanitization.",
   "files": [
-    { "path": "src/index.ts", "type": "registry:source", "target": "src/index.ts" },
-    { "path": "src/headers.ts", "type": "registry:source", "target": "src/headers.ts" },
-    { "path": "src/middleware.ts", "type": "registry:source", "target": "src/middleware.ts" }
+    { "path": "src/index.ts", "type": "registry:source" },
+    { "path": "src/headers.ts", "type": "registry:source" },
+    { "path": "src/csp.ts", "type": "registry:source" },
+    { "path": "src/origin.ts", "type": "registry:source" }
   ]
 }

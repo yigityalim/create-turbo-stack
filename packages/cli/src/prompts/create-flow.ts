@@ -1,5 +1,5 @@
 import * as p from "@clack/prompts";
-import { listIntegrations } from "@create-turbo-stack/core";
+import { BUILTIN_REGISTRY_ITEMS } from "@create-turbo-stack/core";
 import type { Preset, UserConfig } from "@create-turbo-stack/schema";
 import { INTEGRATION_OPTION_CATEGORIES } from "@create-turbo-stack/schema";
 import pc from "picocolors";
@@ -433,22 +433,37 @@ export async function runCreatePrompts(
     app.consumes = [...allPkgNames];
   }
 
-  // Integration providers are derived from the registry: each `integrations.*`
-  // category contributes its registered providers (label + value). Adding a
-  // category/provider upstream surfaces here automatically — no hand-listed
-  // picker to keep in sync. Items whose category is constrained by
-  // allow/forbid are hidden so the user can't pick something invalid.
-  const allIntegrationItems = INTEGRATION_OPTION_CATEGORIES.flatMap((category) =>
-    listIntegrations(category).map((def) => ({
-      value: def.provider,
-      label: def.label ?? def.provider,
-      category,
-    })),
-  );
-  const integrationOptions = allIntegrationItems
+  // Integration providers come from the bundled registry items. Slot→category
+  // mapping: monitoring↔errorTracking, rate-limit↔rateLimit, others same.
+  // Items whose category is constrained by allow/forbid are hidden.
+  const SLOT_TO_CATEGORY: Record<string, string> = {
+    analytics: "analytics",
+    monitoring: "errorTracking",
+    email: "email",
+    "rate-limit": "rateLimit",
+    ai: "ai",
+    cache: "cache",
+  };
+  const integrationItems = BUILTIN_REGISTRY_ITEMS.flatMap((item) => {
+    if (!item.slot || !item.variant) return [];
+    const category = SLOT_TO_CATEGORY[item.slot];
+    if (!category) return [];
+    return [
+      {
+        value: item.variant,
+        label: item.title ?? item.variant,
+        category,
+      },
+    ];
+  });
+  const integrationOptions = integrationItems
     .filter((item) => {
-      const allow = policy?.allow?.[item.category] as readonly string[] | undefined;
-      const forbid = policy?.forbid?.[item.category] as readonly string[] | undefined;
+      const allow = (policy?.allow as Record<string, readonly string[]> | undefined)?.[
+        item.category
+      ];
+      const forbid = (policy?.forbid as Record<string, readonly string[]> | undefined)?.[
+        item.category
+      ];
       if (forbid?.includes(item.value)) return false;
       if (allow && allow.length > 0 && !allow.includes(item.value)) return false;
       return true;
@@ -461,7 +476,7 @@ export async function runCreatePrompts(
       message: "Integrations",
       options: integrationOptions,
       required: false,
-      initialValues: allIntegrationItems
+      initialValues: integrationItems
         .filter((item) => defaultIntegrations[item.category] === item.value)
         .map((item) => item.value),
     }),
@@ -472,8 +487,10 @@ export async function runCreatePrompts(
   // For each category the first selected provider wins; unselected → "none".
   const integrationsResult: Record<string, string> = {};
   for (const category of INTEGRATION_OPTION_CATEGORIES) {
-    const chosen = listIntegrations(category).find((def) => extras.includes(def.provider));
-    integrationsResult[category] = chosen?.provider ?? "none";
+    const chosen = integrationItems.find(
+      (item) => item.category === category && extras.includes(item.value),
+    );
+    integrationsResult[category] = chosen?.value ?? "none";
   }
   const integrations = {
     ...integrationsResult,

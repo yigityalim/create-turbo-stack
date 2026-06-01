@@ -1,5 +1,5 @@
-import type { Preset } from "@create-turbo-stack/schema";
-import { activeProvider, getIntegration, INTEGRATION_CATEGORIES } from "../integrations";
+import type { PackageRegistryItem, Preset } from "@create-turbo-stack/schema";
+import { parseDep } from "../registry/parse-dep";
 import { getLinter } from "./linters";
 import { VERSIONS } from "./versions";
 
@@ -9,10 +9,28 @@ export interface CatalogEntry {
 }
 
 /**
- * Compute the full dependency catalog based on preset selections.
- * Each integration/framework/tool contributes its dependencies.
+ * Compute the full dependency catalog based on preset selections plus the
+ * registry items the engine has bundled. The catalog is the single
+ * resolution layer for workspace deps: every package.json references
+ * `catalog:`, and this function decides what's in that catalog.
+ *
+ * Two layers feed into the catalog:
+ *
+ *   1. **Rules** — framework + CSS deps that come from the preset itself
+ *      (`next`, `react`, `tailwindcss`, …). Engine knows these from the app
+ *      type and CSS config. Hard-coded against the central `VERSIONS` map.
+ *
+ *   2. **Content** — every selected registry item's `dependencies` and
+ *      `devDependencies`. Items can declare versions inline
+ *      (`zod@^4.0.0`); when they don't, the engine looks up the bare name
+ *      in `VERSIONS`, falling back to `"latest"` if it's unknown.
+ *
+ * Pure function — no I/O. Browser-safe.
  */
-export function computeCatalog(preset: Preset): CatalogEntry[] {
+export function computeCatalog(
+  preset: Preset,
+  items: ReadonlyArray<PackageRegistryItem> = [],
+): CatalogEntry[] {
   const catalog = new Map<string, string>();
 
   const add = (name: string, version: string) => {
@@ -21,7 +39,6 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
 
   // Always
   add("typescript", VERSIONS.typescript);
-  // Node-side packages (env, db, rate-limit, ...) reference @types/node.
   add("@types/node", VERSIONS.typesNode);
 
   for (const entry of getLinter(preset.basics.linter).catalogEntries) {
@@ -32,7 +49,6 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
     add("tailwindcss", VERSIONS.tailwind4);
     add("@tailwindcss/postcss", VERSIONS.tailwindPostcss);
   }
-  // vanilla / css-modules pull no CSS tooling — plain stylesheets only.
 
   if (preset.css.ui === "shadcn") {
     add("tw-animate-css", VERSIONS.twAnimateCss);
@@ -47,7 +63,6 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
       add("react-dom", VERSIONS.reactDom);
       add("@types/react", VERSIONS.typesReact);
       add("@types/react-dom", VERSIONS.typesReactDom);
-      add("@types/node", VERSIONS.typesNode);
     }
     if (app.type === "hono-standalone") {
       add("hono", VERSIONS.hono);
@@ -61,7 +76,6 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
       add("vite", VERSIONS.vite);
       add("@types/react", VERSIONS.typesReact);
       add("@types/react-dom", VERSIONS.typesReactDom);
-      // Tailwind 4 in Vite uses the first-party Vite plugin.
       if (preset.css.framework === "tailwind4") add("@tailwindcss/vite", VERSIONS.tailwindVite);
     }
     if (app.type === "sveltekit") {
@@ -75,8 +89,6 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
     if (app.type === "astro") {
       add("astro", VERSIONS.astro);
       add("@astrojs/check", VERSIONS.astrojsCheck);
-      // React is pulled in when the app consumes a React package (via
-      // @astrojs/react). Catalog supersets are harmless, so add it here.
       add("@astrojs/react", VERSIONS.astrojsReact);
       add("react", VERSIONS.react);
       add("react-dom", VERSIONS.reactDom);
@@ -88,24 +100,63 @@ export function computeCatalog(preset: Preset): CatalogEntry[] {
     }
   }
 
-  // Env validation: built-in pseudo-integration. Currently the only provider
-  // is `t3-env`; the enum leaves room for additional choices.
-  if (preset.integrations.envValidation !== "none") {
-    add("@t3-oss/env-nextjs", VERSIONS.t3Env);
-    add("zod", VERSIONS.zod);
-  }
-
-  // Provider-driven catalog entries (auth, database, api, analytics, ...)
-  // come from the integration registry — no hardcoded if-cascade.
-  for (const category of INTEGRATION_CATEGORIES) {
-    const provider = activeProvider(preset, category);
-    if (!provider) continue;
-    const integration = getIntegration(category, provider);
-    if (!integration) continue;
-    for (const entry of integration.catalogEntries(preset)) {
-      add(entry.name, entry.version);
+  // Items contribute their declared deps. Versions come from inline specs
+  // ("zod@^4.0.0"), the central VERSIONS map (by bare name), or "latest"
+  // as the last-resort fallback.
+  for (const item of items) {
+    for (const spec of item.dependencies) {
+      const { name, version } = parseDep(spec);
+      const resolved = version !== "latest" ? version : (versionFromMap(name) ?? "latest");
+      add(name, resolved);
+    }
+    for (const spec of item.devDependencies) {
+      const { name, version } = parseDep(spec);
+      const resolved = version !== "latest" ? version : (versionFromMap(name) ?? "latest");
+      add(name, resolved);
     }
   }
 
   return Array.from(catalog.entries()).map(([name, version]) => ({ name, version }));
+}
+
+/**
+ * Best-effort lookup of a bare package name in the central VERSIONS map.
+ * Keys in VERSIONS are camelCase versions of npm names (`@t3-oss/env-nextjs`
+ * → `t3Env`), so we can't just `VERSIONS[name]`. This is a small
+ * known-package table; unknown packages return undefined and the caller
+ * falls back to "latest".
+ */
+function versionFromMap(name: string): string | undefined {
+  const KNOWN: Record<string, string> = {
+    "@t3-oss/env-nextjs": VERSIONS.t3Env,
+    zod: VERSIONS.zod,
+    next: VERSIONS.next,
+    react: VERSIONS.react,
+    "react-dom": VERSIONS.reactDom,
+    "@types/react": VERSIONS.typesReact,
+    "@types/react-dom": VERSIONS.typesReactDom,
+    "@types/node": VERSIONS.typesNode,
+    typescript: VERSIONS.typescript,
+    tailwindcss: VERSIONS.tailwind4,
+    "@tailwindcss/postcss": VERSIONS.tailwindPostcss,
+    "@tailwindcss/vite": VERSIONS.tailwindVite,
+    "tw-animate-css": VERSIONS.twAnimateCss,
+    clsx: VERSIONS.clsx,
+    "tailwind-merge": VERSIONS.tailwindMerge,
+    hono: VERSIONS.hono,
+    "@hono/node-server": VERSIONS.honoNodeServer,
+    tsx: VERSIONS.tsx,
+    "next-intl": VERSIONS.nextIntl,
+    vite: VERSIONS.vite,
+    "@vitejs/plugin-react": VERSIONS.vitejsPluginReact,
+    "@sveltejs/kit": VERSIONS.sveltejsKit,
+    svelte: VERSIONS.svelte,
+    "@sveltejs/adapter-auto": VERSIONS.sveltejsAdapterAuto,
+    "@sveltejs/vite-plugin-svelte": VERSIONS.sveltejsVitePluginSvelte,
+    "svelte-check": VERSIONS.svelteCheck,
+    astro: VERSIONS.astro,
+    "@astrojs/check": VERSIONS.astrojsCheck,
+    "@astrojs/react": VERSIONS.astrojsReact,
+  };
+  return KNOWN[name];
 }

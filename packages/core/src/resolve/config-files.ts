@@ -1,4 +1,9 @@
-import type { FileTreeNode, PackageManager, Preset } from "@create-turbo-stack/schema";
+import type {
+  FileTreeNode,
+  PackageManager,
+  PackageRegistryItem,
+  Preset,
+} from "@create-turbo-stack/schema";
 import { workspaceGlobs } from "../utils/package-path";
 import { computeCatalog } from "../wiring/catalog";
 import { computeEnvChain } from "../wiring/env-chain";
@@ -10,10 +15,13 @@ import type { PackageJson, WorkspacesField } from "./manifest-types";
 /**
  * Resolve root-level config files: package.json, turbo.json, biome.json, .gitignore, etc.
  */
-export function resolveRootFiles(preset: Preset): FileTreeNode[] {
+export function resolveRootFiles(
+  preset: Preset,
+  items: ReadonlyArray<PackageRegistryItem> = [],
+): FileTreeNode[] {
   const nodes: FileTreeNode[] = [];
-  const catalog = computeCatalog(preset);
-  const envChain = computeEnvChain(preset);
+  const catalog = computeCatalog(preset, items);
+  const envChain = computeEnvChain(preset, items);
   const turboConfig = computeTurboConfig(preset, envChain.globalEnv);
 
   // Root package.json

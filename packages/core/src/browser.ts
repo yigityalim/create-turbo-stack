@@ -64,12 +64,6 @@ export {
   selectRegistryItems,
   substituteRegistryItem,
 } from "./registry";
-// Runtime template registry (plugins ship inline templates here)
-export {
-  getRegisteredTemplates,
-  listRegisteredCategories,
-  registerTemplates,
-} from "./render/template-registry";
 // App type plugin system (plugin files are metadata-only — no render imports)
 export {
   type AppResolveContext,

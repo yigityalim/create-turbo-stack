@@ -1,3 +1,0 @@
-export { createClient } from "./server";
-export { createBrowserClient } from "./client";
-export type { Database } from "./types";

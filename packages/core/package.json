@@ -21,9 +21,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@create-turbo-stack/schema": "workspace:*",
-    "@create-turbo-stack/templates": "workspace:*",
-    "eta": "^4.5.1"
+    "@create-turbo-stack/schema": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

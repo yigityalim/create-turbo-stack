@@ -107,3 +107,20 @@ describe("browser entry transitive safety", () => {
     ).toEqual([]);
   });
 });
+
+describe("Node entry — Eta-free assertion", () => {
+  it("src/index.ts and everything it imports avoid `eta`", () => {
+    // After the registry-first migration the engine renders content
+    // through the substituter, not Eta. This guard locks the migration
+    // in place — anything that re-introduces an `eta` import in core
+    // fails CI loudly.
+    const entry = resolve(HERE, "index.ts");
+    const offenders = collectForbidden(entry).filter((o) => o.spec === "eta");
+    expect(
+      offenders,
+      `\n\`eta\` is no longer a core dependency. Offending files:\n${offenders
+        .map((o) => `  ${o.file.replace(/^.*\/packages\/core\//, "packages/core/")}`)
+        .join("\n")}`,
+    ).toEqual([]);
+  });
+});

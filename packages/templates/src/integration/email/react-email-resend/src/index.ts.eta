@@ -1,2 +1,0 @@
-export { sendEmail } from "./client";
-export { WelcomeEmail } from "./templates/welcome";

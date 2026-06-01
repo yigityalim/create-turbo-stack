@@ -1,2 +1,0 @@
-export { Analytics } from "@vercel/analytics/react";
-export { track } from "@vercel/analytics";

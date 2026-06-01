@@ -1,5 +1,5 @@
 import * as p from "@clack/prompts";
-import { listIntegrations, listSupportedAppTypes } from "@create-turbo-stack/core";
+import { BUILTIN_REGISTRY_ITEMS, listSupportedAppTypes } from "@create-turbo-stack/core";
 import pc from "picocolors";
 
 interface ListOptions {
@@ -9,24 +9,27 @@ interface ListOptions {
 /**
  * `list` — what does this CLI know how to scaffold *right now*?
  *
- * Driven entirely by the registries (built-in + plugin-registered).
- * Useful when a `create-turbo-stack.json` declares plugins and you
- * want to confirm a third-party app type or provider is actually
- * loaded before starting a prompt session.
+ * Driven by the bundled registry items: each (slot, variant) pair the engine
+ * can serve appears under its slot. Useful when a `create-turbo-stack.json`
+ * declares plugins / extra item sources and you want to confirm a third-party
+ * provider is actually loaded before starting a prompt session.
  */
 export async function listCommand(options: ListOptions = {}): Promise<void> {
   const appTypes = [...listSupportedAppTypes()].sort();
-  const integrations = listIntegrations();
 
-  const byCategory: Record<string, string[]> = {};
-  for (const def of integrations) {
-    if (!byCategory[def.category]) byCategory[def.category] = [];
-    byCategory[def.category].push(def.provider);
+  // Group items by slot. App items repeat across `slot: "app"` and the
+  // variant matches an entry in `appTypes`; we still surface them under
+  // their slot for parity with the JSON shape.
+  const bySlot: Record<string, string[]> = {};
+  for (const item of BUILTIN_REGISTRY_ITEMS) {
+    if (!item.slot || !item.variant) continue;
+    if (!bySlot[item.slot]) bySlot[item.slot] = [];
+    bySlot[item.slot].push(item.variant);
   }
-  for (const cat of Object.keys(byCategory)) byCategory[cat].sort();
+  for (const slot of Object.keys(bySlot)) bySlot[slot].sort();
 
   if (options.json) {
-    process.stdout.write(`${JSON.stringify({ appTypes, integrations: byCategory }, null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify({ appTypes, slots: bySlot }, null, 2)}\n`);
     return;
   }
 
@@ -36,10 +39,10 @@ export async function listCommand(options: ListOptions = {}): Promise<void> {
   for (const type of appTypes) p.log.message(`  ${pc.cyan(type)}`);
 
   p.log.message("");
-  p.log.message(pc.bold("Integrations"));
-  for (const cat of Object.keys(byCategory).sort()) {
-    p.log.message(`  ${pc.dim(cat)}`);
-    for (const provider of byCategory[cat]) p.log.message(`    ${pc.cyan(provider)}`);
+  p.log.message(pc.bold("Registry slots"));
+  for (const slot of Object.keys(bySlot).sort()) {
+    p.log.message(`  ${pc.dim(slot)}`);
+    for (const variant of bySlot[slot]) p.log.message(`    ${pc.cyan(variant)}`);
   }
 
   p.outro("");
