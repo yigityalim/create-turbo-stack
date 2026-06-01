@@ -1,0 +1,58 @@
+{
+  "name": "email-templates",
+  "type": "registry:package",
+  "environment": "node",
+  "build": "none",
+  "lib": ["ES2022", "DOM"],
+  "jsx": "react-jsx",
+  "dependencies": ["@react-email/components", "react"],
+  "devDependencies": ["react-email"],
+  "scripts": {
+    "email": "email dev --dir src/emails --port 3000",
+    "email:export": "email export --dir src/emails --outDir exported --pretty",
+    "email:export:text": "email export --dir src/emails --outDir exported --pretty --plainText"
+  },
+  "exports": ["."],
+  "categories": ["email"],
+  "docs": "React Email transactional templates (auth, account/KVKK, billing) with shared Tailwind design tokens, transport-agnostic render(), and PreviewProps on every template — brand config in one file, domain-specific templates not included.",
+  "files": [
+    { "path": "src/emails/tailwind.config.ts", "type": "registry:source" },
+    { "path": "src/emails/components/layout.tsx", "type": "registry:source" },
+    { "path": "src/emails/auth/verify-email.tsx", "type": "registry:source" },
+    { "path": "src/emails/auth/reset-password.tsx", "type": "registry:source" },
+    { "path": "src/emails/auth/magic-link.tsx", "type": "registry:source" },
+    { "path": "src/emails/auth/welcome.tsx", "type": "registry:source" },
+    { "path": "src/emails/auth/new-login.tsx", "type": "registry:source" },
+    {
+      "path": "src/emails/auth/password-changed.tsx",
+      "type": "registry:source"
+    },
+    { "path": "src/emails/auth/email-changed.tsx", "type": "registry:source" },
+    { "path": "src/emails/auth/mfa-changed.tsx", "type": "registry:source" },
+    {
+      "path": "src/emails/auth/team-invitation.tsx",
+      "type": "registry:source"
+    },
+    {
+      "path": "src/emails/account/data-export-ready.tsx",
+      "type": "registry:source"
+    },
+    {
+      "path": "src/emails/account/deletion-requested.tsx",
+      "type": "registry:source"
+    },
+    {
+      "path": "src/emails/account/deletion-completed.tsx",
+      "type": "registry:source"
+    },
+    {
+      "path": "src/emails/billing/payment-receipt.tsx",
+      "type": "registry:source"
+    },
+    {
+      "path": "src/emails/billing/subscription-event.tsx",
+      "type": "registry:source"
+    },
+    { "path": "src/emails/index.ts", "type": "registry:source" }
+  ]
+}

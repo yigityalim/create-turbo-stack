@@ -1,0 +1,36 @@
+{
+  "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
+  "name": "typescript-config",
+  "type": "registry:package",
+  "slot": "typescript-config",
+  "variant": "default",
+  "title": "TypeScript Config",
+  "description": "Shared tsconfig presets for the whole workspace. A `base` config carrying the strict, bundler-oriented defaults, plus per-target extends: `library` (source-export packages), `node` (Node-runtime packages), `react-library` (React component packages), and `nextjs` (App Router apps). Every other package extends one of these.",
+  "author": "create-turbo-stack",
+  "devDependencies": ["typescript"],
+  "exports": [
+    "./base.json",
+    "./library.json",
+    "./node.json",
+    "./react-library.json",
+    "./nextjs.json"
+  ],
+  "build": "none",
+  "categories": ["foundation"],
+  "docs": "Extend the preset that matches the package: `{{scope}}/typescript-config/library.json` for source-export packages, `/node.json` for Node-only code, `/react-library.json` for React components, `/nextjs.json` for App Router apps. Each tsconfig.json adds only its own `include`/`outDir` on top.",
+  "files": [
+    { "path": "base.json", "type": "registry:file", "target": "base.json" },
+    {
+      "path": "library.json",
+      "type": "registry:file",
+      "target": "library.json"
+    },
+    { "path": "node.json", "type": "registry:file", "target": "node.json" },
+    {
+      "path": "react-library.json",
+      "type": "registry:file",
+      "target": "react-library.json"
+    },
+    { "path": "nextjs.json", "type": "registry:file", "target": "nextjs.json" }
+  ]
+}

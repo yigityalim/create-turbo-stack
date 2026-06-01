@@ -1,0 +1,22 @@
+{
+  "name": "email-resend",
+  "type": "registry:package",
+  "slot": "email",
+  "variant": "resend",
+  "environment": "node",
+  "build": "none",
+  "lib": ["ES2022"],
+  "dependencies": ["resend"],
+  "registryDependencies": ["env-t3"],
+  "envVars": {
+    "RESEND_API_KEY": "re_xxxxxxxxx"
+  },
+  "exports": [".", "./send", "./client"],
+  "categories": ["email"],
+  "docs": "Resend transactional email transport with typed Result pattern, idempotency key support, batch send (up to 100), and html/text/react body — template rendering is handled by the caller or a future email-templates package.",
+  "files": [
+    { "path": "src/index.ts", "type": "registry:source" },
+    { "path": "src/client.ts", "type": "registry:source" },
+    { "path": "src/send.ts", "type": "registry:source" }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "cache-upstash-redis",
+  "type": "registry:package",
+  "slot": "cache",
+  "variant": "upstash-redis",
+  "environment": "universal",
+  "build": "none",
+  "lib": ["ES2022", "WebWorker"],
+  "dependencies": ["@upstash/redis"],
+  "registryDependencies": ["env-t3"],
+  "envVars": {
+    "UPSTASH_REDIS_REST_URL": "https://your-db.upstash.io",
+    "UPSTASH_REDIS_REST_TOKEN": "your-rest-token"
+  },
+  "exports": [".", "./client", "./cache", "./tags", "./batch"],
+  "categories": ["foundation", "cache"],
+  "docs": "Read-through cache, stale-while-revalidate with waitUntil wiring, tag-based group invalidation, TTL jitter, negative caching, namespace isolation, and pipeline batch ops — all backed by Upstash Redis, designed for serverless and edge environments.",
+  "files": [
+    { "path": "src/index.ts", "type": "registry:source" },
+    { "path": "src/client.ts", "type": "registry:source" },
+    { "path": "src/cache.ts", "type": "registry:source" },
+    { "path": "src/tags.ts", "type": "registry:source" },
+    { "path": "src/batch.ts", "type": "registry:source" }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "email-plunk",
+  "type": "registry:package",
+  "slot": "email",
+  "variant": "plunk",
+  "environment": "node",
+  "build": "none",
+  "lib": ["ES2022"],
+  "dependencies": ["@plunk/node"],
+  "registryDependencies": ["env-t3"],
+  "envVars": {
+    "PLUNK_API_KEY": "sk_xxxxxxxx",
+    "PLUNK_BASE_URL": "https://api.useplunk.com"
+  },
+  "exports": ["."],
+  "categories": ["email"],
+  "docs": "Plunk transactional email transport (open-source / self-hostable) with the same sendEmail interface as email/resend and email/sendgrid — set PLUNK_BASE_URL to your own Plunk instance for KVKK/privacy compliance.",
+  "files": [
+    { "path": "src/index.ts", "type": "registry:source" },
+    { "path": "src/client.ts", "type": "registry:source" },
+    { "path": "src/send.ts", "type": "registry:source" }
+  ]
+}

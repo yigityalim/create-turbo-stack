@@ -1,0 +1,23 @@
+{
+  "name": "analytics-plausible",
+  "type": "registry:package",
+  "slot": "analytics",
+  "variant": "plausible",
+  "environment": "universal",
+  "build": "none",
+  "lib": ["ES2022", "WebWorker"],
+  "dependencies": [],
+  "registryDependencies": ["env-t3"],
+  "envVars": {
+    "PLAUSIBLE_DOMAIN": "yourdomain.com",
+    "PLAUSIBLE_API_HOST": "https://plausible.io"
+  },
+  "exports": [".", "./server", "./client"],
+  "categories": ["analytics"],
+  "docs": "Privacy-first, cookie-less Plausible Analytics — server-side Events API with required UA+IP forwarding for accurate visitor counting, client-side script helper with ad-blocker proxy support, self-host via PLAUSIBLE_API_HOST, zero npm dependencies.",
+  "files": [
+    { "path": "src/index.ts", "type": "registry:source" },
+    { "path": "src/server.ts", "type": "registry:source" },
+    { "path": "src/client.ts", "type": "registry:source" }
+  ]
+}

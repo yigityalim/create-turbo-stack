@@ -1,0 +1,25 @@
+{
+  "name": "analytics-vercel-analytics",
+  "type": "registry:package",
+  "slot": "analytics",
+  "variant": "vercel-analytics",
+  "environment": "universal",
+  "build": "none",
+  "lib": ["ES2022", "WebWorker"],
+  "dependencies": ["@vercel/analytics"],
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": { "optional": true }
+  },
+  "exports": [".", "./react", "./server", "./client"],
+  "categories": ["analytics"],
+  "docs": "Vercel Web Analytics — no env vars (enabled via Vercel dashboard), client and server track() with EventData type constraint, React <Analytics/> component, framework inject helper, dev-mode safe.",
+  "files": [
+    { "path": "src/index.ts", "type": "registry:source" },
+    { "path": "src/server.ts", "type": "registry:source" },
+    { "path": "src/client.ts", "type": "registry:source" },
+    { "path": "src/react.tsx", "type": "registry:source" }
+  ]
+}

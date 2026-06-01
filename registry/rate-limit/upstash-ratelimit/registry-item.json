@@ -1,0 +1,35 @@
+{
+  "name": "rate-limit-upstash-ratelimit",
+  "type": "registry:package",
+  "slot": "rate-limit",
+  "variant": "upstash-ratelimit",
+  "environment": "universal",
+  "build": "none",
+  "lib": ["ES2022", "WebWorker"],
+  "dependencies": ["@upstash/ratelimit", "@upstash/redis"],
+  "peerDependencies": {
+    "next": ">=14",
+    "hono": ">=4",
+    "@sveltejs/kit": ">=2"
+  },
+  "peerDependenciesMeta": {
+    "next": { "optional": true },
+    "hono": { "optional": true },
+    "@sveltejs/kit": { "optional": true }
+  },
+  "registryDependencies": ["env-t3"],
+  "envVars": {
+    "UPSTASH_REDIS_REST_URL": "https://your-db.upstash.io",
+    "UPSTASH_REDIS_REST_TOKEN": "your-rest-token"
+  },
+  "exports": [".", "./next", "./hono", "./sveltekit"],
+  "categories": ["rate-limit", "security"],
+  "docs": "Framework-agnostic rate limiting core (Web Request/Response) with Next.js, Hono, and SvelteKit adapters, backed by Upstash Redis — safe client-IP extraction (no leftmost-XFF), spec-correct 429 with IETF rate-limit headers, and pending/waitUntil wiring for edge analytics.",
+  "files": [
+    { "path": "src/index.ts", "type": "registry:source" },
+    { "path": "src/core.ts", "type": "registry:source" },
+    { "path": "src/next.ts", "type": "registry:source" },
+    { "path": "src/hono.ts", "type": "registry:source" },
+    { "path": "src/sveltekit.ts", "type": "registry:source" }
+  ]
+}
