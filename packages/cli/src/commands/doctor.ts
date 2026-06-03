@@ -115,10 +115,14 @@ export async function doctorCommand(options: DoctorOptions = {}): Promise<void> 
 
 function which(bin: string): string | null {
   try {
-    const out = execSync(`command -v ${bin}`, { stdio: ["ignore", "pipe", "ignore"] })
+    // `where` on Windows, `command -v` on Unix.
+    const cmd =
+      process.platform === "win32" ? `where ${bin}` : `command -v ${bin}`;
+    const out = execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] })
       .toString()
       .trim();
-    return out || null;
+    // `where` may return multiple lines; take the first.
+    return out.split("\n")[0]?.trim() || null;
   } catch {
     return null;
   }

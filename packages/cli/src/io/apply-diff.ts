@@ -143,6 +143,7 @@ async function applyDiffInner(
     `${pc.cyan(String(diff.create.length))} new, ` +
       `${pc.yellow(String(diff.update.length))} updated, ` +
       `${pc.magenta(String(diff.conflict.length))} conflict, ` +
+      `${pc.blue(String(diff.move.length))} moved, ` +
       `${pc.red(String(diff.delete.length))} deleted, ` +
       `${pc.dim(String(diff.unchanged.length))} unchanged`,
   );
@@ -163,6 +164,7 @@ async function applyDiffInner(
     for (const u of diff.update) p.log.message(`  ${pc.yellow("~")} ${u.path}`);
     for (const c of diff.conflict)
       p.log.message(`  ${pc.magenta("?")} ${c.path} (manual edits — would prompt)`);
+    for (const m of diff.move) p.log.message(`  ${pc.blue("→")} ${m.from} → ${m.to}`);
     for (const d of diff.delete) p.log.message(`  ${pc.red("-")} ${d}`);
     return;
   }
@@ -202,6 +204,7 @@ async function applyDiffInner(
     diff.create.length === 0 &&
     diff.update.length === 0 &&
     diff.delete.length === 0 &&
+    diff.move.length === 0 &&
     conflictsToApply.length === 0
   ) {
     p.log.info("No changes needed.");
@@ -220,6 +223,11 @@ async function applyDiffInner(
     const before = existingFiles.get(relPath);
     if (before === undefined) continue; // already gone; nothing to back up
     backups.push({ path: relPath, existed: true, content: before });
+  }
+  // Moves: back up the source path so rollback can restore it if rename fails mid-way.
+  for (const { from } of diff.move) {
+    const before = existingFiles.get(from);
+    if (before !== undefined) backups.push({ path: from, existed: true, content: before });
   }
   const stateBackup = await fs
     .readFile(path.join(cwd, STATE_FILE), "utf-8")
@@ -247,6 +255,20 @@ async function applyDiffInner(
       s.stop(`Updated ${allUpdates.length} files`);
       for (const u of diff.update) p.log.info(`  ${pc.yellow("~")} ${u.path}`);
       for (const u of conflictsToApply) p.log.info(`  ${pc.magenta("!")} ${u.path} (overwritten)`);
+    }
+
+    if (diff.move.length > 0) {
+      s.start("Renaming files");
+      for (const { from, to } of diff.move) {
+        const fromPath = path.join(cwd, from);
+        const toPath = path.join(cwd, to);
+        await fs.mkdir(path.dirname(toPath), { recursive: true });
+        await fs.rename(fromPath, toPath);
+      }
+      const movedFromDirs = new Set(diff.move.map(({ from }) => path.dirname(from)));
+      for (const dir of movedFromDirs) await pruneEmptyDirs(cwd, dir);
+      s.stop(`Renamed ${diff.move.length} files`);
+      for (const { from, to } of diff.move) p.log.info(`  ${pc.blue("→")} ${from} → ${to}`);
     }
 
     if (diff.delete.length > 0) {

@@ -21,7 +21,6 @@
         "fumadocs-mdx": "14.2.10",
         "fumadocs-ui": "16.6.17",
         "lucide-react": "^0.577.0",
-        "lz-string": "^1.5.0",
         "motion": "^12.40.0",
         "next": "^16.2.0",
         "react": "^19.2.4",
@@ -34,7 +33,6 @@
       "devDependencies": {
         "@biomejs/biome": "^2.4.8",
         "@tailwindcss/postcss": "^4.2.2",
-        "@types/lz-string": "^1.5.0",
         "@types/mdx": "^2.0.13",
         "@types/node": "^25.5.0",
         "@types/react": "^19.2.14",
@@ -67,7 +65,6 @@
         "@clack/prompts": "^1.1.0",
         "@modelcontextprotocol/sdk": "^1.12.1",
         "commander": "^14.0.3",
-        "eta": "^4.5.1",
         "lz-string": "^1.5.0",
         "picocolors": "^1.1.1",
         "zod": "^4.3.6",
@@ -76,7 +73,6 @@
         "@create-turbo-stack/analyzer": "workspace:*",
         "@create-turbo-stack/core": "workspace:*",
         "@create-turbo-stack/schema": "workspace:*",
-        "@create-turbo-stack/templates": "workspace:*",
         "@types/node": "^22.0.0",
         "tsup": "^8.5.1",
         "tsx": "^4.21.0",
@@ -89,8 +85,6 @@
       "version": "1.0.0",
       "dependencies": {
         "@create-turbo-stack/schema": "workspace:*",
-        "@create-turbo-stack/templates": "workspace:*",
-        "eta": "^4.5.1",
       },
       "devDependencies": {
         "typescript": "^5.9.3",
@@ -107,13 +101,6 @@
       "devDependencies": {
         "typescript": "^5.9.3",
         "vitest": "^4.1.0",
-      },
-    },
-    "packages/templates": {
-      "name": "@create-turbo-stack/templates",
-      "version": "1.0.0",
-      "devDependencies": {
-        "typescript": "^5.9.3",
       },
     },
   },
@@ -159,8 +146,6 @@
     "@create-turbo-stack/core": ["@create-turbo-stack/core@workspace:packages/core"],
 
     "@create-turbo-stack/schema": ["@create-turbo-stack/schema@workspace:packages/schema"],
-
-    "@create-turbo-stack/templates": ["@create-turbo-stack/templates@workspace:packages/templates"],
 
     "@emnapi/runtime": ["@emnapi/runtime@1.9.0", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-QN75eB0IH2ywSpRpNddCRfQIhmJYBCJ1x5Lb3IscKAL8bMnVAKnRg8dCoXbHzVLLH7P38N2Z3mtulB7W0J0FKw=="],
 
@@ -536,8 +521,6 @@
 
     "@types/hast": ["@types/hast@3.0.4", "", { "dependencies": { "@types/unist": "*" } }, "sha512-WPs+bbQw5aCj+x6laNGWLH3wviHtoCv/P3+otBhbOhJgG8qtpdAMlTCxLtsTWA7LH1Oh/bFCHsBn0TPS5m30EQ=="],
 
-    "@types/lz-string": ["@types/lz-string@1.5.0", "", { "dependencies": { "lz-string": "*" } }, "sha512-s84fKOrzqqNCAPljhVyC5TjAo6BH4jKHw9NRNFNiRUY5QSgZCmVm5XILlWbisiKl+0OcS7eWihmKGS5akc2iQw=="],
-
     "@types/mdast": ["@types/mdast@4.0.4", "", { "dependencies": { "@types/unist": "*" } }, "sha512-kGaNbPh1k7AFzgpud/gMdvIm5xuECykRR+JnWKQno9TAXVa6WIVCGTPvYGekIDL4uwCZQSYbUxNBSb1aUo79oA=="],
 
     "@types/mdx": ["@types/mdx@2.0.13", "", {}, "sha512-+OWZQfAYyio6YkJb3HLxDrvnx6SWWDbC0zVPfBRzUk0/nqoDyf6dNxQi3eArPe8rJ473nobTMQ/8Zk+LxJ+Yuw=="],
@@ -719,8 +702,6 @@
     "estree-util-visit": ["estree-util-visit@2.0.0", "", { "dependencies": { "@types/estree-jsx": "^1.0.0", "@types/unist": "^3.0.0" } }, "sha512-m5KgiH85xAhhW8Wta0vShLcUvOsh3LLPI2YVwcbio1l7E09NTLL1EyMZFM1OyWowoH0skScNbhOPl4kcBgzTww=="],
 
     "estree-walker": ["estree-walker@3.0.3", "", { "dependencies": { "@types/estree": "^1.0.0" } }, "sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g=="],
-
-    "eta": ["eta@4.5.1", "", {}, "sha512-EaNCGm+8XEIU7YNcc+THptWAO5NfKBHHARxt+wxZljj9bTr/+arRoOm9/MpGt4n6xn9fLnPFRSoLD0WFYGFUxQ=="],
 
     "etag": ["etag@1.8.1", "", {}, "sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg=="],
 
