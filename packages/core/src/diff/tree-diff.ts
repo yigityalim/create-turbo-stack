@@ -23,6 +23,36 @@ export interface TreeDiff {
   conflict: Array<{ path: string; mutations: FileMutation[]; userContent: string }>;
   unchanged: string[];
   delete: string[];
+  /**
+   * Files that moved from one path to another with identical content.
+   * Detected when a file is present in `previousNodes` at `from` and in
+   * `desiredNodes` at `to` with the same content — indicating a rename or
+   * package relocation rather than a delete + create.
+   *
+   * Populated only when `options.previousNodes` is given. The disk writer
+   * should prefer `fs.rename` for these entries to preserve git history.
+   * Callers that do not support move can treat each entry as a delete of
+   * `from` followed by a create at `to`.
+   */
+  move: Array<{ from: string; to: string }>;
+}
+
+/**
+ * File extensions known to contain binary content. For these paths,
+ * `computeMutations` skips JSON / CSS analysis and returns a direct
+ * overwrite — attempting text mutations on binary content would corrupt it.
+ */
+const BINARY_EXTENSIONS = new Set([
+  ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".ico", ".svg",
+  ".woff", ".woff2", ".ttf", ".eot", ".otf",
+  ".pdf", ".zip", ".tar", ".gz",
+  ".mp4", ".webm", ".mp3", ".wav",
+]);
+
+function isBinaryPath(filePath: string): boolean {
+  const dot = filePath.lastIndexOf(".");
+  if (dot === -1) return false;
+  return BINARY_EXTENSIONS.has(filePath.slice(dot).toLowerCase());
 }
 
 export interface DiffOptions {
@@ -55,6 +85,7 @@ export function diffTree(
   const conflict: TreeDiff["conflict"] = [];
   const unchanged: string[] = [];
   const deletePaths: string[] = [];
+  const moves: TreeDiff["move"] = [];
 
   // Index of what *we* wrote last time (if caller is tracking history).
   const previousByPath = new Map<string, string>();
@@ -104,18 +135,57 @@ export function diffTree(
       if (desiredPaths.has(prev.path)) continue;
       deletePaths.push(prev.path);
     }
+
+    // Move detection: a file deleted from `from` and created at `to` with
+    // identical content is a rename. Build a content → new-node map from
+    // `create` candidates (files not on disk), then match against deletions.
+    // First match wins; files with duplicate content are not false-moved
+    // because we remove each match from the candidate map.
+    const createByContent = new Map<string, FileTreeNode>();
+    for (const node of create) {
+      if (typeof node.content === "string" && !createByContent.has(node.content)) {
+        createByContent.set(node.content, node);
+      }
+    }
+
+    const movedFromPaths = new Set<string>();
+    const movedToNodes = new Set<FileTreeNode>();
+
+    for (const fromPath of deletePaths) {
+      const prevContent = previousByPath.get(fromPath);
+      if (prevContent === undefined) continue;
+      const toNode = createByContent.get(prevContent);
+      if (!toNode) continue;
+      moves.push({ from: fromPath, to: toNode.path });
+      movedFromPaths.add(fromPath);
+      movedToNodes.add(toNode);
+      createByContent.delete(prevContent);
+    }
+
+    // Remove moved entries from create and delete so callers see clean sets.
+    create.splice(0, create.length, ...create.filter((n) => !movedToNodes.has(n)));
+    deletePaths.splice(0, deletePaths.length, ...deletePaths.filter((p) => !movedFromPaths.has(p)));
   }
 
-  return { create, update, conflict, unchanged, delete: deletePaths };
+  return { create, update, conflict, unchanged, delete: deletePaths, move: moves };
 }
 
 /**
  * Compute mutations to transform existing content to desired content.
- * Tries JSON merge for .json files, CSS source insertion for .css files.
- * Falls back to overwrite for everything else.
+ *
+ * Strategy (in priority order):
+ *   1. Binary extensions — skip analysis, overwrite directly. Attempting text
+ *      mutations on binary content would corrupt it.
+ *   2. `.json` — leaf-level JSON merge; preserves user-authored keys.
+ *   3. `.css` — `@source` directive injection when only new directives are added.
+ *   4. Everything else — full overwrite.
  */
 function computeMutations(existing: string, node: FileTreeNode): FileMutation[] {
   const desired = node.content ?? "";
+
+  if (isBinaryPath(node.path)) {
+    return [{ type: "overwrite", content: desired }];
+  }
 
   if (node.path.endsWith(".json")) {
     const jsonMutations = computeJsonMutations(existing, desired);

@@ -229,6 +229,105 @@ describe("diffTree", () => {
     const mutations = diff.update[0].mutations;
     expect(mutations.some((m) => m.type === "append-to-json")).toBe(true);
   });
+
+  // Move detection
+
+  it("detects a file rename as a move, not delete+create", () => {
+    const content = "export const x = 1;";
+    const existing = new Map([["packages/old-name/src/index.ts", content]]);
+    const desired = [{ path: "packages/new-name/src/index.ts", content, isDirectory: false }];
+    const previous = [{ path: "packages/old-name/src/index.ts", content, isDirectory: false }];
+
+    const diff = diffTree(existing, desired, { previousNodes: previous });
+    expect(diff.move).toEqual([
+      { from: "packages/old-name/src/index.ts", to: "packages/new-name/src/index.ts" },
+    ]);
+    expect(diff.delete).toHaveLength(0);
+    expect(diff.create).toHaveLength(0);
+  });
+
+  it("does not detect a move when previousNodes is absent", () => {
+    const content = "export const x = 1;";
+    const existing = new Map([["packages/old/src/index.ts", content]]);
+    const desired = [{ path: "packages/new/src/index.ts", content, isDirectory: false }];
+
+    const diff = diffTree(existing, desired);
+    expect(diff.move).toHaveLength(0);
+    expect(diff.create).toHaveLength(1);
+  });
+
+  it("does not false-detect a move when content differs", () => {
+    const existing = new Map([["a.ts", "v1"]]);
+    const desired = [{ path: "b.ts", content: "v2", isDirectory: false }];
+    const previous = [{ path: "a.ts", content: "v1", isDirectory: false }];
+
+    const diff = diffTree(existing, desired, { previousNodes: previous });
+    expect(diff.move).toHaveLength(0);
+    expect(diff.delete).toEqual(["a.ts"]);
+    expect(diff.create).toHaveLength(1);
+  });
+
+  it("deduplicates move candidates — does not double-move identical content", () => {
+    const content = "shared";
+    const existing = new Map([
+      ["a.ts", content],
+      ["b.ts", content],
+    ]);
+    const desired = [{ path: "c.ts", content, isDirectory: false }];
+    const previous = [
+      { path: "a.ts", content, isDirectory: false },
+      { path: "b.ts", content, isDirectory: false },
+    ];
+
+    const diff = diffTree(existing, desired, { previousNodes: previous });
+    // Only one move can be detected (first match wins); the other is a delete.
+    expect(diff.move).toHaveLength(1);
+    expect(diff.delete).toHaveLength(1);
+    expect(diff.create).toHaveLength(0);
+  });
+
+  it("move is empty array when no renames occur", () => {
+    const existing = new Map([["a.ts", "x"]]);
+    const desired = [{ path: "a.ts", content: "y", isDirectory: false }];
+    const previous = [{ path: "a.ts", content: "x", isDirectory: false }];
+
+    const diff = diffTree(existing, desired, { previousNodes: previous });
+    expect(diff.move).toEqual([]);
+  });
+
+  // Binary file detection
+
+  it("uses overwrite (not json merge) for binary extensions", () => {
+    const existing = new Map([["public/logo.png", "old-binary-content"]]);
+    const desired = [{ path: "public/logo.png", content: "new-binary-content", isDirectory: false }];
+
+    const diff = diffTree(existing, desired);
+    expect(diff.update).toHaveLength(1);
+    const [mutation] = diff.update[0].mutations;
+    expect(mutation.type).toBe("overwrite");
+  });
+
+  it("uses overwrite for .woff2 files without attempting text mutations", () => {
+    const existing = new Map([["public/font.woff2", "binary"]]);
+    const desired = [{ path: "public/font.woff2", content: "binary-v2", isDirectory: false }];
+
+    const diff = diffTree(existing, desired);
+    expect(diff.update[0].mutations).toEqual([{ type: "overwrite", content: "binary-v2" }]);
+  });
+
+  it("still uses JSON merge for .json files (binary check does not affect them)", () => {
+    const existing = new Map([["tsconfig.json", JSON.stringify({ compilerOptions: { strict: true } })]]);
+    const desired = [
+      {
+        path: "tsconfig.json",
+        content: JSON.stringify({ compilerOptions: { strict: true, noUncheckedIndexedAccess: true } }),
+        isDirectory: false,
+      },
+    ];
+
+    const diff = diffTree(existing, desired);
+    expect(diff.update[0].mutations.some((m) => m.type === "append-to-json")).toBe(true);
+  });
 });
 
 // applyMutations
