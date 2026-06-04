@@ -84,7 +84,7 @@ function NavButton({
       type="button"
       onClick={() => onClick(item.id)}
       className={cn(
-        "flex w-full items-center gap-2 rounded-[3px] px-2 py-1.5 text-left font-mono text-[10px] tracking-wide transition-colors",
+        "flex w-full items-center gap-2 rounded-[3px] px-2 py-1.5 text-left font-mono text-[10px] tracking-wide transition-colors focus:outline-none",
         active
           ? "bg-fd-primary/10 text-fd-primary"
           : "text-fd-muted-foreground hover:bg-fd-muted/10 hover:text-fd-foreground",
