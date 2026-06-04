@@ -28,6 +28,7 @@ import { resolveTreeAction } from "@/lib/actions/resolve-tree";
 import {
   downloadPresetJSON,
   downloadProjectZip,
+  generateCliPresetURL,
   generateShareURL,
   importPresetFromFile,
 } from "@/lib/preset/serialization";
@@ -537,7 +538,8 @@ function CliCommandSection() {
     }
     let cancelled = false;
     void (async () => {
-      const url = await generateShareURL(preset);
+      // CLI command uses /api/preset (returns JSON); share button uses /builder (opens UI).
+      const url = await generateCliPresetURL(preset);
       if (!cancelled) setShareUrl(url);
     })();
     return () => {
@@ -933,12 +935,13 @@ function ActionButtons() {
   }
 
   return (
-    <div className="grid grid-cols-3 gap-1.5">
+    <div className="grid grid-cols-2 gap-1.5">
       <ActionButton
         icon={shared ? Check : Share2}
         label={shared ? "Copied!" : "Share"}
         onClick={handleShare}
         active={shared}
+        className="col-span-2"
       />
       <ActionButton icon={Download} label="JSON" onClick={handleExport} />
       <ActionButton
@@ -959,12 +962,14 @@ function ActionButton({
   onClick,
   active = false,
   disabled = false,
+  className,
 }: {
   icon: React.ElementType;
   label: string;
   onClick: () => void;
   active?: boolean;
   disabled?: boolean;
+  className?: string;
 }) {
   return (
     <button
@@ -972,10 +977,11 @@ function ActionButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center gap-1 rounded-[3px] border px-2 py-1.5 font-mono text-[10px] transition-colors",
+        "flex flex-col items-center gap-1 rounded-[3px] border px-2 py-1.5 font-mono text-[10px] transition-colors disabled:cursor-not-allowed disabled:opacity-50",
         active
           ? "border-fd-primary bg-fd-primary/10 text-fd-primary"
           : "border-fd-border bg-fd-muted/15 text-fd-muted-foreground hover:border-fd-primary hover:bg-fd-primary/[0.06] hover:text-fd-foreground",
+        className,
       )}
     >
       <Icon className="h-3.5 w-3.5" />

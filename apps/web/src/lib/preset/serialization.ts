@@ -270,7 +270,7 @@ export async function readPresetFromURL(): Promise<Preset | null> {
   return compressed ? decompressPreset(compressed) : null;
 }
 
-/** Build a shareable URL for a preset. */
+/** Build a shareable builder URL for a preset (opens the visual builder). */
 export async function generateShareURL(
   preset: Preset,
   baseURL?: string,
@@ -278,6 +278,21 @@ export async function generateShareURL(
   const base =
     baseURL ?? (typeof window !== "undefined" ? window.location.origin : "");
   return `${base}/builder?${PARAM_KEY}=${await compressPreset(preset)}`;
+}
+
+/**
+ * Build the CLI-safe preset URL that `--preset` can consume directly.
+ * Points to `/api/preset?p=` which returns JSON (not the builder HTML).
+ *
+ * `bunx create-turbo-stack@latest <name> --preset <this url>`
+ */
+export async function generateCliPresetURL(
+  preset: Preset,
+  baseURL?: string,
+): Promise<string> {
+  const base =
+    baseURL ?? (typeof window !== "undefined" ? window.location.origin : "");
+  return `${base}/api/preset?${PARAM_KEY}=${await compressPreset(preset)}`;
 }
 
 /** Sync a preset into the browser URL without navigating. */
@@ -373,17 +388,10 @@ export function downloadPresetJSON(preset: Preset): void {
    if (typeof window === "undefined") return;
 
    const files: Record<string, Uint8Array> = {};
-   const walk = (list: FileTreeNode[]): void => {
-     for (const node of list) {
-       if (node.isDirectory) {
-         if (node.children) walk(node.children);
-         continue;
-       }
-       if (node.content == null) continue;
-       files[node.path] = strToU8(node.content);
-     }
-   };
-   walk(nodes);
+   for (const node of nodes) {
+     if (node.isDirectory || node.content == null) continue;
+     files[node.path] = strToU8(node.content);
+   }
 
    const zip = zipSync(files, { level: 6 });
    const blob = new Blob([zip as BlobPart], { type: "application/zip" });
