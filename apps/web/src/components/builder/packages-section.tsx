@@ -57,7 +57,7 @@ function iconForAutoPackage(
 ): { group: string; value: string } | null {
   switch (name) {
     case "typescript-config":
-      return { group: "linter", value: preset.basics.linter ?? "biome" };
+      return { group: "typescript", value: "tsconfig" };
     case "env":
       return { group: "envValidation", value: "t3-env" };
     case "db":

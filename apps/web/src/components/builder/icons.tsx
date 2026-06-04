@@ -1269,6 +1269,7 @@ const PROVIDER_ICONS: Record<string, Record<string, React.FC<SvgProps>>> = {
   typescript: {
     strict: TypeScriptSvg,
     relaxed: TypeScriptSvg,
+    tsconfig: TsconfigSvg,
   },
 };
 

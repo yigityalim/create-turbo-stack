@@ -35,10 +35,31 @@ import {
 import { useBuilder } from "./builder-provider";
 import { ProviderIcon } from "./icons";
 
+/** Consistent section header used across all sidebar blocks. */
+function SidebarLabel({
+  label,
+  right,
+}: {
+  label: string;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="select-none font-mono text-[9px] tracking-[0.14em] text-fd-muted-foreground/55 uppercase">
+        {label}
+      </span>
+      {right && (
+        <span className="font-mono text-[9px] text-fd-muted-foreground/55">
+          {right}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function BuilderSidebar() {
   const { validationErrors, isValid, fileTreeError, preset } = useBuilder();
 
-  // Track unsaved changes (compare with initial loaded state)
   const initialPresetRef = useRef<string | null>(null);
   const [isModified, setIsModified] = useState(false);
 
@@ -52,260 +73,290 @@ export function BuilderSidebar() {
 
   return (
     <aside className="flex min-h-0 flex-col overflow-hidden border-fd-border border-r bg-fd-background">
-      {/* Scrollable content */}
       <div className="min-h-0 flex-1 overflow-auto">
-        <div className="space-y-5 p-4">
-          {/* Unsaved changes indicator */}
-          {isModified && (
-            <div className="flex items-center gap-1.5 rounded-[3px] bg-amber-500/10 px-2 py-1">
-              <Circle className="h-2 w-2 fill-amber-500 text-amber-500" />
-              <span className="font-mono text-[10px] text-amber-600 dark:text-amber-400">
-                Modified
-              </span>
+        <div className="divide-y divide-fd-border/60">
+          <div className="px-3.5 py-3">
+            <ProjectSection isModified={isModified} />
+          </div>
+          <div className="px-3.5 py-3">
+            <CliCommandSection />
+          </div>
+          <div className="px-3.5 py-3">
+            <CoverageGrid />
+          </div>
+          <div className="px-3.5 py-3">
+            <ComplexityMeter />
+          </div>
+          <div className="px-3.5 py-3">
+            <StackSummary />
+          </div>
+          {(fileTreeError || !isValid) && (
+            <div className="px-3.5 py-3 space-y-2">
+              {fileTreeError && (
+                <div className="rounded-[3px] border border-red-500/20 bg-red-500/8 px-2.5 py-2">
+                  <p className="font-mono text-[9px] tracking-[0.12em] text-red-400 uppercase mb-1">
+                    Preview Error
+                  </p>
+                  <p className="font-mono text-[11px] text-fd-muted-foreground">
+                    {fileTreeError}
+                  </p>
+                </div>
+              )}
+              {!isValid && <ValidationErrors errors={validationErrors} />}
             </div>
           )}
-
-          {/* Preset Info */}
-          <PresetMetaFields />
-
-          {/* Project Name & Scope */}
-          <ProjectNameField />
-          <ScopeField />
-
-          {/* CLI Command */}
-          <CliCommandSection />
-
-          {/* Category Progress */}
-          <CategoryProgress />
-
-          {/* Complexity Badge */}
-          <ComplexityBadge />
-
-          {/* Stack Summary */}
-          <StackSummary />
-
-          {/* Errors */}
-          {fileTreeError && (
-            <div className="rounded-[3px] border border-red-500/20 bg-red-500/10 px-3 py-2">
-              <p className="font-mono text-[11px] text-red-400 uppercase tracking-wide">
-                Preview Error
-              </p>
-              <p className="mt-1 text-xs text-fd-muted-foreground">
-                {fileTreeError}
-              </p>
-            </div>
-          )}
-          {!isValid && <ValidationErrors errors={validationErrors} />}
         </div>
       </div>
-
-      {/* Sticky footer actions */}
-      <div className="space-y-2.5 border-fd-border border-t bg-fd-background/95 p-4">
+      <div className="border-fd-border border-t bg-fd-background/95 p-3.5">
         <ActionButtons />
       </div>
     </aside>
   );
 }
 
-// ─── Preset Metadata ──────────────────────────────────────────────────────────
+// ─── Project Section (name + scope + description merged) ─────────────────────
 
-function PresetMetaFields() {
+function ProjectSection({ isModified }: { isModified: boolean }) {
   const { preset, dispatch } = useBuilder();
 
+  const nameValue = preset.basics.projectName;
+  const scopeValue = preset.basics.scope;
+
+  const nameError =
+    nameValue.length === 0
+      ? "Required"
+      : !/^[a-z0-9-]+$/.test(nameValue)
+        ? "Lowercase + hyphens only"
+        : null;
+
+  const scopeError =
+    scopeValue.length === 0
+      ? "Required"
+      : !/^@[a-z0-9-]+$/.test(scopeValue)
+        ? "Must start with @"
+        : null;
+
   return (
-    <div className="space-y-2">
-      <span className="font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wide">
-        Preset Info
-      </span>
-      <label className="flex flex-col">
-        <span className="mb-1 font-mono text-[10px] text-fd-muted-foreground">
-          Name
-        </span>
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between">
+        <SidebarLabel label="Project" />
+        {isModified && (
+          <span className="flex items-center gap-1 font-mono text-[9px] text-amber-500 dark:text-amber-400">
+            <Circle className="h-1.5 w-1.5 fill-current" />
+            modified
+          </span>
+        )}
+      </div>
+
+      {/* Name — large, prominent */}
+      <div>
+        <input
+          type="text"
+          value={nameValue}
+          onChange={(e) =>
+            dispatch({
+              type: "SET_BASICS",
+              payload: { projectName: e.target.value.toLowerCase() },
+            })
+          }
+          className={cn(
+            "w-full rounded-[3px] border bg-transparent px-2.5 py-1.5 font-mono text-sm text-fd-foreground focus:outline-none transition-colors",
+            nameError
+              ? "border-red-500/60 bg-red-500/8"
+              : "border-fd-border focus:border-fd-primary",
+          )}
+          placeholder="my-turborepo"
+        />
+        {nameError && (
+          <p className="mt-0.5 font-mono text-[10px] text-red-400">{nameError}</p>
+        )}
+      </div>
+
+      {/* Scope */}
+      <div>
+        <input
+          type="text"
+          value={scopeValue}
+          onChange={(e) => {
+            let v = e.target.value.toLowerCase();
+            if (v.length > 0 && !v.startsWith("@")) v = `@${v}`;
+            dispatch({ type: "SET_BASICS", payload: { scope: v } });
+          }}
+          className={cn(
+            "w-full rounded-[3px] border bg-transparent px-2.5 py-1.5 font-mono text-xs text-fd-muted-foreground focus:text-fd-foreground focus:outline-none transition-colors",
+            scopeError
+              ? "border-red-500/60 bg-red-500/8"
+              : "border-fd-border focus:border-fd-primary",
+          )}
+          placeholder="@my-org"
+        />
+        {scopeError && (
+          <p className="mt-0.5 font-mono text-[10px] text-red-400">{scopeError}</p>
+        )}
+      </div>
+
+      {/* Preset name + description — subtle, below fold */}
+      <div className="grid grid-cols-2 gap-1.5">
         <input
           type="text"
           value={preset.name}
           onChange={(e) =>
-            dispatch({
-              type: "SET_META",
-              payload: { name: e.target.value },
-            })
+            dispatch({ type: "SET_META", payload: { name: e.target.value } })
           }
-          className="w-full rounded-[3px] border border-fd-border bg-fd-background px-2.5 py-1.5 font-mono text-sm text-fd-foreground focus:border-fd-primary focus:outline-none"
-          placeholder="My SaaS Stack"
+          className="rounded-[3px] border border-fd-border bg-transparent px-2 py-1 font-mono text-[11px] text-fd-muted-foreground placeholder:text-fd-muted-foreground/40 focus:border-fd-primary focus:text-fd-foreground focus:outline-none transition-colors"
+          placeholder="preset name"
         />
-      </label>
-      <label className="flex flex-col">
-        <span className="mb-1 font-mono text-[10px] text-fd-muted-foreground">
-          Description
-        </span>
-        <textarea
+        <input
+          type="text"
           value={preset.description ?? ""}
           onChange={(e) =>
-            dispatch({
-              type: "SET_META",
-              payload: { description: e.target.value },
-            })
+            dispatch({ type: "SET_META", payload: { description: e.target.value } })
           }
-          rows={2}
-          className="w-full resize-none rounded-[3px] border border-fd-border bg-fd-background px-2.5 py-1.5 font-mono text-xs text-fd-foreground focus:border-fd-primary focus:outline-none"
-          placeholder="One-line description of this preset"
+          className="rounded-[3px] border border-fd-border bg-transparent px-2 py-1 font-mono text-[11px] text-fd-muted-foreground placeholder:text-fd-muted-foreground/40 focus:border-fd-primary focus:text-fd-foreground focus:outline-none transition-colors"
+          placeholder="description"
         />
-      </label>
+      </div>
     </div>
   );
 }
 
-// ─── Project Name ─────────────────────────────────────────────────────────────
+// ─── Coverage Grid ────────────────────────────────────────────────────────────
 
-function ProjectNameField() {
-  const { preset, dispatch } = useBuilder();
-  const value = preset.basics.projectName;
-  const error =
-    value.length === 0
-      ? "Required"
-      : !/^[a-z0-9-]+$/.test(value)
-        ? "Lowercase alphanumeric and hyphens only"
-        : null;
+type CoverageCell = {
+  key: string;
+  label: string;
+  active: boolean;
+  icon?: { group: string; value: string };
+};
 
-  return (
-    <label className="flex flex-col">
-      <span className="mb-1 font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wide">
-        Project Name
-      </span>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) =>
-          dispatch({
-            type: "SET_BASICS",
-            payload: { projectName: e.target.value.toLowerCase() },
-          })
-        }
-        className={cn(
-          "w-full rounded-[3px] border px-2.5 py-1.5 font-mono text-sm text-fd-foreground focus:outline-none",
-          error
-            ? "border-red-500 bg-red-500/10"
-            : "border-fd-border bg-fd-background focus:border-fd-primary",
-        )}
-        placeholder="my-turborepo"
-      />
-      {error && <span className="mt-1 text-[11px] text-red-400">{error}</span>}
-    </label>
-  );
-}
-
-// ─── Scope ────────────────────────────────────────────────────────────────────
-
-function ScopeField() {
-  const { preset, dispatch } = useBuilder();
-  const value = preset.basics.scope;
-  const error =
-    value.length === 0
-      ? "Required"
-      : !/^@[a-z0-9-]+$/.test(value)
-        ? "Must start with @ (e.g. @my-org)"
-        : null;
-
-  return (
-    <label className="flex flex-col">
-      <span className="mb-1 font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wide">
-        Scope
-      </span>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => {
-          let v = e.target.value.toLowerCase();
-          if (v.length > 0 && !v.startsWith("@")) v = `@${v}`;
-          dispatch({ type: "SET_BASICS", payload: { scope: v } });
-        }}
-        className={cn(
-          "w-full rounded-[3px] border px-2.5 py-1.5 font-mono text-sm text-fd-foreground focus:outline-none",
-          error
-            ? "border-red-500 bg-red-500/10"
-            : "border-fd-border bg-fd-background focus:border-fd-primary",
-        )}
-        placeholder="@my-org"
-      />
-      {error && <span className="mt-1 text-[11px] text-red-400">{error}</span>}
-    </label>
-  );
-}
-
-// ─── Category Progress (minimap) ──────────────────────────────────────────
-
-function CategoryProgress() {
+function CoverageGrid() {
   const { preset } = useBuilder();
 
-  const progress = useMemo(() => {
-    const items: { key: string; label: string; active: boolean }[] = [
-      {
-        key: "database",
-        label: "Database",
-        active: preset.database.strategy !== "none",
-      },
-      { key: "api", label: "API", active: preset.api.strategy !== "none" },
-      { key: "auth", label: "Auth", active: preset.auth.provider !== "none" },
-      { key: "css", label: "CSS", active: preset.css.framework !== "vanilla" },
-      { key: "ui", label: "UI", active: preset.css.ui !== "none" },
-      {
-        key: "analytics",
-        label: "Analytics",
-        active: preset.integrations.analytics !== "none",
-      },
-      {
-        key: "errors",
-        label: "Errors",
-        active: preset.integrations.errorTracking !== "none",
-      },
-      {
-        key: "email",
-        label: "Email",
-        active: preset.integrations.email !== "none",
-      },
-      {
-        key: "rateLimit",
-        label: "Rate Limit",
-        active: preset.integrations.rateLimit !== "none",
-      },
-      { key: "ai", label: "AI", active: preset.integrations.ai !== "none" },
-    ];
-    return items;
-  }, [preset]);
+  const cells = useMemo((): CoverageCell[] => [
+    {
+      key: "database",
+      label: "DB",
+      active: preset.database.strategy !== "none",
+      icon: preset.database.strategy !== "none"
+        ? { group: "database", value: preset.database.strategy }
+        : undefined,
+    },
+    {
+      key: "api",
+      label: "API",
+      active: preset.api.strategy !== "none",
+      icon: preset.api.strategy !== "none"
+        ? { group: "api", value: preset.api.strategy }
+        : undefined,
+    },
+    {
+      key: "auth",
+      label: "Auth",
+      active: preset.auth.provider !== "none",
+      icon: preset.auth.provider !== "none"
+        ? { group: "auth", value: preset.auth.provider }
+        : undefined,
+    },
+    {
+      key: "css",
+      label: "CSS",
+      active: true,
+      icon: { group: "css", value: preset.css.framework },
+    },
+    {
+      key: "ui",
+      label: "UI",
+      active: preset.css.ui !== "none",
+      icon: preset.css.ui !== "none"
+        ? { group: "ui", value: preset.css.ui }
+        : undefined,
+    },
+    {
+      key: "analytics",
+      label: "Analytics",
+      active: preset.integrations.analytics !== "none",
+      icon: preset.integrations.analytics !== "none"
+        ? { group: "analytics", value: preset.integrations.analytics }
+        : undefined,
+    },
+    {
+      key: "errorTracking",
+      label: "Errors",
+      active: preset.integrations.errorTracking !== "none",
+      icon: preset.integrations.errorTracking !== "none"
+        ? { group: "errorTracking", value: preset.integrations.errorTracking }
+        : undefined,
+    },
+    {
+      key: "email",
+      label: "Email",
+      active: preset.integrations.email !== "none",
+      icon: preset.integrations.email !== "none"
+        ? { group: "email", value: preset.integrations.email }
+        : undefined,
+    },
+    {
+      key: "rateLimit",
+      label: "Rate",
+      active: preset.integrations.rateLimit !== "none",
+      icon: preset.integrations.rateLimit !== "none"
+        ? { group: "rateLimit", value: preset.integrations.rateLimit }
+        : undefined,
+    },
+    {
+      key: "ai",
+      label: "AI",
+      active: preset.integrations.ai !== "none",
+      icon: preset.integrations.ai !== "none"
+        ? { group: "ai", value: preset.integrations.ai }
+        : undefined,
+    },
+  ], [preset]);
 
-  const activeCount = progress.filter((p) => p.active).length;
+  const activeCount = cells.filter((c) => c.active).length;
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wide">
-          Configuration
-        </span>
-        <span className="font-mono text-[11px] text-fd-muted-foreground">
-          {activeCount}/{progress.length}
-        </span>
-      </div>
-      <div className="flex flex-wrap gap-1">
-        {progress.map((item) => (
-          <span
-            key={item.key}
+    <div className="space-y-2">
+      <SidebarLabel label="Configuration" right={`${activeCount} / ${cells.length}`} />
+      <div className="grid grid-cols-5 gap-1">
+        {cells.map((cell) => (
+          <div
+            key={cell.key}
             className={cn(
-              "rounded-[2px] px-1.5 py-0.5 font-mono text-[10px] transition-colors",
-              item.active
-                ? "bg-fd-primary/12 text-fd-primary"
-                : "bg-fd-muted/10 text-fd-muted-foreground/50",
+              "flex flex-col items-center gap-1 rounded-[3px] border py-1.5 px-1 transition-colors",
+              cell.active
+                ? "border-fd-primary/30 bg-fd-primary/8"
+                : "border-fd-border/50 bg-fd-muted/8",
             )}
           >
-            {item.label}
-          </span>
+            <div className="h-3.5 w-3.5 flex items-center justify-center">
+              {cell.icon ? (
+                <ProviderIcon
+                  group={cell.icon.group}
+                  value={cell.icon.value}
+                  className="h-3.5 w-3.5"
+                />
+              ) : (
+                <span
+                  className={cn(
+                    "block h-1.5 w-1.5 rounded-full",
+                    cell.active ? "bg-fd-primary/60" : "bg-fd-muted-foreground/20",
+                  )}
+                />
+              )}
+            </div>
+            <span
+              className={cn(
+                "font-mono text-[8px] leading-none tracking-wide",
+                cell.active
+                  ? "text-fd-primary/80"
+                  : "text-fd-muted-foreground/40",
+              )}
+            >
+              {cell.label}
+            </span>
+          </div>
         ))}
-      </div>
-      {/* Progress bar */}
-      <div className="h-1 overflow-hidden rounded-[2px] bg-fd-muted/15">
-        <div
-          className="h-full rounded-[2px] bg-fd-primary/60 transition-all duration-300"
-          style={{ width: `${(activeCount / progress.length) * 100}%` }}
-        />
       </div>
     </div>
   );
@@ -425,37 +476,48 @@ const COMPLEXITY_STYLES: Record<
   },
 };
 
-function ComplexityBadge() {
+const MAX_SCORE = 12;
+
+function ComplexityMeter() {
   const { preset } = useBuilder();
   const { level, score, details } = useMemo(
     () => computeComplexity(preset),
     [preset],
   );
   const style = COMPLEXITY_STYLES[level];
+  const filled = Math.min(score, MAX_SCORE);
 
   return (
-    <div className="space-y-1.5">
-      <span className="font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wide">
-        Complexity
-      </span>
-      <div className="flex items-center gap-2">
-        <div
-          className={cn(
-            "flex items-center gap-1.5 rounded-[3px] px-2 py-1",
-            style.bg,
-          )}
-        >
-          <Gauge className={cn("h-3.5 w-3.5", style.text)} />
-          <span className={cn("font-mono text-xs font-medium", style.text)}>
-            {style.label}
+    <div className="space-y-2">
+      <SidebarLabel
+        label="Complexity"
+        right={
+          <span className={cn("font-mono text-[9px]", style.text)}>
+            {style.label} · {score}pts
           </span>
-        </div>
-        <span className="font-mono text-[10px] text-fd-muted-foreground">
-          {score} pts
-        </span>
+        }
+      />
+      <div className="flex gap-[2px]">
+        {Array.from({ length: MAX_SCORE }).map((_, i) => (
+          <div
+            key={i}
+            className={cn(
+              "h-1.5 flex-1 rounded-[1px] transition-colors duration-200",
+              i < filled
+                ? level === "minimal"
+                  ? "bg-green-500/70"
+                  : level === "standard"
+                    ? "bg-blue-500/70"
+                    : level === "advanced"
+                      ? "bg-amber-500/70"
+                      : "bg-red-500/70"
+                : "bg-fd-muted/20",
+            )}
+          />
+        ))}
       </div>
       {details.length > 0 && (
-        <p className="text-[11px] text-fd-muted-foreground leading-relaxed">
+        <p className="font-mono text-[10px] text-fd-muted-foreground/60 leading-relaxed">
           {details.join(" · ")}
         </p>
       )}
@@ -582,23 +644,21 @@ function CliCommandSection() {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wide">
-          CLI Command
-        </span>
+        <SidebarLabel label="CLI Command" />
         <button
           type="button"
           onClick={copy}
           className={cn(
-            "flex items-center gap-1 rounded-[3px] border px-2 py-1 font-mono text-[11px] uppercase transition-colors",
+            "flex items-center gap-1 rounded-[3px] border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide transition-colors",
             copied
               ? "border-fd-primary bg-fd-primary/14 text-fd-primary"
               : "border-fd-border bg-fd-muted/20 text-fd-muted-foreground hover:border-fd-primary hover:bg-fd-primary/[0.06] hover:text-fd-foreground",
           )}
         >
           {copied ? (
-            <Check className="h-3 w-3" />
+            <Check className="h-2.5 w-2.5" />
           ) : (
-            <ClipboardCopy className="h-3 w-3" />
+            <ClipboardCopy className="h-2.5 w-2.5" />
           )}
           {copied ? "Copied" : "Copy"}
         </button>
@@ -771,14 +831,7 @@ function StackSummary() {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wide">
-          Selected stack
-        </span>
-        <span className="font-mono text-[11px] text-fd-muted-foreground">
-          {badges.length} picks
-        </span>
-      </div>
+      <SidebarLabel label="Stack" right={`${badges.length} picks`} />
       <div className="flex flex-wrap gap-1.5">
         {badges.map((badge) =>
           badge.onRemove ? (
@@ -845,19 +898,19 @@ function ValidationErrors({
   errors: { path: (string | number)[]; message: string }[];
 }) {
   return (
-    <div className="rounded-[3px] border border-amber-500/20 bg-amber-500/10 px-3 py-2 space-y-1">
-      <div className="flex items-center gap-1.5 font-mono text-[11px] text-amber-600 uppercase tracking-wide dark:text-amber-400">
-        <AlertTriangle className="h-3.5 w-3.5" />
-        Validation Issues
+    <div className="rounded-[3px] border border-amber-500/20 bg-amber-500/8 px-2.5 py-2 space-y-1">
+      <div className="flex items-center gap-1.5 font-mono text-[9px] tracking-[0.12em] text-amber-500 uppercase dark:text-amber-400">
+        <AlertTriangle className="h-3 w-3" />
+        Validation
       </div>
       {errors.slice(0, 5).map((err) => (
-        <p key={err.message} className="text-xs text-fd-muted-foreground">
+        <p key={err.message} className="font-mono text-[11px] text-fd-muted-foreground">
           {err.message}
         </p>
       ))}
       {errors.length > 5 && (
-        <p className="text-xs text-fd-muted-foreground">
-          ...and {errors.length - 5} more
+        <p className="font-mono text-[10px] text-fd-muted-foreground/60">
+          +{errors.length - 5} more
         </p>
       )}
     </div>
