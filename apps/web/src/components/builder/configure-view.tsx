@@ -58,7 +58,7 @@ function SectionNav({
         {items.map((item) =>
           item.separator ? (
             <div key={`sep-${item.id}`}>
-              <div className="my-1 border-fd-border/60 border-t" />
+              <hr className="my-1 border-fd-border/40" />
               <NavButton item={item} active={activeId === item.id} onClick={onNavigate} />
             </div>
           ) : (
@@ -84,7 +84,7 @@ function NavButton({
       type="button"
       onClick={() => onClick(item.id)}
       className={cn(
-        "flex w-full items-center gap-2 rounded-[3px] px-2 py-1.5 text-left font-mono text-[10px] tracking-wide transition-colors focus:outline-none",
+        "flex w-full items-center gap-2 rounded-[3px] px-2 py-1.5 text-left font-mono text-[10px] tracking-wide transition-colors outline-none focus:outline-none focus-visible:outline-none active:outline-none",
         active
           ? "bg-fd-primary/10 text-fd-primary"
           : "text-fd-muted-foreground hover:bg-fd-muted/10 hover:text-fd-foreground",
