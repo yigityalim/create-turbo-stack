@@ -39,26 +39,31 @@ export function registerTools(server: McpServer, ctx: McpContext): void {
       port: z.number().int().min(1024).max(65535).describe("Dev server port"),
       i18n: z.boolean().optional().default(false).describe("Enable i18n"),
       consumes: z.array(z.string()).optional().default([]).describe("Package names to consume"),
+      location: z
+        .string()
+        .optional()
+        .default("apps")
+        .describe("Workspace directory for this app (default: apps)"),
     },
-    ({ name, type, port, i18n, consumes }) =>
+    ({ name, type, port, i18n, consumes, location }) =>
       withConfig(ctx, async (config) => {
         if (config.apps.some((a) => a.name === name)) {
           return { error: `App "${name}" already exists` };
         }
+        if (config.apps.some((a) => a.port === port)) {
+          return { error: `Port ${port} is already in use by another app` };
+        }
         const newApp: App = {
           name,
           type,
-          // MCP currently hardcodes the default workspace location. Exposing
-          // it as a tool argument is queued for the next iteration once we
-          // wire location autocomplete through the agent surface.
-          location: "apps",
+          location: location ?? "apps",
           port,
           i18n: i18n ?? false,
           consumes: consumes ?? [],
         };
         return {
           preset: { ...config, apps: [...config.apps, newApp] } as Preset,
-          success: `Created app "${name}" (${type}:${port}).`,
+          success: `Created app "${name}" (${type}:${port}) in ${location ?? "apps"}/`,
         };
       }),
   );
@@ -75,8 +80,13 @@ export function registerTools(server: McpServer, ctx: McpContext): void {
         .default(false)
         .describe("Whether the package produces CSS"),
       exports: z.array(z.string()).optional().default(["."]).describe("Package export paths"),
+      location: z
+        .string()
+        .optional()
+        .default("packages")
+        .describe("Workspace directory for this package (default: packages)"),
     },
-    ({ name, type, producesCSS, exports }) =>
+    ({ name, type, producesCSS, exports, location }) =>
       withConfig(ctx, async (config) => {
         if (config.packages.some((p) => p.name === name)) {
           return { error: `Package "${name}" already exists` };
@@ -84,27 +94,31 @@ export function registerTools(server: McpServer, ctx: McpContext): void {
         const newPkg: Package = {
           name,
           type,
-          // See `add_app` comment — location is currently hardcoded to the
-          // default workspace until the MCP surface exposes it as an arg.
-          location: "packages",
+          location: location ?? "packages",
           producesCSS: producesCSS ?? false,
           exports: exports ?? ["."],
         };
         return {
           preset: { ...config, packages: [...config.packages, newPkg] } as Preset,
-          success: `Created package "${name}" (${type}).`,
+          success: `Created package "${name}" (${type}) in ${location ?? "packages"}/`,
         };
       }),
   );
 
   server.tool(
     `${PREFIX}add_integration`,
-    "Add an integration to the monorepo",
+    "Add or switch an integration provider in the monorepo",
     {
       category: z
-        .enum(["analytics", "errorTracking", "email", "rateLimit", "ai"])
+        .enum(["analytics", "errorTracking", "email", "rateLimit", "ai", "cache"])
         .describe("Integration category"),
-      value: z.string().describe("Integration value (e.g. posthog, sentry, react-email-resend)"),
+      value: z
+        .string()
+        .describe(
+          "Provider value. Analytics: posthog|vercel-analytics|plausible|none. " +
+            "Error tracking: sentry|bugsnag|none. Email: react-email-resend|nodemailer|none. " +
+            "Rate limit: upstash|none. AI: vercel-ai-sdk|langchain|none. Cache: upstash|none.",
+        ),
     },
     ({ category, value }) =>
       withConfig(ctx, async (config) => ({
@@ -112,7 +126,73 @@ export function registerTools(server: McpServer, ctx: McpContext): void {
           ...config,
           integrations: { ...config.integrations, [category]: value },
         } as Preset,
-        success: `Added integration ${category}=${value}.`,
+        success: `Set ${category} → ${value}.`,
+      })),
+  );
+
+  server.tool(
+    `${PREFIX}switch_database`,
+    "Switch the database strategy (replaces existing database config)",
+    {
+      strategy: z
+        .enum(["drizzle", "prisma", "supabase", "none"])
+        .describe("Database strategy"),
+      driver: z
+        .enum(["postgres", "mysql", "sqlite", "turso", "neon", "planetscale"])
+        .optional()
+        .describe("Drizzle/Prisma driver (required for drizzle, optional for prisma)"),
+    },
+    ({ strategy, driver }) =>
+      withConfig(ctx, async (config) => {
+        if (strategy === "drizzle" && !driver) {
+          return { error: "Drizzle requires a driver (postgres, mysql, sqlite, turso, neon, planetscale)" };
+        }
+        const database =
+          strategy === "drizzle"
+            ? { strategy: "drizzle" as const, driver: driver! }
+            : strategy === "prisma" && driver
+              ? { strategy: "prisma" as const, driver }
+              : { strategy } as Preset["database"];
+        return {
+          preset: { ...config, database } as Preset,
+          success: `Database switched to ${strategy}${driver ? ` (${driver})` : ""}.`,
+        };
+      }),
+  );
+
+  server.tool(
+    `${PREFIX}switch_auth`,
+    "Switch the authentication provider",
+    {
+      provider: z
+        .enum(["supabase-auth", "better-auth", "clerk", "next-auth", "lucia", "none"])
+        .describe("Auth provider"),
+    },
+    ({ provider }) =>
+      withConfig(ctx, async (config) => ({
+        preset: {
+          ...config,
+          auth: { provider, rbac: config.auth.rbac, entitlements: config.auth.entitlements },
+        } as Preset,
+        success: `Auth switched to ${provider}.`,
+      })),
+  );
+
+  server.tool(
+    `${PREFIX}switch_api`,
+    "Switch the API strategy",
+    {
+      strategy: z
+        .enum(["trpc", "hono", "rest-nextjs", "none"])
+        .describe("API strategy"),
+    },
+    ({ strategy }) =>
+      withConfig(ctx, async (config) => ({
+        preset: {
+          ...config,
+          api: { strategy } as Preset["api"],
+        } as Preset,
+        success: `API switched to ${strategy}.`,
       })),
   );
 

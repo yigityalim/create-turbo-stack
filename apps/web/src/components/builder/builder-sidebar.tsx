@@ -6,8 +6,10 @@ import {
   Circle,
   ClipboardCopy,
   Download,
+  FolderArchive,
   Gauge,
   Link,
+  Loader2,
   RefreshCw,
   Share2,
   Upload,
@@ -22,8 +24,10 @@ import {
   INTEGRATION_CATEGORY_LABELS,
   providerLabel,
 } from "@/lib/preset/schema-meta";
+import { resolveTreeAction } from "@/lib/actions/resolve-tree";
 import {
   downloadPresetJSON,
+  downloadProjectZip,
   generateShareURL,
   importPresetFromFile,
 } from "@/lib/preset/serialization";
@@ -895,6 +899,20 @@ function ActionButtons() {
     eventBus.emit("preset:share", { method: "json" });
   }
 
+  const [zipping, setZipping] = useState(false);
+  async function handleDownloadZip() {
+    if (zipping) return;
+    setZipping(true);
+    try {
+      const { tree, error } = await resolveTreeAction(preset);
+      if (error || !tree) return;
+      downloadProjectZip(preset, tree.nodes);
+      eventBus.emit("preset:share", { method: "zip" });
+    } finally {
+      setZipping(false);
+    }
+  }
+
   async function handleImport() {
     const input = document.createElement("input");
     input.type = "file";
@@ -915,14 +933,20 @@ function ActionButtons() {
   }
 
   return (
-    <div className="grid grid-cols-4 gap-1.5">
+    <div className="grid grid-cols-3 gap-1.5">
       <ActionButton
         icon={shared ? Check : Share2}
         label={shared ? "Copied!" : "Share"}
         onClick={handleShare}
         active={shared}
       />
-      <ActionButton icon={Download} label="Export" onClick={handleExport} />
+      <ActionButton icon={Download} label="JSON" onClick={handleExport} />
+      <ActionButton
+        icon={zipping ? Loader2 : FolderArchive}
+        label={zipping ? "Zipping…" : "ZIP"}
+        onClick={handleDownloadZip}
+        disabled={zipping}
+      />
       <ActionButton icon={Upload} label="Import" onClick={handleImport} />
       <ActionButton icon={RefreshCw} label="Reset" onClick={handleReset} />
     </div>
@@ -934,15 +958,18 @@ function ActionButton({
   label,
   onClick,
   active = false,
+  disabled = false,
 }: {
   icon: React.ElementType;
   label: string;
   onClick: () => void;
   active?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={onClick}
       className={cn(
         "flex flex-col items-center gap-1 rounded-[3px] border px-2 py-1.5 font-mono text-[10px] transition-colors",

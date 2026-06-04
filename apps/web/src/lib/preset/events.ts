@@ -26,7 +26,7 @@ export type PresetEventMap = {
     presetName?: string;
   };
   /** Preset was shared */
-  "preset:share": { method: "url" | "json" | "clipboard" };
+  "preset:share": { method: "url" | "json" | "clipboard" | "zip" };
   /** Preset was reset to defaults */
   "preset:reset": Record<string, never>;
   /** File was selected in preview */
