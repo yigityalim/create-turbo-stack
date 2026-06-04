@@ -122,41 +122,37 @@ export function ConfigureSection({
   const Icon = ICON_MAP[category.icon] ?? Settings;
   const sectionData = preset[category.key as keyof Preset];
 
-  // Get the current discriminator value (for database/api)
   const discriminatorValue = category.discriminator
-    ? ((sectionData as Record<string, unknown>)?.[
-        category.discriminator
-      ] as string)
+    ? ((sectionData as Record<string, unknown>)?.[category.discriminator] as string)
     : undefined;
 
-  // Get active variant fields
   const variantFields =
     category.discriminator && discriminatorValue && category.variants
       ? (category.variants[discriminatorValue] ?? [])
       : [];
 
   return (
-    <section className="scroll-mt-4">
-      {/* Header */}
-      <div className="mb-5">
-        <div className="flex items-center gap-2.5">
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-[3px] border border-fd-border bg-fd-card text-fd-primary">
-            <Icon className="h-4 w-4" />
-          </span>
-          <h2 className="font-mono font-semibold text-sm uppercase tracking-wide">
+    <section className="scroll-mt-4 max-w-4xl">
+      {/* Section header */}
+      <div className="mb-6 flex items-start gap-3">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[3px] border border-fd-primary/25 bg-fd-primary/8 text-fd-primary">
+          <Icon className="h-3.5 w-3.5" />
+        </span>
+        <div>
+          <h2 className="font-mono text-[11px] font-semibold tracking-[0.1em] text-fd-foreground uppercase">
             {category.label}
           </h2>
+          <p className="mt-0.5 text-[11px] text-fd-muted-foreground leading-relaxed">
+            {category.description}
+          </p>
         </div>
-        <p className="mt-2 text-fd-muted-foreground text-xs leading-relaxed">
-          {category.description}
-        </p>
       </div>
 
-      {/* Errors */}
+      {/* Validation errors */}
       {errors.length > 0 && (
-        <div className="mb-3 rounded-[3px] border border-red-500/20 bg-red-500/10 px-3 py-2">
+        <div className="mb-4 rounded-[3px] border border-red-500/20 bg-red-500/8 px-3 py-2 space-y-0.5">
           {errors.map((err) => (
-            <p key={err.message} className="text-xs text-red-400">
+            <p key={err.message} className="font-mono text-[11px] text-red-400">
               {err.message}
             </p>
           ))}
@@ -164,7 +160,7 @@ export function ConfigureSection({
       )}
 
       {/* Fields */}
-      <div className="space-y-5">
+      <div className="space-y-6">
         {category.fields?.map((field) => (
           <FieldRenderer
             key={field.key}
@@ -177,9 +173,12 @@ export function ConfigureSection({
           />
         ))}
 
-        {/* Variant sub-fields (appear after discriminator selection) */}
+        {/* Variant sub-fields */}
         {variantFields.length > 0 && (
-          <div className="ml-4 space-y-4 border-fd-border border-l pl-4">
+          <div className="space-y-5 rounded-[3px] border border-fd-border/60 bg-fd-muted/5 p-4">
+            <p className="font-mono text-[9px] tracking-[0.12em] text-fd-muted-foreground/50 uppercase">
+              {discriminatorValue} options
+            </p>
             {variantFields.map((field) => (
               <FieldRenderer
                 key={field.key}
@@ -232,10 +231,10 @@ function FieldRenderer({
   if (field.type === "enum" && field.options) {
     return (
       <div>
-        <p className="mb-2 font-mono text-[11px] text-fd-muted-foreground uppercase tracking-wide">
+        <p className="mb-2.5 font-mono text-[9px] tracking-[0.12em] text-fd-muted-foreground/60 uppercase">
           {field.label}
         </p>
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {field.options.map((option) => {
             const available = isAvailable(field.group, option.value);
             return (
