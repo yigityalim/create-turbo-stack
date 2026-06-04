@@ -613,24 +613,6 @@ function AutoPackageCard({
           </span>
         )}
         <span className="flex-1" />
-        {entry.disableableCategory && (
-          // biome-ignore lint/a11y/useSemanticElements: outer row is already a <button>; nesting another <button> would be invalid HTML, so the span+role pattern stands in.
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={handleDisable}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                handleDisable(e as unknown as React.MouseEvent);
-              }
-            }}
-            title={`Disable ${entry.name} (sets integrations.${entry.disableableCategory} to "none")`}
-            className="flex shrink-0 items-center gap-1 rounded-[2px] px-1.5 py-1 font-mono text-[10px] text-fd-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400"
-          >
-            <Power className="h-3.5 w-3.5" />
-            disable
-          </span>
-        )}
       </button>
 
       {expanded && (

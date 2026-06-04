@@ -674,12 +674,17 @@ function CliCommandSection() {
             onClick={() => setPm(opt)}
             title={`${PM_PREFIX[opt].trim()} create-turbo-stack@latest …`}
             className={cn(
-              "flex-1 rounded-[2px] px-1 py-0.5 font-mono text-[10px] uppercase tracking-wider transition-colors",
+              "flex flex-1 flex-col items-center gap-0.5 rounded-[2px] px-1 py-1 font-mono text-[8px] uppercase tracking-wider transition-colors",
               pm === opt
                 ? "bg-fd-primary/15 text-fd-primary"
                 : "text-fd-muted-foreground hover:bg-fd-muted/15 hover:text-fd-foreground",
             )}
           >
+            <ProviderIcon
+              group="packageManager"
+              value={opt}
+              className="h-3.5 w-3.5"
+            />
             {opt}
           </button>
         ))}
@@ -729,23 +734,63 @@ function CliCommandSection() {
 
 // ─── Stack Summary ────────────────────────────────────────────────────────────
 
+type StackBadge = {
+  key: string;
+  label: string;
+  secondary?: string;
+  icon?: { group: string; value: string };
+  onRemove?: () => void;
+  group: "core" | "integrations" | "apps" | "packages";
+};
+
+const STACK_GROUPS: { key: StackBadge["group"]; label: string }[] = [
+  { key: "core", label: "Core" },
+  { key: "integrations", label: "Integrations" },
+  { key: "apps", label: "Apps" },
+  { key: "packages", label: "Packages" },
+];
+
+function StackChip({ badge }: { badge: StackBadge }) {
+  const base =
+    "flex items-center gap-1 rounded-[3px] border px-1.5 py-0.5 font-mono text-[10px] transition-colors";
+
+  if (badge.onRemove) {
+    return (
+      <button
+        type="button"
+        onClick={badge.onRemove}
+        title={badge.secondary ? `Remove ${badge.label} (${badge.secondary})` : `Remove ${badge.label}`}
+        className={cn(
+          base,
+          "group border-fd-primary/25 bg-fd-primary/8 text-fd-primary hover:border-red-500/40 hover:bg-red-500/8 hover:text-red-400",
+        )}
+      >
+        {badge.icon && (
+          <ProviderIcon group={badge.icon.group} value={badge.icon.value} className="size-3" />
+        )}
+        {badge.label}
+        {badge.secondary && (
+          <span className="text-fd-primary/40">·{badge.secondary}</span>
+        )}
+        <X className="h-2 w-2 opacity-0 transition-opacity group-hover:opacity-100" />
+      </button>
+    );
+  }
+  return (
+    <span className={cn(base, "border-fd-border/50 bg-fd-muted/10 text-fd-muted-foreground")}>
+      {badge.icon && (
+        <ProviderIcon group={badge.icon.group} value={badge.icon.value} className="size-3" />
+      )}
+      {badge.label}
+    </span>
+  );
+}
+
 function StackSummary() {
   const { preset, dispatch } = useBuilder();
 
-  // Each badge now carries an `icon` slot (group + value) so the sidebar gets
-  // the same brand glyphs the option cards in the configure pane use.
-  // Hand-coded `apps/packages` chip glyphs (frameworks + package types) use
-  // their own PROVIDER_ICONS groups so the brand mark is recognizable.
-  const badges = useMemo(() => {
-    const b: {
-      key: string;
-      label: string;
-      /** Optional muted suffix — e.g. category label so duplicate providers
-       *  ("Upstash" for cache AND rate-limit) read distinctly. */
-      secondary?: string;
-      icon?: { group: string; value: string };
-      onRemove?: () => void;
-    }[] = [];
+  const badges = useMemo((): StackBadge[] => {
+    const b: StackBadge[] = [];
     const clear = (action: PresetAction) => () => dispatch(action);
 
     if (preset.database.strategy !== "none")
@@ -753,47 +798,36 @@ function StackSummary() {
         key: `db-${preset.database.strategy}`,
         label: providerLabel("database", preset.database.strategy),
         icon: { group: "database", value: preset.database.strategy },
-        onRemove: clear({
-          type: "SET_DATABASE",
-          payload: { strategy: "none" },
-        } as PresetAction),
+        onRemove: clear({ type: "SET_DATABASE", payload: { strategy: "none" } } as PresetAction),
+        group: "core",
       });
     if (preset.api.strategy !== "none")
       b.push({
         key: `api-${preset.api.strategy}`,
         label: providerLabel("api", preset.api.strategy),
         icon: { group: "api", value: preset.api.strategy },
-        onRemove: clear({
-          type: "SET_API",
-          payload: { strategy: "none" },
-        } as PresetAction),
+        onRemove: clear({ type: "SET_API", payload: { strategy: "none" } } as PresetAction),
+        group: "core",
       });
     if (preset.auth.provider !== "none")
       b.push({
         key: `auth-${preset.auth.provider}`,
         label: providerLabel("auth", preset.auth.provider),
         icon: { group: "auth", value: preset.auth.provider },
-        onRemove: clear({
-          type: "SET_AUTH",
-          payload: { provider: "none" },
-        } as PresetAction),
+        onRemove: clear({ type: "SET_AUTH", payload: { provider: "none" } } as PresetAction),
+        group: "core",
       });
     if (preset.css.ui !== "none")
       b.push({
         key: `ui-${preset.css.ui}`,
         label: providerLabel("ui", preset.css.ui),
         icon: { group: "ui", value: preset.css.ui },
-        onRemove: clear({
-          type: "SET_CSS",
-          payload: { ui: "none" },
-        } as PresetAction),
+        onRemove: clear({ type: "SET_CSS", payload: { ui: "none" } } as PresetAction),
+        group: "core",
       });
+
     for (const [key, value] of Object.entries(preset.integrations)) {
       if (key === "envValidation" || value === "none") continue;
-      // Same provider can power multiple integrations (Upstash → cache +
-      // rateLimit, Vercel → analytics + AI). Tack the category label on so
-      // the two chips are distinct at a glance instead of both reading
-      // "Upstash" with no context.
       const provider = providerLabel(key, String(value));
       const category = INTEGRATION_CATEGORY_LABELS[key] ?? key;
       b.push({
@@ -801,91 +835,63 @@ function StackSummary() {
         label: provider,
         secondary: category,
         icon: { group: key, value: String(value) },
-        onRemove: clear({
-          type: "SET_INTEGRATIONS",
-          payload: { [key]: "none" },
-        } as PresetAction),
+        onRemove: clear({ type: "SET_INTEGRATIONS", payload: { [key]: "none" } } as PresetAction),
+        group: "integrations",
       });
     }
+
     preset.apps.forEach((app, i) => {
       b.push({
         key: `app-${app.name}`,
         label: app.name,
         icon: { group: "appType", value: app.type },
-        onRemove:
-          preset.apps.length > 1
-            ? clear({ type: "REMOVE_APP", index: i } as PresetAction)
-            : undefined,
+        onRemove: preset.apps.length > 1
+          ? clear({ type: "REMOVE_APP", index: i } as PresetAction)
+          : undefined,
+        group: "apps",
       });
     });
+
     preset.packages.forEach((pkg, i) => {
       b.push({
         key: `pkg-${pkg.name}`,
         label: pkg.name,
         icon: { group: "packageType", value: pkg.type },
         onRemove: clear({ type: "REMOVE_PACKAGE", index: i } as PresetAction),
+        group: "packages",
       });
     });
+
     return b;
   }, [preset, dispatch]);
 
+  const total = badges.length;
+
   return (
-    <div className="space-y-2">
-      <SidebarLabel label="Stack" right={`${badges.length} picks`} />
-      <div className="flex flex-wrap gap-1.5">
-        {badges.map((badge) =>
-          badge.onRemove ? (
-            <button
-              key={badge.key}
-              type="button"
-              onClick={badge.onRemove}
-              title={
-                badge.secondary
-                  ? `Remove ${badge.label} (${badge.secondary})`
-                  : `Remove ${badge.label}`
-              }
-              className="group flex items-center gap-1.5 rounded-[3px] border border-fd-primary/30 bg-fd-primary/10 py-1 pr-1.5 pl-1.5 font-mono text-[11px] text-fd-primary transition-colors hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
-            >
-              {badge.icon && (
-                <ProviderIcon
-                  group={badge.icon.group}
-                  value={badge.icon.value}
-                  className="size-3"
-                />
-              )}
-              {badge.label}
-              {badge.secondary && (
-                <span className="text-fd-primary/50">· {badge.secondary}</span>
-              )}
-              <X className="h-2.5 w-2.5 opacity-50 transition-opacity group-hover:opacity-100" />
-            </button>
-          ) : (
-            <span
-              key={badge.key}
-              className="flex items-center gap-1.5 rounded-[3px] border border-fd-border bg-fd-muted/15 px-1.5 py-1 font-mono text-[11px] text-fd-muted-foreground"
-            >
-              {badge.icon && (
-                <ProviderIcon
-                  group={badge.icon.group}
-                  value={badge.icon.value}
-                  className="size-3"
-                />
-              )}
-              {badge.label}
-              {badge.secondary && (
-                <span className="text-fd-muted-foreground/50">
-                  · {badge.secondary}
-                </span>
-              )}
-            </span>
-          ),
-        )}
-        {badges.length === 0 && (
-          <span className="text-fd-muted-foreground text-xs">
-            Default configuration
-          </span>
-        )}
-      </div>
+    <div className="space-y-2.5">
+      <SidebarLabel label="Stack" right={`${total} picks`} />
+      {total === 0 ? (
+        <p className="font-mono text-[10px] text-fd-muted-foreground/50">Default configuration</p>
+      ) : (
+        <div className="space-y-2">
+          {STACK_GROUPS.map(({ key, label }) => {
+            const items = badges.filter((b) => b.group === key);
+            if (items.length === 0) return null;
+            return (
+              <div key={key}>
+                <p className="mb-1 font-mono text-[8px] tracking-[0.12em] text-fd-muted-foreground/40 uppercase">
+                  {label}
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {items.map((badge) => (
+                    <StackChip key={badge.key} badge={badge} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

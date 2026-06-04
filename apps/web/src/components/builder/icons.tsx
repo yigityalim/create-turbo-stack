@@ -1240,12 +1240,9 @@ const PROVIDER_ICONS: Record<string, Record<string, React.FC<SvgProps>>> = {
     none: NoneTile,
   },
   envValidation: {
-    // `integrations.envValidation` is a boolean in the schema, but `t3-env`
-    // is the library wired in when it's on. The `enabled` / `t3env` keys
-    // exist so a future enum migration (`envValidation: "t3-env" | "none"`)
-    // can drop in without touching this map.
     enabled: T3EnvSvg,
     "t3-env": T3EnvSvg,
+    none: NoneTile,
   },
   appType: {
     nextjs: NextSvg,
