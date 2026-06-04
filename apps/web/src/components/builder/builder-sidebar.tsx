@@ -35,6 +35,15 @@ import {
 import { useBuilder } from "./builder-provider";
 import { ProviderIcon } from "./icons";
 
+/** Wrapper that adds consistent padding + explicit bottom border. */
+function Section({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="border-fd-border/50 border-b px-3.5 py-3 last:border-b-0">
+      {children}
+    </div>
+  );
+}
+
 /** Consistent section header used across all sidebar blocks. */
 function SidebarLabel({
   label,
@@ -44,12 +53,12 @@ function SidebarLabel({
   right?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="select-none font-mono text-[9px] tracking-[0.14em] text-fd-muted-foreground/55 uppercase">
+    <div className="mb-2 flex items-center justify-between">
+      <span className="select-none font-mono text-[10px] font-medium tracking-[0.1em] text-fd-muted-foreground uppercase">
         {label}
       </span>
       {right && (
-        <span className="font-mono text-[9px] text-fd-muted-foreground/55">
+        <span className="font-mono text-[10px] text-fd-muted-foreground/70">
           {right}
         </span>
       )}
@@ -74,24 +83,14 @@ export function BuilderSidebar() {
   return (
     <aside className="flex min-h-0 flex-col overflow-hidden border-fd-border border-r bg-fd-background">
       <div className="min-h-0 flex-1 overflow-auto">
-        <div className="divide-y divide-fd-border/60">
-          <div className="px-3.5 py-3">
-            <ProjectSection isModified={isModified} />
-          </div>
-          <div className="px-3.5 py-3">
-            <CliCommandSection />
-          </div>
-          <div className="px-3.5 py-3">
-            <CoverageGrid />
-          </div>
-          <div className="px-3.5 py-3">
-            <ComplexityMeter />
-          </div>
-          <div className="px-3.5 py-3">
-            <StackSummary />
-          </div>
-          {(fileTreeError || !isValid) && (
-            <div className="px-3.5 py-3 space-y-2">
+        <Section><ProjectSection isModified={isModified} /></Section>
+        <Section><CliCommandSection /></Section>
+        <Section><CoverageGrid /></Section>
+        <Section><ComplexityMeter /></Section>
+        <Section><StackSummary /></Section>
+        {(fileTreeError || !isValid) && (
+          <Section>
+            <div className="space-y-2">
               {fileTreeError && (
                 <div className="rounded-[3px] border border-red-500/20 bg-red-500/8 px-2.5 py-2">
                   <p className="font-mono text-[9px] tracking-[0.12em] text-red-400 uppercase mb-1">
@@ -104,8 +103,8 @@ export function BuilderSidebar() {
               )}
               {!isValid && <ValidationErrors errors={validationErrors} />}
             </div>
-          )}
-        </div>
+          </Section>
+        )}
       </div>
       <div className="border-fd-border border-t bg-fd-background/95 p-3.5">
         <ActionButtons />
@@ -752,7 +751,7 @@ const STACK_GROUPS: { key: StackBadge["group"]; label: string }[] = [
 
 function StackChip({ badge }: { badge: StackBadge }) {
   const base =
-    "flex items-center gap-1 rounded-[3px] border px-1.5 py-0.5 font-mono text-[10px] transition-colors";
+    "flex items-center gap-1.5 rounded-[3px] border px-2 py-1 font-mono text-[11px] transition-colors";
 
   if (badge.onRemove) {
     return (
@@ -766,20 +765,20 @@ function StackChip({ badge }: { badge: StackBadge }) {
         )}
       >
         {badge.icon && (
-          <ProviderIcon group={badge.icon.group} value={badge.icon.value} className="size-3" />
+          <ProviderIcon group={badge.icon.group} value={badge.icon.value} className="size-3.5" />
         )}
         {badge.label}
         {badge.secondary && (
-          <span className="text-fd-primary/40">·{badge.secondary}</span>
+          <span className="text-fd-primary/40 text-[10px]">· {badge.secondary}</span>
         )}
-        <X className="h-2 w-2 opacity-0 transition-opacity group-hover:opacity-100" />
+        <X className="h-2.5 w-2.5 opacity-0 transition-opacity group-hover:opacity-100" />
       </button>
     );
   }
   return (
     <span className={cn(base, "border-fd-border/50 bg-fd-muted/10 text-fd-muted-foreground")}>
       {badge.icon && (
-        <ProviderIcon group={badge.icon.group} value={badge.icon.value} className="size-3" />
+        <ProviderIcon group={badge.icon.group} value={badge.icon.value} className="size-3.5" />
       )}
       {badge.label}
     </span>
