@@ -1,5 +1,6 @@
 "use client";
 
+import { BUILTIN_REGISTRY_ITEMS } from "@create-turbo-stack/core";
 import type { Preset } from "@create-turbo-stack/schema";
 import { Database, Palette, Puzzle, Settings, Shield, Zap } from "lucide-react";
 import type { ValidationError } from "@/lib/hooks/use-preset-builder";
@@ -8,6 +9,93 @@ import type { CategoryMeta, FieldMeta } from "@/lib/preset/schema-meta";
 import { ProviderIcon } from "./icons";
 import { OptionCard } from "./option-card";
 import { Toggle } from "./toggle";
+
+/**
+ * Maps (schema group, value) → registry (slot, variant)[] pairs.
+ * null  = no registry item needed (built-in behaviour, always available)
+ * empty = unknown option, treat as available
+ */
+const REGISTRY_MAP: Record<string, Record<string, [string, string][] | null>> = {
+  database: {
+    none: null,
+    supabase: [["db", "supabase"]],
+    drizzle: [["db", "drizzle-postgres"], ["db", "drizzle-mysql"], ["db", "drizzle-sqlite"]],
+    prisma: [["db", "prisma-postgres"], ["db", "prisma-mysql"], ["db", "prisma-sqlite"]],
+  },
+  driver: {
+    postgres: null, turso: null, neon: null, planetscale: null,
+    mysql: null, sqlite: null,
+  },
+  api: {
+    none: null,
+    trpc: [["api", "trpc"]],
+    hono: [["api", "hono-route"], ["api", "hono-standalone"]],
+    "rest-nextjs": null, // Built into Next.js — no separate registry item
+  },
+  auth: {
+    none: null,
+    "better-auth": [["auth", "better-auth"]],
+    clerk: [["auth", "clerk"]],
+    "supabase-auth": [["auth", "supabase-auth"]],
+    "next-auth": [["auth", "authjs"]],
+    lucia: null, // Deprecated
+  },
+  css: { tailwind4: null, vanilla: null, "css-modules": null },
+  ui: {
+    none: null,
+    shadcn: [["ui", "shadcn-starter"]],
+    "radix-raw": null,
+  },
+  analytics: {
+    none: null,
+    posthog: [["analytics", "posthog"]],
+    "vercel-analytics": [["analytics", "vercel-analytics"]],
+    plausible: [["analytics", "plausible"]],
+  },
+  errorTracking: {
+    none: null,
+    sentry: [["monitoring", "sentry"]],
+    bugsnag: [["monitoring", "bugsnag"]],
+  },
+  email: {
+    none: null,
+    "react-email-resend": [["email", "resend"]],
+    nodemailer: [["email", "nodemailer"]],
+  },
+  rateLimit: {
+    none: null,
+    upstash: [["rate-limit", "upstash-ratelimit"]],
+  },
+  ai: {
+    none: null,
+    "vercel-ai-sdk": [["ai", "vercel-ai-sdk"]],
+    langchain: [["ai", "langchain"]],
+  },
+  cache: {
+    none: null,
+    upstash: [["cache", "upstash-redis"]],
+  },
+};
+
+// Build a Set of "slot:variant" keys that have real file content.
+// Computed once at module load — no per-render cost.
+const BUILT_KEYS = new Set(
+  BUILTIN_REGISTRY_ITEMS
+    .filter((item) => (item.files?.length ?? 0) > 0)
+    .map((item) => `${item.slot}:${item.variant}`),
+);
+
+/**
+ * Returns true when the (group, value) pair is covered by at least one
+ * built registry item, or when no registry item is needed for it.
+ */
+function isAvailable(group: string | undefined, value: string): boolean {
+  if (!group) return true; // Fields without a group don't gate on registry
+  const pairs = REGISTRY_MAP[group]?.[value];
+  if (pairs === null) return true; // Explicitly "no item needed"
+  if (pairs === undefined) return true; // Unknown option → don't block
+  return pairs.some(([slot, variant]) => BUILT_KEYS.has(`${slot}:${variant}`));
+}
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Settings,
@@ -148,38 +236,43 @@ function FieldRenderer({
           {field.label}
         </p>
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-          {field.options.map((option) => (
-            <OptionCard
-              key={option.value}
-              label={option.label}
-              description={option.description}
-              selected={value === option.value}
-              icon={
-                field.group ? (
-                  <ProviderIcon group={field.group} value={option.value} />
-                ) : null
-              }
-              onClick={() => {
-                if (isDiscriminator) {
-                  dispatchDiscriminatorChange(
-                    dispatch,
-                    categoryKey,
-                    field.key,
-                    option.value,
-                    sectionData,
-                  );
-                } else {
-                  dispatchFieldChange(
-                    dispatch,
-                    categoryKey,
-                    field.key,
-                    option.value,
-                    sectionData,
-                  );
+          {field.options.map((option) => {
+            const available = isAvailable(field.group, option.value);
+            return (
+              <OptionCard
+                key={option.value}
+                label={option.label}
+                description={option.description}
+                selected={value === option.value}
+                comingSoon={!available}
+                icon={
+                  field.group ? (
+                    <ProviderIcon group={field.group} value={option.value} />
+                  ) : null
                 }
-              }}
-            />
-          ))}
+                onClick={() => {
+                  if (!available) return;
+                  if (isDiscriminator) {
+                    dispatchDiscriminatorChange(
+                      dispatch,
+                      categoryKey,
+                      field.key,
+                      option.value,
+                      sectionData,
+                    );
+                  } else {
+                    dispatchFieldChange(
+                      dispatch,
+                      categoryKey,
+                      field.key,
+                      option.value,
+                      sectionData,
+                    );
+                  }
+                }}
+              />
+            );
+          })}
         </div>
       </div>
     );

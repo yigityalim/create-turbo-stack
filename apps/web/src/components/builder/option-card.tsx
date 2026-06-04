@@ -9,8 +9,9 @@ type OptionCardProps = {
   selected: boolean;
   disabled?: boolean;
   disabledReason?: string;
+  /** Registry item not yet authored — card is visible but unselectable. */
+  comingSoon?: boolean;
   onClick: () => void;
-  /** Optional brand / type glyph rendered to the left of the label. */
   icon?: React.ReactNode;
 };
 
@@ -20,24 +21,36 @@ export function OptionCard({
   selected,
   disabled = false,
   disabledReason,
+  comingSoon = false,
   onClick,
   icon,
 }: OptionCardProps) {
+  const isBlocked = disabled || comingSoon;
+
   return (
     <button
       type="button"
-      disabled={disabled}
+      disabled={isBlocked}
       aria-pressed={selected}
       onClick={onClick}
       className={cn(
         "relative w-full rounded-[3px] border p-3 text-left transition-all duration-150",
         selected
           ? "border-fd-primary bg-fd-primary/10 text-fd-primary"
-          : disabled
-            ? "cursor-not-allowed border-red-500/30 bg-fd-muted/5 opacity-50"
-            : "brutal-hover border-fd-border bg-fd-muted/5 hover:text-fd-foreground",
+          : comingSoon
+            ? "cursor-default border-fd-border/40 bg-fd-muted/3 opacity-60"
+            : disabled
+              ? "cursor-not-allowed border-red-500/30 bg-fd-muted/5 opacity-50"
+              : "brutal-hover border-fd-border bg-fd-muted/5 hover:text-fd-foreground",
       )}
     >
+      {/* Coming soon badge */}
+      {comingSoon && (
+        <span className="absolute top-1.5 right-1.5 rounded-[2px] bg-fd-muted/30 px-1.5 py-0.5 font-mono text-[8px] tracking-[0.1em] text-fd-muted-foreground/50 uppercase">
+          soon
+        </span>
+      )}
+
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           {icon}

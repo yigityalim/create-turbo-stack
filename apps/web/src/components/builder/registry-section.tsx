@@ -44,7 +44,7 @@ export function RegistrySection() {
       <div className="mb-3 flex items-center justify-between border-fd-border border-b pb-2">
         <div className="flex items-center gap-2">
           <h2 className="font-mono font-semibold text-fd-foreground text-sm sm:text-base">
-            REGISTRY
+            ADD-ONS
           </h2>
           <span className="font-mono text-[11px] text-fd-muted-foreground">
             {selected.size} selected
@@ -53,8 +53,8 @@ export function RegistrySection() {
       </div>
 
       <p className="mb-3 font-mono text-[11px] text-fd-muted-foreground">
-        Ready-made packages added with <code>cts add</code> after scaffolding
-        (not shown in the preview).
+        Ready-made workspace packages pinned via <code>cts add</code> after
+        scaffolding. Not shown in the file-tree preview.
       </p>
 
       {error && <p className="py-2 font-mono text-xs text-red-400">{error}</p>}
