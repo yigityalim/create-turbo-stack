@@ -6,16 +6,16 @@ import {
   Circle,
   ClipboardCopy,
   Download,
+  FileInput,
   FolderArchive,
-  Gauge,
   Link,
   Loader2,
   RefreshCw,
   Share2,
-  Upload,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { resolveTreeAction } from "@/lib/actions/resolve-tree";
 import { cn } from "@/lib/cn";
 import { matchBuiltin } from "@/lib/preset/builtins";
 import { DEFAULT_PRESET } from "@/lib/preset/defaults";
@@ -24,7 +24,6 @@ import {
   INTEGRATION_CATEGORY_LABELS,
   providerLabel,
 } from "@/lib/preset/schema-meta";
-import { resolveTreeAction } from "@/lib/actions/resolve-tree";
 import {
   downloadPresetJSON,
   downloadProjectZip,
@@ -83,11 +82,21 @@ export function BuilderSidebar() {
   return (
     <aside className="flex min-h-0 flex-col overflow-hidden border-fd-border border-r bg-fd-background">
       <div className="min-h-0 flex-1 overflow-auto">
-        <Section><ProjectSection isModified={isModified} /></Section>
-        <Section><CliCommandSection /></Section>
-        <Section><CoverageGrid /></Section>
-        <Section><ComplexityMeter /></Section>
-        <Section><StackSummary /></Section>
+        <Section>
+          <ProjectSection isModified={isModified} />
+        </Section>
+        <Section>
+          <CliCommandSection />
+        </Section>
+        <Section>
+          <CoverageGrid />
+        </Section>
+        <Section>
+          <ComplexityMeter />
+        </Section>
+        <Section>
+          <StackSummary />
+        </Section>
         {(fileTreeError || !isValid) && (
           <Section>
             <div className="space-y-2">
@@ -167,7 +176,9 @@ function ProjectSection({ isModified }: { isModified: boolean }) {
           placeholder="my-turborepo"
         />
         {nameError && (
-          <p className="mt-0.5 font-mono text-[10px] text-red-400">{nameError}</p>
+          <p className="mt-0.5 font-mono text-[10px] text-red-400">
+            {nameError}
+          </p>
         )}
       </div>
 
@@ -190,7 +201,9 @@ function ProjectSection({ isModified }: { isModified: boolean }) {
           placeholder="@my-org"
         />
         {scopeError && (
-          <p className="mt-0.5 font-mono text-[10px] text-red-400">{scopeError}</p>
+          <p className="mt-0.5 font-mono text-[10px] text-red-400">
+            {scopeError}
+          </p>
         )}
       </div>
 
@@ -209,7 +222,10 @@ function ProjectSection({ isModified }: { isModified: boolean }) {
           type="text"
           value={preset.description ?? ""}
           onChange={(e) =>
-            dispatch({ type: "SET_META", payload: { description: e.target.value } })
+            dispatch({
+              type: "SET_META",
+              payload: { description: e.target.value },
+            })
           }
           className="rounded-[3px] border border-fd-border bg-transparent px-2 py-1 font-mono text-[11px] text-fd-muted-foreground placeholder:text-fd-muted-foreground/40 focus:border-fd-primary focus:text-fd-foreground focus:outline-none transition-colors"
           placeholder="description"
@@ -231,92 +247,110 @@ type CoverageCell = {
 function CoverageGrid() {
   const { preset } = useBuilder();
 
-  const cells = useMemo((): CoverageCell[] => [
-    {
-      key: "database",
-      label: "DB",
-      active: preset.database.strategy !== "none",
-      icon: preset.database.strategy !== "none"
-        ? { group: "database", value: preset.database.strategy }
-        : undefined,
-    },
-    {
-      key: "api",
-      label: "API",
-      active: preset.api.strategy !== "none",
-      icon: preset.api.strategy !== "none"
-        ? { group: "api", value: preset.api.strategy }
-        : undefined,
-    },
-    {
-      key: "auth",
-      label: "Auth",
-      active: preset.auth.provider !== "none",
-      icon: preset.auth.provider !== "none"
-        ? { group: "auth", value: preset.auth.provider }
-        : undefined,
-    },
-    {
-      key: "css",
-      label: "CSS",
-      active: true,
-      icon: { group: "css", value: preset.css.framework },
-    },
-    {
-      key: "ui",
-      label: "UI",
-      active: preset.css.ui !== "none",
-      icon: preset.css.ui !== "none"
-        ? { group: "ui", value: preset.css.ui }
-        : undefined,
-    },
-    {
-      key: "analytics",
-      label: "Analytics",
-      active: preset.integrations.analytics !== "none",
-      icon: preset.integrations.analytics !== "none"
-        ? { group: "analytics", value: preset.integrations.analytics }
-        : undefined,
-    },
-    {
-      key: "errorTracking",
-      label: "Errors",
-      active: preset.integrations.errorTracking !== "none",
-      icon: preset.integrations.errorTracking !== "none"
-        ? { group: "errorTracking", value: preset.integrations.errorTracking }
-        : undefined,
-    },
-    {
-      key: "email",
-      label: "Email",
-      active: preset.integrations.email !== "none",
-      icon: preset.integrations.email !== "none"
-        ? { group: "email", value: preset.integrations.email }
-        : undefined,
-    },
-    {
-      key: "rateLimit",
-      label: "Rate",
-      active: preset.integrations.rateLimit !== "none",
-      icon: preset.integrations.rateLimit !== "none"
-        ? { group: "rateLimit", value: preset.integrations.rateLimit }
-        : undefined,
-    },
-    {
-      key: "ai",
-      label: "AI",
-      active: preset.integrations.ai !== "none",
-      icon: preset.integrations.ai !== "none"
-        ? { group: "ai", value: preset.integrations.ai }
-        : undefined,
-    },
-  ], [preset]);
+  const cells = useMemo(
+    (): CoverageCell[] => [
+      {
+        key: "database",
+        label: "DB",
+        active: preset.database.strategy !== "none",
+        icon:
+          preset.database.strategy !== "none"
+            ? { group: "database", value: preset.database.strategy }
+            : undefined,
+      },
+      {
+        key: "api",
+        label: "API",
+        active: preset.api.strategy !== "none",
+        icon:
+          preset.api.strategy !== "none"
+            ? { group: "api", value: preset.api.strategy }
+            : undefined,
+      },
+      {
+        key: "auth",
+        label: "Auth",
+        active: preset.auth.provider !== "none",
+        icon:
+          preset.auth.provider !== "none"
+            ? { group: "auth", value: preset.auth.provider }
+            : undefined,
+      },
+      {
+        key: "css",
+        label: "CSS",
+        active: true,
+        icon: { group: "css", value: preset.css.framework },
+      },
+      {
+        key: "ui",
+        label: "UI",
+        active: preset.css.ui !== "none",
+        icon:
+          preset.css.ui !== "none"
+            ? { group: "ui", value: preset.css.ui }
+            : undefined,
+      },
+      {
+        key: "analytics",
+        label: "Analytics",
+        active: preset.integrations.analytics !== "none",
+        icon:
+          preset.integrations.analytics !== "none"
+            ? { group: "analytics", value: preset.integrations.analytics }
+            : undefined,
+      },
+      {
+        key: "errorTracking",
+        label: "Errors",
+        active: preset.integrations.errorTracking !== "none",
+        icon:
+          preset.integrations.errorTracking !== "none"
+            ? {
+                group: "errorTracking",
+                value: preset.integrations.errorTracking,
+              }
+            : undefined,
+      },
+      {
+        key: "email",
+        label: "Email",
+        active: preset.integrations.email !== "none",
+        icon:
+          preset.integrations.email !== "none"
+            ? { group: "email", value: preset.integrations.email }
+            : undefined,
+      },
+      {
+        key: "rateLimit",
+        label: "Rate",
+        active: preset.integrations.rateLimit !== "none",
+        icon:
+          preset.integrations.rateLimit !== "none"
+            ? { group: "rateLimit", value: preset.integrations.rateLimit }
+            : undefined,
+      },
+      {
+        key: "ai",
+        label: "AI",
+        active: preset.integrations.ai !== "none",
+        icon:
+          preset.integrations.ai !== "none"
+            ? { group: "ai", value: preset.integrations.ai }
+            : undefined,
+      },
+    ],
+    [preset],
+  );
 
   const activeCount = cells.filter((c) => c.active).length;
 
   return (
     <div className="space-y-2">
-      <SidebarLabel label="Configuration" right={`${activeCount} / ${cells.length}`} />
+      <SidebarLabel
+        label="Configuration"
+        right={`${activeCount} / ${cells.length}`}
+      />
       <div className="grid grid-cols-5 gap-1">
         {cells.map((cell) => (
           <div
@@ -339,7 +373,9 @@ function CoverageGrid() {
                 <span
                   className={cn(
                     "block h-1.5 w-1.5 rounded-full",
-                    cell.active ? "bg-fd-primary/60" : "bg-fd-muted-foreground/20",
+                    cell.active
+                      ? "bg-fd-primary/60"
+                      : "bg-fd-muted-foreground/20",
                   )}
                 />
               )}
@@ -497,12 +533,12 @@ function ComplexityMeter() {
         }
       />
       <div className="flex gap-[2px]">
-        {Array.from({ length: MAX_SCORE }).map((_, i) => (
+        {Array.from({ length: MAX_SCORE }, (_, i) => i).map((pip) => (
           <div
-            key={i}
+            key={pip}
             className={cn(
               "h-1.5 flex-1 rounded-[1px] transition-colors duration-200",
-              i < filled
+              pip < filled
                 ? level === "minimal"
                   ? "bg-green-500/70"
                   : level === "standard"
@@ -758,27 +794,46 @@ function StackChip({ badge }: { badge: StackBadge }) {
       <button
         type="button"
         onClick={badge.onRemove}
-        title={badge.secondary ? `Remove ${badge.label} (${badge.secondary})` : `Remove ${badge.label}`}
+        title={
+          badge.secondary
+            ? `Remove ${badge.label} (${badge.secondary})`
+            : `Remove ${badge.label}`
+        }
         className={cn(
           base,
           "group border-fd-primary/25 bg-fd-primary/8 text-fd-primary hover:border-red-500/40 hover:bg-red-500/8 hover:text-red-400",
         )}
       >
         {badge.icon && (
-          <ProviderIcon group={badge.icon.group} value={badge.icon.value} className="size-3.5" />
+          <ProviderIcon
+            group={badge.icon.group}
+            value={badge.icon.value}
+            className="size-3.5"
+          />
         )}
         {badge.label}
         {badge.secondary && (
-          <span className="text-fd-primary/40 text-[10px]">· {badge.secondary}</span>
+          <span className="text-fd-primary/40 text-[10px]">
+            · {badge.secondary}
+          </span>
         )}
         <X className="h-2.5 w-2.5 opacity-0 transition-opacity group-hover:opacity-100" />
       </button>
     );
   }
   return (
-    <span className={cn(base, "border-fd-border/50 bg-fd-muted/10 text-fd-muted-foreground")}>
+    <span
+      className={cn(
+        base,
+        "border-fd-border/50 bg-fd-muted/10 text-fd-muted-foreground",
+      )}
+    >
       {badge.icon && (
-        <ProviderIcon group={badge.icon.group} value={badge.icon.value} className="size-3.5" />
+        <ProviderIcon
+          group={badge.icon.group}
+          value={badge.icon.value}
+          className="size-3.5"
+        />
       )}
       {badge.label}
     </span>
@@ -797,7 +852,10 @@ function StackSummary() {
         key: `db-${preset.database.strategy}`,
         label: providerLabel("database", preset.database.strategy),
         icon: { group: "database", value: preset.database.strategy },
-        onRemove: clear({ type: "SET_DATABASE", payload: { strategy: "none" } } as PresetAction),
+        onRemove: clear({
+          type: "SET_DATABASE",
+          payload: { strategy: "none" },
+        } as PresetAction),
         group: "core",
       });
     if (preset.api.strategy !== "none")
@@ -805,7 +863,10 @@ function StackSummary() {
         key: `api-${preset.api.strategy}`,
         label: providerLabel("api", preset.api.strategy),
         icon: { group: "api", value: preset.api.strategy },
-        onRemove: clear({ type: "SET_API", payload: { strategy: "none" } } as PresetAction),
+        onRemove: clear({
+          type: "SET_API",
+          payload: { strategy: "none" },
+        } as PresetAction),
         group: "core",
       });
     if (preset.auth.provider !== "none")
@@ -813,7 +874,10 @@ function StackSummary() {
         key: `auth-${preset.auth.provider}`,
         label: providerLabel("auth", preset.auth.provider),
         icon: { group: "auth", value: preset.auth.provider },
-        onRemove: clear({ type: "SET_AUTH", payload: { provider: "none" } } as PresetAction),
+        onRemove: clear({
+          type: "SET_AUTH",
+          payload: { provider: "none" },
+        } as PresetAction),
         group: "core",
       });
     if (preset.css.ui !== "none")
@@ -821,7 +885,10 @@ function StackSummary() {
         key: `ui-${preset.css.ui}`,
         label: providerLabel("ui", preset.css.ui),
         icon: { group: "ui", value: preset.css.ui },
-        onRemove: clear({ type: "SET_CSS", payload: { ui: "none" } } as PresetAction),
+        onRemove: clear({
+          type: "SET_CSS",
+          payload: { ui: "none" },
+        } as PresetAction),
         group: "core",
       });
 
@@ -834,7 +901,10 @@ function StackSummary() {
         label: provider,
         secondary: category,
         icon: { group: key, value: String(value) },
-        onRemove: clear({ type: "SET_INTEGRATIONS", payload: { [key]: "none" } } as PresetAction),
+        onRemove: clear({
+          type: "SET_INTEGRATIONS",
+          payload: { [key]: "none" },
+        } as PresetAction),
         group: "integrations",
       });
     }
@@ -844,9 +914,10 @@ function StackSummary() {
         key: `app-${app.name}`,
         label: app.name,
         icon: { group: "appType", value: app.type },
-        onRemove: preset.apps.length > 1
-          ? clear({ type: "REMOVE_APP", index: i } as PresetAction)
-          : undefined,
+        onRemove:
+          preset.apps.length > 1
+            ? clear({ type: "REMOVE_APP", index: i } as PresetAction)
+            : undefined,
         group: "apps",
       });
     });
@@ -870,7 +941,9 @@ function StackSummary() {
     <div className="space-y-2.5">
       <SidebarLabel label="Stack" right={`${total} picks`} />
       {total === 0 ? (
-        <p className="font-mono text-[10px] text-fd-muted-foreground/50">Default configuration</p>
+        <p className="font-mono text-[10px] text-fd-muted-foreground/50">
+          Default configuration
+        </p>
       ) : (
         <div className="space-y-2">
           {STACK_GROUPS.map(({ key, label }) => {
@@ -909,7 +982,10 @@ function ValidationErrors({
         Validation
       </div>
       {errors.slice(0, 5).map((err) => (
-        <p key={err.message} className="font-mono text-[11px] text-fd-muted-foreground">
+        <p
+          key={err.message}
+          className="font-mono text-[11px] text-fd-muted-foreground"
+        >
           {err.message}
         </p>
       ))}
@@ -1008,7 +1084,7 @@ function ActionButtons() {
         onClick={handleDownloadZip}
         disabled={zipping}
       />
-      <ActionButton icon={Upload} label="Import" onClick={handleImport} />
+      <ActionButton icon={FileInput} label="Import" onClick={handleImport} />
       <ActionButton icon={RefreshCw} label="Reset" onClick={handleReset} />
     </div>
   );

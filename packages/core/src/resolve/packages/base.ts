@@ -33,6 +33,10 @@ export function makeBasePackageFiles(
   const isReact = opts.react || pkg.type === "ui" || pkg.type === "react-library";
   const linter = getLinter(preset.basics.linter);
 
+  // The typescript-config package ships JSON files only — it IS the tsconfig
+  // base, so it can't extend itself and has no TypeScript source to check.
+  const isTsConfigPkg = pkg.name === "typescript-config";
+
   const pkgJson: PackageJson = {
     name: `${scope}/${pkg.name}`,
     version: "0.1.0",
@@ -40,14 +44,14 @@ export function makeBasePackageFiles(
     type: "module",
     exports: exportsMap,
     scripts: {
-      lint: linter.lintScript,
-      "type-check": "tsc --noEmit",
+      ...(isTsConfigPkg ? {} : { lint: linter.lintScript }),
+      ...(isTsConfigPkg ? {} : { "type-check": "tsc --noEmit" }),
     },
     dependencies: { ...extraDeps },
     devDependencies: {
-      [`${scope}/typescript-config`]: "workspace:*",
-      ...linter.packageDevDeps,
-      typescript: "catalog:",
+      ...(isTsConfigPkg ? {} : { [`${scope}/typescript-config`]: "workspace:*" }),
+      ...(isTsConfigPkg ? {} : linter.packageDevDeps),
+      ...(isTsConfigPkg ? {} : { typescript: "catalog:" }),
       // Node-targeted packages reference `process` and friends; React
       // packages get DOM libs from react.json instead.
       ...(pkg.type === "ui" || pkg.type === "react-library" ? {} : { "@types/node": "catalog:" }),
@@ -62,26 +66,30 @@ export function makeBasePackageFiles(
     isDirectory: false,
   });
 
-  nodes.push(...linter.packageConfigFiles(base));
+  if (!isTsConfigPkg) {
+    nodes.push(...linter.packageConfigFiles(base));
+  }
 
-  const tsconfigBase = isReact
-    ? "react.json"
-    : pkg.type === "config"
-      ? "base.json"
-      : "library.json";
+  if (!isTsConfigPkg) {
+    const tsconfigBase = isReact
+      ? "react.json"
+      : pkg.type === "config"
+        ? "base.json"
+        : "library.json";
 
-  const tsconfig: TsConfig = {
-    extends: `${scope}/typescript-config/${tsconfigBase}`,
-    compilerOptions: { outDir: "./dist", rootDir: "./src" },
-    include: ["src/**/*"],
-    exclude: ["node_modules", "dist"],
-  };
+    const tsconfig: TsConfig = {
+      extends: `${scope}/typescript-config/${tsconfigBase}`,
+      compilerOptions: { outDir: "./dist", rootDir: "./src" },
+      include: ["src/**/*"],
+      exclude: ["node_modules", "dist"],
+    };
 
-  nodes.push({
-    path: `${base}/tsconfig.json`,
-    content: toJsonFile(tsconfig),
-    isDirectory: false,
-  });
+    nodes.push({
+      path: `${base}/tsconfig.json`,
+      content: toJsonFile(tsconfig),
+      isDirectory: false,
+    });
+  }
 
   return nodes;
 }

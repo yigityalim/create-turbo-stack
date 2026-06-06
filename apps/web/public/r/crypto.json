@@ -2,8 +2,7 @@
   "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
   "name": "crypto",
   "type": "registry:package",
-  "title": "Crypto",
-  "description": "Web Crypto helpers: SHA-256 / HMAC hashing and secure random tokens.",
+  "description": "SHA-256/512 hashing, HMAC, CSPRNG, and base encoding via Web Crypto API.",
   "dependencies": [],
   "devDependencies": [],
   "registryDependencies": [],
@@ -11,7 +10,9 @@
   "exports": [
     ".",
     "./hash",
-    "./random"
+    "./hmac",
+    "./random",
+    "./encoding"
   ],
   "lib": [
     "ES2022",
@@ -20,28 +21,37 @@
   "environment": "universal",
   "build": "none",
   "categories": [
+    "foundation",
     "security",
     "crypto"
   ],
+  "docs": "SHA-256/512 hashing, HMAC-SHA256 with timing-safe verification, CSPRNG utilities, and base encoding helpers. Backed entirely by the native Web Crypto API — no runtime dependencies, runs unmodified in Node 20+, Vercel/Cloudflare Edge, and modern browsers. Does not include AES, asymmetric crypto, password hashing, JWT, TOTP, or anything requiring server-only APIs.",
   "files": [
     {
       "path": "src/index.ts",
-      "target": "src/index.ts",
       "type": "registry:source",
-      "content": "export { hmacSha256, sha256 } from \"./hash\";\nexport { randomId, randomToken } from \"./random\";\n"
+      "content": "export { sha256, sha512 } from \"./hash\";\nexport { hmacSha256, hmacVerify } from \"./hmac\";\nexport {\n  randomBytes,\n  randomHex,\n  randomToken,\n  randomId,\n  randomUUID,\n} from \"./random\";\nexport {\n  toHex,\n  fromHex,\n  toBase64url,\n  fromBase64url,\n  utf8ToBytes,\n  bytesToUtf8,\n} from \"./encoding\";\n"
     },
     {
       "path": "src/hash.ts",
-      "target": "src/hash.ts",
       "type": "registry:source",
-      "content": "/**\n * SHA-256 hash of a string, hex-encoded. Uses the Web Crypto API\n * (`crypto.subtle`), available in Node 20+, edge runtimes, and browsers.\n */\nexport async function sha256(text: string): Promise<string> {\n  const data = new TextEncoder().encode(text);\n  const digest = await crypto.subtle.digest(\"SHA-256\", data);\n  return toHex(new Uint8Array(digest));\n}\n\n/**\n * HMAC-SHA-256 of `message` with `secret`, hex-encoded. Use for signing\n * tokens, verifying webhooks, etc.\n */\nexport async function hmacSha256(secret: string, message: string): Promise<string> {\n  const key = await crypto.subtle.importKey(\n    \"raw\",\n    new TextEncoder().encode(secret),\n    { name: \"HMAC\", hash: \"SHA-256\" },\n    false,\n    [\"sign\"],\n  );\n  const signature = await crypto.subtle.sign(\"HMAC\", key, new TextEncoder().encode(message));\n  return toHex(new Uint8Array(signature));\n}\n\nfunction toHex(bytes: Uint8Array): string {\n  return Array.from(bytes)\n    .map((b) => b.toString(16).padStart(2, \"0\"))\n    .join(\"\");\n}\n"
+      "content": "import { toHex, utf8ToBytes } from \"./encoding\";\n\n/** Returns the SHA-256 digest of a UTF-8 string as a lowercase hex string. */\nexport async function sha256(input: string): Promise<string> {\n  const digest = await crypto.subtle.digest(\"SHA-256\", utf8ToBytes(input));\n  return toHex(new Uint8Array(digest));\n}\n\n/** Returns the SHA-512 digest of a UTF-8 string as a lowercase hex string. */\nexport async function sha512(input: string): Promise<string> {\n  const digest = await crypto.subtle.digest(\"SHA-512\", utf8ToBytes(input));\n  return toHex(new Uint8Array(digest));\n}\n"
+    },
+    {
+      "path": "src/hmac.ts",
+      "type": "registry:source",
+      "content": "import { toHex, fromHex, utf8ToBytes } from \"./encoding\";\n\nconst ALGORITHM = { name: \"HMAC\", hash: \"SHA-256\" } as const;\n\nasync function importKey(\n  secret: string,\n  usages: KeyUsage[],\n): Promise<CryptoKey> {\n  return crypto.subtle.importKey(\n    \"raw\",\n    utf8ToBytes(secret),\n    ALGORITHM,\n    false,\n    usages,\n  );\n}\n\n/** Returns the HMAC-SHA256 signature of message under secret as a lowercase hex string. */\nexport async function hmacSha256(\n  secret: string,\n  message: string,\n): Promise<string> {\n  const key = await importKey(secret, [\"sign\"]);\n  const signature = await crypto.subtle.sign(\"HMAC\", key, utf8ToBytes(message));\n  return toHex(new Uint8Array(signature));\n}\n\n/**\n * Verifies an HMAC-SHA256 signature in constant time.\n * Delegates to subtle.verify so the runtime — not userland code — provides the constant-time comparison.\n */\nexport async function hmacVerify(\n  secret: string,\n  message: string,\n  signatureHex: string,\n): Promise<boolean> {\n  const key = await importKey(secret, [\"verify\"]);\n  return crypto.subtle.verify(\n    \"HMAC\",\n    key,\n    fromHex(signatureHex),\n    utf8ToBytes(message),\n  );\n}\n"
     },
     {
       "path": "src/random.ts",
-      "target": "src/random.ts",
       "type": "registry:source",
-      "content": "/**\n * A cryptographically-secure random token, hex-encoded. Uses\n * `crypto.getRandomValues` (Web Crypto). Default 32 bytes → 64 hex chars.\n * Good for session ids, CSRF tokens, API keys.\n */\nexport function randomToken(bytes = 32): string {\n  const buf = crypto.getRandomValues(new Uint8Array(bytes));\n  return Array.from(buf)\n    .map((b) => b.toString(16).padStart(2, \"0\"))\n    .join(\"\");\n}\n\n/** A random URL-safe base64 string (no padding). */\nexport function randomId(bytes = 16): string {\n  const buf = crypto.getRandomValues(new Uint8Array(bytes));\n  return btoa(String.fromCharCode(...buf))\n    .replace(/\\+/g, \"-\")\n    .replace(/\\//g, \"_\")\n    .replace(/=+$/, \"\");\n}\n"
+      "content": "import { toHex, toBase64url } from \"./encoding\";\n\n/** Returns `length` cryptographically secure random bytes. */\nexport function randomBytes(length: number): Uint8Array<ArrayBuffer> {\n  return crypto.getRandomValues(new Uint8Array(length));\n}\n\n/** Returns `length` random bytes as a lowercase hex string. */\nexport function randomHex(length: number): string {\n  return toHex(randomBytes(length));\n}\n\n/**\n * Returns a `length`-byte random token as a lowercase hex string.\n * Suitable for session IDs, API keys, and CSRF tokens.\n * Default length of 32 bytes produces 256 bits of entropy.\n */\nexport function randomToken(length = 32): string {\n  return randomHex(length);\n}\n\n/**\n * Returns a URL-safe base64 (no padding) random ID.\n * Default of 16 bytes produces a 22-character string with 128 bits of entropy.\n * Suitable for short public identifiers in URLs and logs.\n */\nexport function randomId(length = 16): string {\n  return toBase64url(randomBytes(length));\n}\n\n/** Returns a random UUID v4 using the native crypto.randomUUID() implementation. */\nexport function randomUUID(): string {\n  return crypto.randomUUID();\n}\n"
+    },
+    {
+      "path": "src/encoding.ts",
+      "type": "registry:source",
+      "content": "/** Returns the lowercase hex encoding of bytes. */\nexport function toHex(bytes: Uint8Array): string {\n  return Array.from(bytes, (b) => b.toString(16).padStart(2, \"0\")).join(\"\");\n}\n\n/** Decodes a lowercase or uppercase hex string. Throws on odd length or non-hex characters. */\nexport function fromHex(hex: string): Uint8Array<ArrayBuffer> {\n  if (hex.length % 2 !== 0) {\n    throw new TypeError(\"fromHex: input length must be even\");\n  }\n  if (hex.length > 0 && !/^[0-9a-fA-F]+$/.test(hex)) {\n    throw new TypeError(\"fromHex: input contains non-hex characters\");\n  }\n  const result = new Uint8Array(hex.length / 2);\n  for (let i = 0; i < result.length; i++) {\n    result[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);\n  }\n  return result;\n}\n\n/** Encodes bytes as URL-safe base64 with no padding characters. */\nexport function toBase64url(bytes: Uint8Array): string {\n  let binary = \"\";\n  for (const byte of bytes) {\n    binary += String.fromCharCode(byte);\n  }\n  return btoa(binary).replace(/\\+/g, \"-\").replace(/\\//g, \"_\").replace(/=/g, \"\");\n}\n\n/** Decodes a URL-safe base64 string (padded or unpadded) to bytes. */\nexport function fromBase64url(s: string): Uint8Array<ArrayBuffer> {\n  const padded = s.replace(/-/g, \"+\").replace(/_/g, \"/\");\n  const base64 = padded + \"=\".repeat((4 - (padded.length % 4)) % 4);\n  const binary = atob(base64);\n  const result = new Uint8Array(binary.length);\n  for (let i = 0; i < binary.length; i++) {\n    result[i] = binary.charCodeAt(i);\n  }\n  return result;\n}\n\n/** Encodes a string to its UTF-8 byte representation. */\nexport function utf8ToBytes(text: string): Uint8Array<ArrayBuffer> {\n  return new TextEncoder().encode(text);\n}\n\n/** Decodes UTF-8 bytes to a string. */\nexport function bytesToUtf8(bytes: Uint8Array): string {\n  return new TextDecoder().decode(bytes);\n}\n"
     }
   ],
-  "checksum": "sha256-b35e630cb6698d9b95d4a8e5d13dfd4fd92d280d121815d57394114714095b48"
+  "checksum": "sha256-a0bcea61ee23875b94f300f3395d664fc62c78258a7c664d0627a7d5bc77b40a"
 }

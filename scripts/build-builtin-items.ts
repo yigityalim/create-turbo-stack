@@ -148,7 +148,7 @@ function loadItem(manifestPath: string, slot: string): BuiltinItem | null {
   for (const f of parsed.files) {
     const filePath = path.join(dir, f.path);
     try {
-      files.push({ ...f, content: readFileSync(filePath, "utf-8") });
+      files.push({ ...f, content: readFileSync(filePath, "utf-8").replace(/\r\n/g, "\n") });
     } catch {
       // biome-ignore lint/suspicious/noConsole: build script
       console.warn(

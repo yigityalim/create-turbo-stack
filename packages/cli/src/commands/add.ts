@@ -93,12 +93,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   rateLimit: "Rate Limiting",
   ai: "AI",
 };
-const categoryLabel = (c: string): string =>
+export const categoryLabel = (c: string): string =>
   CATEGORY_LABELS[c] ??
   c.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^\w/, (m) => m.toUpperCase());
 
 /** Add `pkg` to the `consumes` of the named apps (skips apps already consuming it). */
-function wireConsumes(apps: App[], pkg: string, appNames: ReadonlySet<string>): App[] {
+export function wireConsumes(apps: App[], pkg: string, appNames: ReadonlySet<string>): App[] {
   return apps.map((a) =>
     appNames.has(a.name) && !a.consumes.includes(pkg)
       ? { ...a, consumes: [...a.consumes, pkg] }
@@ -478,13 +478,12 @@ async function addIntegration(userConfig?: UserConfig, options: AddOptions = {},
 
   p.intro(`${pc.bgCyan(pc.black(" add integration "))} to ${pc.cyan(config.basics.projectName)}`);
 
-  const integrationsState = config.integrations as unknown as Record<string, string>;
   const category = (await p.select({
     message: "Integration category",
     options: INTEGRATION_OPTION_CATEGORIES.map((c) => ({
       value: c,
       label: categoryLabel(c),
-      hint: `current: ${integrationsState[c]}`,
+      hint: `current: ${config.integrations[c]}`,
     })),
   })) as string;
   if (p.isCancel(category)) return process.exit(0);
@@ -506,7 +505,7 @@ async function addIntegration(userConfig?: UserConfig, options: AddOptions = {},
   const value = (await p.select({
     message: `${categoryLabel(category)} provider`,
     options: optionValues.map((v) => ({ value: v, label: v })),
-    initialValue: integrationsState[category],
+    initialValue: config.integrations[category as keyof typeof config.integrations] as string,
   })) as string;
   if (p.isCancel(value)) return process.exit(0);
 

@@ -7,6 +7,7 @@
   "dependencies": [],
   "registryDependencies": ["crypto"],
   "exports": [".", "./headers", "./csp", "./origin"],
+  "description": "OWASP security headers, nonce-based CSP builder, and origin/CSRF guard.",
   "categories": ["foundation", "security"],
   "docs": "OWASP OSHP security response headers, nonce-based CSP builder with strict-dynamic, and origin/CSRF guard. Backed by the Fetch API and Web Crypto (via the crypto package) — no runtime dependencies. Does not include rate limiting, auth, session management, or input sanitization.",
   "files": [

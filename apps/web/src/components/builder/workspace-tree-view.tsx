@@ -106,7 +106,6 @@ function buildBuckets(preset: Preset, kind: WorkspaceTreeKind): Bucket[] {
 
   const pushEntry = (location: string, e: Entry) => {
     if (!map.has(location)) map.set(location, []);
-    // biome-ignore lint/style/noNonNullAssertion: just set above
     map.get(location)!.push(e);
   };
 

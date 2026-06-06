@@ -38,11 +38,18 @@ export function resolveFileTree(
   nodes.push(...resolveRootFiles(preset, items));
 
   const autoPackages = resolveAutoPackages(preset);
+  const autoNames = new Set(autoPackages.map((p) => p.name));
+
   for (const pkg of autoPackages) {
     nodes.push(...resolvePackageFiles(preset, pkg, items));
   }
 
   for (const pkg of preset.packages) {
+    // Skip user packages whose name matches an auto-package: the auto-package
+    // owns the registry slot and already emitted files above. This can happen
+    // when a user declares a producesCSS package (triggering the "ui" slot)
+    // while that same package is also in preset.packages.
+    if (autoNames.has(pkg.name)) continue;
     nodes.push(...resolvePackageFiles(preset, pkg, items));
   }
 

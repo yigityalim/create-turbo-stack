@@ -4,6 +4,7 @@
   "environment": "node",
   "build": "none",
   "lib": ["ES2022", "DOM"],
+  "description": "React Email transactional templates for auth, account, and billing flows.",
   "jsx": "react-jsx",
   "dependencies": ["@react-email/components", "react"],
   "devDependencies": ["react-email"],
@@ -16,7 +17,7 @@
   "categories": ["email"],
   "docs": "React Email transactional templates (auth, account/KVKK, billing) with shared Tailwind design tokens, transport-agnostic render(), and PreviewProps on every template — brand config in one file, domain-specific templates not included.",
   "files": [
-    { "path": "src/emails/tailwind.config.ts", "type": "registry:source" },
+    { "path": "src/tailwind.config.ts", "type": "registry:source" },
     { "path": "src/emails/components/layout.tsx", "type": "registry:source" },
     { "path": "src/emails/auth/verify-email.tsx", "type": "registry:source" },
     { "path": "src/emails/auth/reset-password.tsx", "type": "registry:source" },
@@ -53,6 +54,6 @@
       "path": "src/emails/billing/subscription-event.tsx",
       "type": "registry:source"
     },
-    { "path": "src/emails/index.ts", "type": "registry:source" }
+    { "path": "src/index.ts", "type": "registry:source" }
   ]
 }

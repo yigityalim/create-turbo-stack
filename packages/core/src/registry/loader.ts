@@ -16,8 +16,8 @@
  * The loader owns the I/O; this module owns the traversal.
  */
 
-import { computeChecksum, verifySignature } from "./integrity.js";
 import type { PackageRegistryItem } from "@create-turbo-stack/schema";
+import { computeChecksum, verifySignature } from "./integrity.js";
 
 export interface LoadedItem {
   item: PackageRegistryItem;
@@ -95,9 +95,7 @@ export async function resolveRegistryTree(
     onStack.delete(item.name);
     done.add(item.name);
 
-    const canonicalRef = childBase.startsWith("@")
-      ? `${childBase}/${item.name}`
-      : item.name;
+    const canonicalRef = childBase.startsWith("@") ? `${childBase}/${item.name}` : item.name;
 
     ordered.push({ item, ref: canonicalRef });
   }

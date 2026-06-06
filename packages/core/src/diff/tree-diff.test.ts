@@ -299,7 +299,9 @@ describe("diffTree", () => {
 
   it("uses overwrite (not json merge) for binary extensions", () => {
     const existing = new Map([["public/logo.png", "old-binary-content"]]);
-    const desired = [{ path: "public/logo.png", content: "new-binary-content", isDirectory: false }];
+    const desired = [
+      { path: "public/logo.png", content: "new-binary-content", isDirectory: false },
+    ];
 
     const diff = diffTree(existing, desired);
     expect(diff.update).toHaveLength(1);
@@ -316,11 +318,15 @@ describe("diffTree", () => {
   });
 
   it("still uses JSON merge for .json files (binary check does not affect them)", () => {
-    const existing = new Map([["tsconfig.json", JSON.stringify({ compilerOptions: { strict: true } })]]);
+    const existing = new Map([
+      ["tsconfig.json", JSON.stringify({ compilerOptions: { strict: true } })],
+    ]);
     const desired = [
       {
         path: "tsconfig.json",
-        content: JSON.stringify({ compilerOptions: { strict: true, noUncheckedIndexedAccess: true } }),
+        content: JSON.stringify({
+          compilerOptions: { strict: true, noUncheckedIndexedAccess: true },
+        }),
         isDirectory: false,
       },
     ];

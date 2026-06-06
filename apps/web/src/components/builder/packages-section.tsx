@@ -16,7 +16,6 @@ import {
   Folder,
   FolderOpen,
   Plus,
-  Power,
   Trash2,
   X,
 } from "lucide-react";
@@ -110,13 +109,11 @@ function groupByLocation(
     const p = packages[i];
     if (!p) continue;
     if (!userMap.has(p.location)) userMap.set(p.location, []);
-    // biome-ignore lint/style/noNonNullAssertion: the `has` check above guarantees presence
     userMap.get(p.location)!.push({ pkg: p, originalIndex: i });
   }
   const autoMap = new Map<string, AutoEntry[]>();
   for (const a of autos) {
     if (!autoMap.has(a.location)) autoMap.set(a.location, []);
-    // biome-ignore lint/style/noNonNullAssertion: just set above
     autoMap.get(a.location)!.push(a);
   }
   const locations = new Set<string>([...userMap.keys(), ...autoMap.keys()]);
@@ -561,7 +558,7 @@ function AutoPackageCard({
 
   const pkgDir = `${entry.location}/${entry.name}`;
 
-  const handleDisable = (e: React.MouseEvent) => {
+  const _handleDisable = (e: React.MouseEvent) => {
     // Stop bubbling so the row-level accordion toggle doesn't fire alongside.
     e.stopPropagation();
     if (!entry.disableableCategory) return;

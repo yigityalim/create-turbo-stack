@@ -88,7 +88,7 @@ interface InfoSummary {
   integrations: Record<string, string | boolean>;
 }
 
-function buildSummary(config: TurboStackConfig): InfoSummary {
+export function buildSummary(config: TurboStackConfig): InfoSummary {
   return {
     projectName: config.basics.projectName,
     schemaVersion: (config as { schemaVersion?: string }).schemaVersion ?? "1.0",

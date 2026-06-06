@@ -2,8 +2,7 @@
   "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
   "name": "session",
   "type": "registry:package",
-  "title": "Session",
-  "description": "Secure session id helpers — composes the crypto package.",
+  "description": "Secure session ID generation, hashing, and verification.",
   "dependencies": [],
   "devDependencies": [],
   "registryDependencies": [
@@ -20,17 +19,17 @@
   "environment": "universal",
   "build": "none",
   "categories": [
+    "foundation",
     "security",
     "auth"
   ],
-  "docs": "Store `hashSessionId(id)`, never the raw id. Compare incoming ids by\nre-hashing and matching the stored hash, so a leaked database never\nexposes usable session tokens.",
+  "docs": "Generate a secure session ID, hash it for at-rest storage, and verify incoming tokens — not an auth system; projects using better-auth, Supabase Auth, or Clerk do not need this.",
   "files": [
     {
       "path": "src/index.ts",
-      "target": "src/index.ts",
       "type": "registry:source",
-      "content": "import { randomToken, sha256 } from \"@scope/crypto\";\n\n/** A new opaque, secure session id (256 bits of entropy, hex). */\nexport function createSessionId(): string {\n  return randomToken(32);\n}\n\n/**\n * Hash a session id for storage — store the hash, compare against it, so a\n * leaked database never exposes usable session tokens.\n */\nexport function hashSessionId(id: string): Promise<string> {\n  return sha256(id);\n}\n"
+      "content": "import { randomToken, sha256 } from \"{{scope}}/crypto\";\n\n/**\n * Generates a new opaque session ID.\n * Returns a 64-character lowercase hex string (256-bit entropy via CSPRNG).\n *\n * This value is a secret. Do not store it in plaintext — pass it to hashSessionId\n * and store the hash. Send the raw ID to the client (cookie, header, response body).\n */\nexport function createSessionId(): string {\n  return randomToken(32);\n}\n\n/**\n * Returns the SHA-256 hash of a session ID as a lowercase hex string.\n * Store this in your database, never the raw ID.\n * If the database is compromised, stolen hashes cannot be used as tokens.\n */\nexport async function hashSessionId(id: string): Promise<string> {\n  return sha256(id);\n}\n\n/**\n * Verifies an incoming session ID against a stored hash.\n * Re-hashes the incoming ID unconditionally before comparing — avoids\n * short-circuit evaluation on the raw secret. Returns true on match.\n *\n * Usage: retrieve the stored hash from your database, then call this.\n * Do not compare raw IDs.\n */\nexport async function verifySessionId(\n  incomingId: string,\n  storedHash: string,\n): Promise<boolean> {\n  const hash = await hashSessionId(incomingId);\n  return hash === storedHash;\n}\n"
     }
   ],
-  "checksum": "sha256-2c63d8263ad768ffe90978e9671638c695226e3fc9aac38e2e9ba100d04ad198"
+  "checksum": "sha256-9642b65484310689340524a6f90f55c1073f5b795c9ff7c2856a442642b2c715"
 }

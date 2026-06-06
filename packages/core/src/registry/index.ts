@@ -23,6 +23,13 @@ export {
   BUILTIN_REGISTRY_ITEMS,
 } from "./builtin-items.js";
 export type {
+  LoadedItem,
+  RegistryItemLoader,
+  ResolvedItem,
+  ResolveTreeOptions,
+} from "./loader.js";
+export { resolveRegistryTree } from "./loader.js";
+export type {
   MaterializeContext,
   MaterializeDiagnostic,
   MaterializeOptions,
@@ -34,13 +41,6 @@ export {
   indexItemsBySlotVariant,
   resolveRegistryItems,
 } from "./resolve.js";
-export type {
-  LoadedItem,
-  RegistryItemLoader,
-  ResolvedItem,
-  ResolveTreeOptions,
-} from "./loader.js";
-export { resolveRegistryTree } from "./loader.js";
 export type { ItemRequest } from "./select.js";
 export { selectRegistryItems } from "./select.js";
 export type {

@@ -70,7 +70,7 @@ export async function createCommand(
       // Run schema migrations so old preset JSONs are accepted by the
       // current Zod validator instead of producing cryptic shape errors.
       const migrated = migratePreset(parsed, CURRENT_PRESET_SCHEMA_VERSION);
-      preset = migrated as unknown as Preset;
+      preset = ValidatedPresetSchema.parse(migrated);
     } catch (err) {
       p.log.error(`Invalid preset JSON: ${(err as Error).message}`);
       process.exit(1);

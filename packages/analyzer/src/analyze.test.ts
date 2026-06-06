@@ -7,6 +7,7 @@ import {
   removeFixture,
   SAAS_FULL_FIXTURE,
 } from "./test-utils/fixture";
+import type { Detection } from "./types";
 
 let tmp: string;
 
@@ -151,7 +152,8 @@ describe("analyze() — SAAS_FULL fixture", () => {
   it("preset.database.driver is postgres", async () => {
     tmp = await createFixture(SAAS_FULL_FIXTURE);
     const { preset } = await analyze(tmp);
-    expect((preset.database as any).driver).toBe("postgres");
+    if (preset.database.strategy !== "drizzle") throw new Error("expected drizzle");
+    expect(preset.database.driver).toBe("postgres");
   });
 
   it("preset.auth.provider is clerk", async () => {
@@ -228,7 +230,7 @@ describe("analyze() — SAAS_FULL fixture", () => {
     const { detections } = await analyze(tmp);
     for (const [key, det] of Object.entries(detections)) {
       if (typeof det === "object" && det !== null && "reason" in det) {
-        expect((det as any).reason.length, `${key}.reason`).toBeGreaterThan(0);
+        expect((det as Detection<unknown>).reason.length, `${key}.reason`).toBeGreaterThan(0);
       }
     }
   });
@@ -281,7 +283,8 @@ describe("analyze() — API_ONLY fixture", () => {
   it("preset.database.driver is sqlite", async () => {
     tmp = await createFixture(API_ONLY_FIXTURE);
     const { preset } = await analyze(tmp);
-    expect((preset.database as any).driver).toBe("sqlite");
+    if (preset.database.strategy !== "drizzle") throw new Error("expected drizzle");
+    expect(preset.database.driver).toBe("sqlite");
   });
 
   it("preset.auth.provider is better-auth", async () => {

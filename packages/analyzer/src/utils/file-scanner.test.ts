@@ -52,7 +52,7 @@ describe("fileExists", () => {
     expect(await fileExists(p)).toBe(true);
   });
 
-  it("handles symlink to existing file", async () => {
+  it.skipIf(process.platform === "win32")("handles symlink to existing file", async () => {
     const target = path.join(tmp, "target.txt");
     const link = path.join(tmp, "link.txt");
     await fs.writeFile(target, "data");
@@ -60,7 +60,7 @@ describe("fileExists", () => {
     expect(await fileExists(link)).toBe(true);
   });
 
-  it("returns false for broken symlink", async () => {
+  it.skipIf(process.platform === "win32")("returns false for broken symlink", async () => {
     const target = path.join(tmp, "nonexistent.txt");
     const link = path.join(tmp, "broken.txt");
     await fs.symlink(target, link);

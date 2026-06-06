@@ -65,7 +65,7 @@ function addItem(item: PackageRegistryItem, dir: string, into: Map<string, Packa
   }
   const files = item.files.map((f) => ({
     ...f,
-    content: readFileSync(path.resolve(dir, f.path), "utf-8"),
+    content: readFileSync(path.resolve(dir, f.path), "utf-8").replace(/\r\n/g, "\n"),
   }));
   into.set(item.name, { ...item, files });
 }

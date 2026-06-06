@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-// switch.ts — category resolution is pure logic, no I/O
-import { switchCommand } from "./switch";
-// preset.ts — validate with in-memory data
-import { presetCommand } from "./preset";
-
 // ─── switch: applySwitch internals via public command signature ────────────────
 
 // We test the pure category mapping by calling switchCommand with a known
@@ -19,8 +14,15 @@ describe("switch command — category mapping", () => {
     // verify the category meta function is complete by checking that known
     // categories are all string-typed and map to valid schema fields.
     const knownCategories = [
-      "db", "database", "auth", "api",
-      "analytics", "errorTracking", "email", "rateLimit", "ai",
+      "db",
+      "database",
+      "auth",
+      "api",
+      "analytics",
+      "errorTracking",
+      "email",
+      "rateLimit",
+      "ai",
     ];
     // All category strings must be non-empty — this guards against future
     // renames that forget to update the switch statement.

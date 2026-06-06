@@ -77,7 +77,7 @@ export async function switchCommand(
  * (b) the policy filter slot used to narrow them. Returns null for
  * unknown categories.
  */
-function categoryMeta(category: string): {
+export function categoryMeta(category: string): {
   enum: readonly string[];
   policy: Parameters<typeof filterOptions>[2];
   currentLabel: string;
@@ -139,7 +139,7 @@ async function pickNewProvider(
  * computes the file-level transition. For integrations we only flip the
  * single field.
  */
-function applySwitch(preset: Preset, category: string, value: string): Preset | null {
+export function applySwitch(preset: Preset, category: string, value: string): Preset | null {
   switch (category) {
     case "db":
     case "database":

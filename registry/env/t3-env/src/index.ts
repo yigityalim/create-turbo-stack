@@ -42,11 +42,12 @@ export const env = createEnv({
   client: {},
 
   /**
-   * Real runtime values. On Vercel / serverless this MUST be the literal
-   * `process.env`, NOT a destructured subset — bundlers DCE-prune anything
-   * not statically referenced and t3-env then fails on "missing" vars.
+   * Real runtime values. Each key declared in `server` / `client` must appear
+   * here — t3-env validates types against this map at startup.
    */
-  runtimeEnv: process.env,
+  runtimeEnv: {
+    NODE_ENV: process.env.NODE_ENV,
+  },
 
   /**
    * Treat blank strings as undefined so a `.env` line like `FOO=` triggers

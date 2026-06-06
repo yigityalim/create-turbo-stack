@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { PresetSchema } from "@create-turbo-stack/schema";
+import { type NextRequest, NextResponse } from "next/server";
 
 /**
  * GET /api/preset?p=v1:<compressed>
@@ -16,7 +16,10 @@ export async function GET(req: NextRequest) {
 
   if (!p) {
     return NextResponse.json(
-      { error: "Missing ?p= parameter. Use the builder to generate a shareable URL." },
+      {
+        error:
+          "Missing ?p= parameter. Use the builder to generate a shareable URL.",
+      },
       { status: 400 },
     );
   }
@@ -42,17 +45,60 @@ export async function GET(req: NextRequest) {
 
 const VERSION_PREFIX = "v1:";
 const KEY_MAP: Record<string, string> = {
-  sv: "schemaVersion", n: "name", v: "version", d: "description", ao: "author",
-  b: "basics", db: "database", a: "api", au: "auth", c: "css", i: "integrations",
-  ap: "apps", pk: "packages", rp: "registryPackages", ov: "packageOverrides",
-  al: "autoPackageLocations", pn: "projectName", pm: "packageManager", sc: "scope",
-  ts: "typescript", l: "linter", g: "gitInit", st: "strategy", dv: "driver",
-  md: "mode", pr: "provider", rb: "rbac", en: "entitlements", fw: "framework",
-  u: "ui", sy: "styling", an: "analytics", et: "errorTracking", em: "email",
-  rl: "rateLimit", ai: "ai", ca: "cache", ev: "envValidation", t: "type",
-  lo: "location", p: "port", il: "i18n", co: "consumes", pc: "producesCSS",
-  ex: "exports", rg: "registry", rf: "ref", ck: "checksum", dp: "dependencies",
-  dd: "devDependencies", sr: "scripts", ef: "extraFiles", pa: "path", ct: "content",
+  sv: "schemaVersion",
+  n: "name",
+  v: "version",
+  d: "description",
+  ao: "author",
+  b: "basics",
+  db: "database",
+  a: "api",
+  au: "auth",
+  c: "css",
+  i: "integrations",
+  ap: "apps",
+  pk: "packages",
+  rp: "registryPackages",
+  ov: "packageOverrides",
+  al: "autoPackageLocations",
+  pn: "projectName",
+  pm: "packageManager",
+  sc: "scope",
+  ts: "typescript",
+  l: "linter",
+  g: "gitInit",
+  st: "strategy",
+  dv: "driver",
+  md: "mode",
+  pr: "provider",
+  rb: "rbac",
+  en: "entitlements",
+  fw: "framework",
+  u: "ui",
+  sy: "styling",
+  an: "analytics",
+  et: "errorTracking",
+  em: "email",
+  rl: "rateLimit",
+  ai: "ai",
+  ca: "cache",
+  ev: "envValidation",
+  t: "type",
+  lo: "location",
+  p: "port",
+  il: "i18n",
+  co: "consumes",
+  pc: "producesCSS",
+  ex: "exports",
+  rg: "registry",
+  rf: "ref",
+  ck: "checksum",
+  dp: "dependencies",
+  dd: "devDependencies",
+  sr: "scripts",
+  ef: "extraFiles",
+  pa: "path",
+  ct: "content",
 };
 
 const USER_KEY_PATHS = new Set(["packageOverrides", "autoPackageLocations"]);

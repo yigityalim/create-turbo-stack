@@ -1,6 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { RegistryItemLoader, LoadedItem, ResolvedItem, ResolveTreeOptions } from "@create-turbo-stack/core";
+import type {
+  LoadedItem,
+  RegistryItemLoader,
+  ResolvedItem,
+  ResolveTreeOptions,
+} from "@create-turbo-stack/core";
 import { resolveRegistryTree } from "@create-turbo-stack/core";
 import type { PackageRegistryItem, RegistryConfigEntry } from "@create-turbo-stack/schema";
 import { PackageRegistryItemSchema } from "@create-turbo-stack/schema";

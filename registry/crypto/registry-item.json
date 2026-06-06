@@ -6,6 +6,7 @@
   "lib": ["ES2022", "WebWorker"],
   "dependencies": [],
   "exports": [".", "./hash", "./hmac", "./random", "./encoding"],
+  "description": "SHA-256/512 hashing, HMAC, CSPRNG, and base encoding via Web Crypto API.",
   "categories": ["foundation", "security", "crypto"],
   "docs": "SHA-256/512 hashing, HMAC-SHA256 with timing-safe verification, CSPRNG utilities, and base encoding helpers. Backed entirely by the native Web Crypto API — no runtime dependencies, runs unmodified in Node 20+, Vercel/Cloudflare Edge, and modern browsers. Does not include AES, asymmetric crypto, password hashing, JWT, TOTP, or anything requiring server-only APIs.",
   "files": [

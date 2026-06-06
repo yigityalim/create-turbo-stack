@@ -29,7 +29,7 @@ export async function doctorCommand(options: DoctorOptions = {}): Promise<void> 
   const checks: Check[] = [];
 
   // Node version
-  const major = Number.parseInt(process.versions.node.split(".")[0] ?? "0", 10);
+  const major = parseNodeMajor(process.versions.node);
   checks.push({
     name: "Node version",
     status: major >= 20 ? "ok" : "fail",
@@ -113,12 +113,20 @@ export async function doctorCommand(options: DoctorOptions = {}): Promise<void> 
   if (checks.some((c) => c.status === "fail")) process.exit(1);
 }
 
+/** Returns the OS-appropriate command string to locate a binary on PATH. */
+export function whichCommand(bin: string): string {
+  return process.platform === "win32" ? `where ${bin}` : `command -v ${bin}`;
+}
+
+/** Parses a Node.js version string (e.g. "20.11.0") into the major version number. */
+export function parseNodeMajor(versionStr: string): number {
+  const n = Number.parseInt(versionStr.split(".")[0] ?? "0", 10);
+  return Number.isNaN(n) ? 0 : n;
+}
+
 function which(bin: string): string | null {
   try {
-    // `where` on Windows, `command -v` on Unix.
-    const cmd =
-      process.platform === "win32" ? `where ${bin}` : `command -v ${bin}`;
-    const out = execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] })
+    const out = execSync(whichCommand(bin), { stdio: ["ignore", "pipe", "ignore"] })
       .toString()
       .trim();
     // `where` may return multiple lines; take the first.

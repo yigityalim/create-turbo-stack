@@ -6,48 +6,66 @@
     {
       "name": "crypto",
       "type": "registry:package",
-      "title": "Crypto",
-      "description": "Web Crypto helpers: SHA-256 / HMAC hashing and secure random tokens.",
+      "description": "SHA-256/512 hashing, HMAC, CSPRNG, and base encoding via Web Crypto API.",
       "dependencies": [],
       "registryDependencies": [],
       "categories": [
+        "foundation",
         "security",
         "crypto"
       ],
       "environment": "universal",
       "build": "none",
-      "checksum": "sha256-b35e630cb6698d9b95d4a8e5d13dfd4fd92d280d121815d57394114714095b48"
+      "checksum": "sha256-a0bcea61ee23875b94f300f3395d664fc62c78258a7c664d0627a7d5bc77b40a"
+    },
+    {
+      "name": "email-templates",
+      "type": "registry:package",
+      "description": "React Email transactional templates for auth, account, and billing flows.",
+      "dependencies": [
+        "@react-email/components",
+        "react"
+      ],
+      "registryDependencies": [],
+      "categories": [
+        "email"
+      ],
+      "environment": "node",
+      "build": "none",
+      "checksum": "sha256-4df44e1391f087e79d86a931bf22f08c68d7c024975ccede6efa7e77f8015ff7"
     },
     {
       "name": "security",
       "type": "registry:package",
-      "title": "Security",
-      "description": "Security headers (CSP, HSTS, X-Frame-Options, …) plus an origin/CSRF guard for Next.js and Web-API handlers.",
-      "dependencies": [],
-      "registryDependencies": [],
-      "categories": [
-        "security"
-      ],
-      "environment": "universal",
-      "build": "none",
-      "checksum": "sha256-0c156ebb497f60bca2ce2dacd5fd25128d92024c0edd63ba05993c77fcde0d34"
-    },
-    {
-      "name": "session",
-      "type": "registry:package",
-      "title": "Session",
-      "description": "Secure session id helpers — composes the crypto package.",
+      "description": "OWASP security headers, nonce-based CSP builder, and origin/CSRF guard.",
       "dependencies": [],
       "registryDependencies": [
         "crypto"
       ],
       "categories": [
+        "foundation",
+        "security"
+      ],
+      "environment": "universal",
+      "build": "none",
+      "checksum": "sha256-cfe00055060605fc27fea96405034816d18b9c77b0c4a774a07203a00e479357"
+    },
+    {
+      "name": "session",
+      "type": "registry:package",
+      "description": "Secure session ID generation, hashing, and verification.",
+      "dependencies": [],
+      "registryDependencies": [
+        "crypto"
+      ],
+      "categories": [
+        "foundation",
         "security",
         "auth"
       ],
       "environment": "universal",
       "build": "none",
-      "checksum": "sha256-2c63d8263ad768ffe90978e9671638c695226e3fc9aac38e2e9ba100d04ad198"
+      "checksum": "sha256-9642b65484310689340524a6f90f55c1073f5b795c9ff7c2856a442642b2c715"
     }
   ]
 }

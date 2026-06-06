@@ -129,10 +129,7 @@ export function PreviewView() {
         });
         // If the user had this file open in the preview, clear the selection —
         // the path will be gone on the next resolveFileTree pass anyway.
-        if (
-          selectedFile &&
-          selectedFile.split("/").some((seg) => seg === action.name)
-        ) {
+        if (selectedFile?.split("/").some((seg) => seg === action.name)) {
           setSelectedFile(null);
         }
         break;

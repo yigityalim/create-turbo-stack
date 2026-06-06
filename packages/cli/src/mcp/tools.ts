@@ -134,9 +134,7 @@ export function registerTools(server: McpServer, ctx: McpContext): void {
     `${PREFIX}switch_database`,
     "Switch the database strategy (replaces existing database config)",
     {
-      strategy: z
-        .enum(["drizzle", "prisma", "supabase", "none"])
-        .describe("Database strategy"),
+      strategy: z.enum(["drizzle", "prisma", "supabase", "none"]).describe("Database strategy"),
       driver: z
         .enum(["postgres", "mysql", "sqlite", "turso", "neon", "planetscale"])
         .optional()
@@ -145,14 +143,16 @@ export function registerTools(server: McpServer, ctx: McpContext): void {
     ({ strategy, driver }) =>
       withConfig(ctx, async (config) => {
         if (strategy === "drizzle" && !driver) {
-          return { error: "Drizzle requires a driver (postgres, mysql, sqlite, turso, neon, planetscale)" };
+          return {
+            error: "Drizzle requires a driver (postgres, mysql, sqlite, turso, neon, planetscale)",
+          };
         }
         const database =
           strategy === "drizzle"
             ? { strategy: "drizzle" as const, driver: driver! }
             : strategy === "prisma" && driver
               ? { strategy: "prisma" as const, driver }
-              : { strategy } as Preset["database"];
+              : ({ strategy } as Preset["database"]);
         return {
           preset: { ...config, database } as Preset,
           success: `Database switched to ${strategy}${driver ? ` (${driver})` : ""}.`,
@@ -182,9 +182,7 @@ export function registerTools(server: McpServer, ctx: McpContext): void {
     `${PREFIX}switch_api`,
     "Switch the API strategy",
     {
-      strategy: z
-        .enum(["trpc", "hono", "rest-nextjs", "none"])
-        .describe("API strategy"),
+      strategy: z.enum(["trpc", "hono", "rest-nextjs", "none"]).describe("API strategy"),
     },
     ({ strategy }) =>
       withConfig(ctx, async (config) => ({

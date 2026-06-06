@@ -111,3 +111,79 @@ describe("ValidatedPresetSchema — rejected presets", () => {
     expect(message).toMatch(/consumes unknown package 'nonexistent-pkg'/);
   });
 });
+
+// Additional edge cases
+
+describe("ValidatedPresetSchema — database edge cases", () => {
+  it("accepts prisma without a driver (prisma has no driver requirement)", () => {
+    const preset = fixture();
+    preset.database = { strategy: "prisma" };
+    expect(firstIssueMessage(preset)).toBeUndefined();
+  });
+
+  it("accepts supabase database strategy", () => {
+    const preset = fixture();
+    preset.database = { strategy: "supabase" };
+    expect(firstIssueMessage(preset)).toBeUndefined();
+  });
+
+  it("accepts drizzle with sqlite driver", () => {
+    const preset = fixture();
+    preset.database = { strategy: "drizzle", driver: "sqlite" };
+    expect(firstIssueMessage(preset)).toBeUndefined();
+  });
+});
+
+describe("ValidatedPresetSchema — app name validation", () => {
+  it("rejects an app with an empty name", () => {
+    const preset = fixture();
+    (fixtureApps(preset)[0] as Record<string, unknown>).name = "";
+    expect(firstIssueMessage(preset)).toBeDefined();
+  });
+
+  it("rejects an app name with uppercase letters", () => {
+    const preset = fixture();
+    (fixtureApps(preset)[0] as Record<string, unknown>).name = "MyApp";
+    expect(firstIssueMessage(preset)).toBeDefined();
+  });
+
+  it("rejects an app name with spaces", () => {
+    const preset = fixture();
+    (fixtureApps(preset)[0] as Record<string, unknown>).name = "my app";
+    expect(firstIssueMessage(preset)).toBeDefined();
+  });
+
+  it("accepts a kebab-case app name with numbers", () => {
+    const preset = fixture();
+    (fixtureApps(preset)[0] as Record<string, unknown>).name = "web-app-2";
+    expect(firstIssueMessage(preset)).toBeUndefined();
+  });
+});
+
+describe("ValidatedPresetSchema — registryPackages", () => {
+  it("accepts unique registry packages", () => {
+    const preset = fixture();
+    preset.registryPackages = ["posthog", "sentry"];
+    expect(firstIssueMessage(preset)).toBeUndefined();
+  });
+
+  it("currently accepts duplicate registry packages (no unique constraint yet)", () => {
+    const preset = fixture();
+    preset.registryPackages = ["posthog", "posthog"];
+    expect(firstIssueMessage(preset)).toBeUndefined();
+  });
+});
+
+describe("ValidatedPresetSchema — hono mode edge cases", () => {
+  it("accepts hono nextjs-route mode without a hono-standalone app", () => {
+    const preset = fixture();
+    preset.api = { strategy: "hono", mode: "nextjs-route" };
+    expect(firstIssueMessage(preset)).toBeUndefined();
+  });
+
+  it("rejects hono standalone-app mode when no hono-standalone app exists", () => {
+    const preset = fixture();
+    preset.api = { strategy: "hono", mode: "standalone-app" };
+    expect(firstIssueMessage(preset)).toMatch(/hono-standalone/i);
+  });
+});

@@ -68,7 +68,7 @@ function safe<T>(value: T | undefined | null, fallback: T): T {
   return value ?? fallback;
 }
 
-function generateConventionsDoc(preset: Preset): string {
+export function generateConventionsDoc(preset: Preset): string {
   const basics = preset.basics;
   const integrations = preset.integrations;
   const lines: string[] = [
@@ -118,7 +118,7 @@ function generateConventionsDoc(preset: Preset): string {
   lines.push('- Workspace deps use `"workspace:*"`');
   lines.push('- External deps use `"catalog:"` (version in root package.json catalog)');
 
-  if (integrations?.envValidation) {
+  if (integrations?.envValidation && integrations.envValidation !== "none") {
     lines.push("", "## Environment Variables");
     lines.push(`- Validated via \`@t3-oss/env-nextjs\` in \`${scope}/env\``);
     lines.push(`- Import: \`import { env } from "${scope}/env"\``);

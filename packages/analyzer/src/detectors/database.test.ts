@@ -19,7 +19,8 @@ describe("detectDatabase", () => {
     });
     const r = await detectDatabase(tmp);
     expect(r.value.strategy).toBe("drizzle");
-    expect((r.value as any).driver).toBe("postgres");
+    if (r.value.strategy !== "drizzle") throw new Error("expected drizzle");
+    expect(r.value.driver).toBe("postgres");
     expect(r.confidence).toBe("certain");
   });
 
@@ -30,8 +31,8 @@ describe("detectDatabase", () => {
       },
     });
     const r = await detectDatabase(tmp);
-    expect(r.value.strategy).toBe("drizzle");
-    expect((r.value as any).driver).toBe("mysql");
+    if (r.value.strategy !== "drizzle") throw new Error("expected drizzle");
+    expect(r.value.driver).toBe("mysql");
   });
 
   it("detects drizzle/sqlite via drizzle-orm + better-sqlite3", async () => {
@@ -41,8 +42,8 @@ describe("detectDatabase", () => {
       },
     });
     const r = await detectDatabase(tmp);
-    expect(r.value.strategy).toBe("drizzle");
-    expect((r.value as any).driver).toBe("sqlite");
+    if (r.value.strategy !== "drizzle") throw new Error("expected drizzle");
+    expect(r.value.driver).toBe("sqlite");
   });
 
   it("detects drizzle/sqlite via @libsql/client", async () => {
@@ -52,7 +53,8 @@ describe("detectDatabase", () => {
       },
     });
     const r = await detectDatabase(tmp);
-    expect((r.value as any).driver).toBe("sqlite");
+    if (r.value.strategy !== "drizzle") throw new Error("expected drizzle");
+    expect(r.value.driver).toBe("sqlite");
   });
 
   it("detects drizzle/postgres via @neondatabase/serverless", async () => {
@@ -65,7 +67,8 @@ describe("detectDatabase", () => {
       },
     });
     const r = await detectDatabase(tmp);
-    expect((r.value as any).driver).toBe("postgres");
+    if (r.value.strategy !== "drizzle") throw new Error("expected drizzle");
+    expect(r.value.driver).toBe("postgres");
   });
 
   it("defaults drizzle driver to postgres when no driver package found but drizzle-orm present", async () => {
@@ -76,7 +79,8 @@ describe("detectDatabase", () => {
     });
     const r = await detectDatabase(tmp);
     expect(r.value.strategy).toBe("drizzle");
-    expect((r.value as any).driver).toBe("postgres");
+    if (r.value.strategy !== "drizzle") throw new Error("expected drizzle");
+    expect(r.value.driver).toBe("postgres");
   });
 
   // Drizzle via drizzle.config.ts dialect
@@ -89,7 +93,8 @@ describe("detectDatabase", () => {
       "packages/db/drizzle.config.ts": `export default { dialect: "postgresql" }`,
     });
     const r = await detectDatabase(tmp);
-    expect((r.value as any).driver).toBe("postgres");
+    if (r.value.strategy !== "drizzle") throw new Error("expected drizzle");
+    expect(r.value.driver).toBe("postgres");
   });
 
   it("detects drizzle/mysql from drizzle.config.ts 'mysql' dialect", async () => {
@@ -100,7 +105,8 @@ describe("detectDatabase", () => {
       "packages/db/drizzle.config.ts": `export default { dialect: 'mysql' }`,
     });
     const r = await detectDatabase(tmp);
-    expect((r.value as any).driver).toBe("mysql");
+    if (r.value.strategy !== "drizzle") throw new Error("expected drizzle");
+    expect(r.value.driver).toBe("mysql");
   });
 
   it("detects drizzle/sqlite from drizzle.config.ts 'sqlite' dialect", async () => {
@@ -111,7 +117,8 @@ describe("detectDatabase", () => {
       "packages/db/drizzle.config.ts": `export default { dialect: 'sqlite' }`,
     });
     const r = await detectDatabase(tmp);
-    expect((r.value as any).driver).toBe("sqlite");
+    if (r.value.strategy !== "drizzle") throw new Error("expected drizzle");
+    expect(r.value.driver).toBe("sqlite");
   });
 
   // drizzle.config.ts in root (no packages/db)

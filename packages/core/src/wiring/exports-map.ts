@@ -8,10 +8,15 @@ import type { Package } from "@create-turbo-stack/schema";
  */
 export function computeExportsMap(
   pkg: Package,
-): Record<string, { types: string; default: string }> {
-  const map: Record<string, { types: string; default: string }> = {};
+): Record<string, { types: string; default: string } | string> {
+  const map: Record<string, { types: string; default: string } | string> = {};
 
   for (const exp of pkg.exports) {
+    // JSON / non-TypeScript exports map directly to themselves (e.g. ./base.json).
+    if (exp.endsWith(".json") || exp.endsWith(".css")) {
+      map[exp] = exp;
+      continue;
+    }
     if (exp === ".") {
       map["."] = {
         types: "./src/index.ts",

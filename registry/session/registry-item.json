@@ -7,6 +7,7 @@
   "dependencies": [],
   "registryDependencies": ["crypto"],
   "exports": ["."],
+  "description": "Secure session ID generation, hashing, and verification.",
   "categories": ["foundation", "security", "auth"],
   "docs": "Generate a secure session ID, hash it for at-rest storage, and verify incoming tokens — not an auth system; projects using better-auth, Supabase Auth, or Clerk do not need this.",
   "files": [{ "path": "src/index.ts", "type": "registry:source" }]

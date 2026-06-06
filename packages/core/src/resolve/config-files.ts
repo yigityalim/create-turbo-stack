@@ -73,6 +73,17 @@ export function resolveRootFiles(
     isDirectory: false,
   });
 
+  // bunfig.toml — bun-specific config. Disable hardlinks so packages with
+  // Windows-incompatible file names (e.g. @typescript-eslint/*) install
+  // correctly on Windows without ENOENT copyfile errors.
+  if (pm === "bun") {
+    nodes.push({
+      path: "bunfig.toml",
+      content: "[install]\nhardlinks = false\n",
+      isDirectory: false,
+    });
+  }
+
   // pnpm keeps its catalog (and workspace globs) in pnpm-workspace.yaml,
   // not package.json.
   if (pm === "pnpm" && hasCatalog) {

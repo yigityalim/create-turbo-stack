@@ -43,10 +43,27 @@ export interface TreeDiff {
  * overwrite — attempting text mutations on binary content would corrupt it.
  */
 const BINARY_EXTENSIONS = new Set([
-  ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".ico", ".svg",
-  ".woff", ".woff2", ".ttf", ".eot", ".otf",
-  ".pdf", ".zip", ".tar", ".gz",
-  ".mp4", ".webm", ".mp3", ".wav",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".webp",
+  ".avif",
+  ".ico",
+  ".svg",
+  ".woff",
+  ".woff2",
+  ".ttf",
+  ".eot",
+  ".otf",
+  ".pdf",
+  ".zip",
+  ".tar",
+  ".gz",
+  ".mp4",
+  ".webm",
+  ".mp3",
+  ".wav",
 ]);
 
 function isBinaryPath(filePath: string): boolean {

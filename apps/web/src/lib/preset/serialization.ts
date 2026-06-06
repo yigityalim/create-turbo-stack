@@ -1,6 +1,6 @@
 import type { FileTreeNode, Preset } from "@create-turbo-stack/schema";
 import { PresetSchema } from "@create-turbo-stack/schema";
-import { zipSync, strToU8 } from "fflate";
+import { strToU8, zipSync } from "fflate";
 
 const VERSION_PREFIX = "v1:";
 const PARAM_KEY = "p";
@@ -381,32 +381,32 @@ export function downloadPresetJSON(preset: Preset): void {
  * Call after resolveTreeAction() to hand the user a complete, ready-to-use
  * scaffold without them needing to install the CLI first.
  */
- export function downloadProjectZip(
-   preset: Preset,
-   nodes: FileTreeNode[],
- ): void {
-   if (typeof window === "undefined") return;
+export function downloadProjectZip(
+  preset: Preset,
+  nodes: FileTreeNode[],
+): void {
+  if (typeof window === "undefined") return;
 
-   const files: Record<string, Uint8Array> = {};
-   for (const node of nodes) {
-     if (node.isDirectory || node.content == null) continue;
-     files[node.path] = strToU8(node.content);
-   }
+  const files: Record<string, Uint8Array> = {};
+  for (const node of nodes) {
+    if (node.isDirectory || node.content == null) continue;
+    files[node.path] = strToU8(node.content);
+  }
 
-   const zip = zipSync(files, { level: 6 });
-   const blob = new Blob([zip as BlobPart], { type: "application/zip" });
-   const url = URL.createObjectURL(blob);
+  const zip = zipSync(files, { level: 6 });
+  const blob = new Blob([zip as BlobPart], { type: "application/zip" });
+  const url = URL.createObjectURL(blob);
 
-   const a = document.createElement("a");
-   a.href = url;
-   a.download = `${preset.basics.projectName || "project"}.zip`;
-   a.style.display = "none";
-   document.body.appendChild(a);
-   a.click();
-   a.remove();
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${preset.basics.projectName || "project"}.zip`;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 
-   setTimeout(() => URL.revokeObjectURL(url), 1000);
- }
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 /** Parse a preset from an uploaded JSON file, or null if invalid. */
 export async function importPresetFromFile(file: File): Promise<Preset | null> {

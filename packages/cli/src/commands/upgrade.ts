@@ -38,10 +38,7 @@ export async function upgradeCommand(options: { dryRun?: boolean } = {}) {
 
   let migrated: Record<string, unknown>;
   try {
-    migrated = migratePreset(
-      config as unknown as Record<string, unknown>,
-      CURRENT_PRESET_SCHEMA_VERSION,
-    );
+    migrated = migratePreset(config as Record<string, unknown>, CURRENT_PRESET_SCHEMA_VERSION);
   } catch (err) {
     p.log.error((err as Error).message);
     process.exit(1);

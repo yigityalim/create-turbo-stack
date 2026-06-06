@@ -14,12 +14,24 @@
  */
 
 import { execSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+
+// On Windows, the default AppData\Local\Temp path is long enough that deeply
+// nested packages (like @typescript-eslint/eslint-plugin) exceed MAX_PATH
+// (260 chars) when installed. Use a shorter root to stay under the limit.
+function resolveTmpBase(): string {
+  if (process.platform === "win32") {
+    mkdirSync("C:\\Tmp", { recursive: true });
+    return "C:\\Tmp";
+  }
+  return tmpdir();
+}
+const TMPBASE = resolveTmpBase();
 const CLI_BIN = path.join(REPO_ROOT, "packages/cli/bin/create-turbo-stack.ts");
 
 const PRESETS = ["minimal", "saas-starter", "api-only"] as const;
@@ -40,13 +52,17 @@ interface StepResult {
   output?: string;
 }
 
-function run(cmd: string, cwd: string): { ok: boolean; output: string } {
+function run(
+  cmd: string,
+  cwd: string,
+  extraEnv: Record<string, string> = {},
+): { ok: boolean; output: string } {
   try {
     const output = execSync(cmd, {
       cwd,
       stdio: ["ignore", "pipe", "pipe"],
       encoding: "utf-8",
-      env: { ...process.env, FORCE_COLOR: "0" },
+      env: { ...process.env, FORCE_COLOR: "0", ...extraEnv },
     });
     return { ok: true, output };
   } catch (err) {
@@ -62,7 +78,7 @@ function timed(label: string, fn: () => { ok: boolean; output: string }): StepRe
 }
 
 async function smokePreset(preset: string): Promise<StepResult[]> {
-  const dir = mkdtempSync(path.join(tmpdir(), `cts-e2e-${preset}-`));
+  const dir = mkdtempSync(path.join(TMPBASE, `cts-e2e-${preset}-`));
   const presetPath = path.join(REPO_ROOT, "presets", `${preset}.json`);
   const results: StepResult[] = [];
 
@@ -81,7 +97,7 @@ async function smokePreset(preset: string): Promise<StepResult[]> {
     results.push(timed("type-check", () => run("bun run type-check", appDir)));
     // No real secrets in CI; the generated env package honors this flag and
     // skips Zod validation at build time (the canonical t3-env pattern).
-    results.push(timed("build", () => run("SKIP_ENV_VALIDATION=1 bun run build", appDir)));
+    results.push(timed("build", () => run("bun run build", appDir, { SKIP_ENV_VALIDATION: "1" })));
     return results;
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -94,7 +110,7 @@ async function smokePreset(preset: string): Promise<StepResult[]> {
  * its own linter cleanly.
  */
 async function smokeLinter(linter: string): Promise<StepResult[]> {
-  const dir = mkdtempSync(path.join(tmpdir(), `cts-e2e-lint-${linter}-`));
+  const dir = mkdtempSync(path.join(TMPBASE, `cts-e2e-lint-${linter}-`));
   const results: StepResult[] = [];
 
   try {
@@ -129,7 +145,7 @@ async function smokeLinter(linter: string): Promise<StepResult[]> {
  * and wiring produce a project that actually compiles.
  */
 async function smokeAppType(appType: string): Promise<StepResult[]> {
-  const dir = mkdtempSync(path.join(tmpdir(), `cts-e2e-app-${appType}-`));
+  const dir = mkdtempSync(path.join(TMPBASE, `cts-e2e-app-${appType}-`));
   const results: StepResult[] = [];
 
   try {
@@ -152,7 +168,7 @@ async function smokeAppType(appType: string): Promise<StepResult[]> {
     if (!results.at(-1)?.ok) return results;
 
     results.push(timed("type-check", () => run("bun run type-check", appDir)));
-    results.push(timed("build", () => run("SKIP_ENV_VALIDATION=1 bun run build", appDir)));
+    results.push(timed("build", () => run("bun run build", appDir, { SKIP_ENV_VALIDATION: "1" })));
     return results;
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -168,7 +184,7 @@ async function smokeAppType(appType: string): Promise<StepResult[]> {
  * only shows up when packages depend on each other.
  */
 async function smokeComposition(): Promise<StepResult[]> {
-  const dir = mkdtempSync(path.join(tmpdir(), "cts-e2e-compose-"));
+  const dir = mkdtempSync(path.join(TMPBASE, "cts-e2e-compose-"));
   const registry = path.join(REPO_ROOT, "apps/web/public/r");
   const results: StepResult[] = [];
 

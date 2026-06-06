@@ -519,7 +519,7 @@ export function FileExplorer({
       e.preventDefault();
       setContextMenu({ x: e.clientX, y: e.clientY, items });
     },
-    [onContextAction, memberPaths, collectionPaths],
+    [onContextAction, memberPaths, collectionPaths, onTreeCreate],
   );
 
   // Close context menu on click outside or scroll

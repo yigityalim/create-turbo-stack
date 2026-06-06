@@ -56,11 +56,16 @@ export function materializeAsAutoPackage(
     deps[`${preset.basics.scope}/${sibling}`] = "workspace:*";
   }
 
+  // Use the item's declared exports if present — the auto-package stub
+  // always has `exports: ["."]` which resolves to a TypeScript source path,
+  // which is wrong for JSON-only packages like typescript-config.
+  const pkgWithExports: Package = item.exports.length ? { ...pkg, exports: item.exports } : pkg;
+
   // makeBasePackageFiles owns package.json + tsconfig.json + linter configs.
   // It's the "rules" half: catalog merging, workspace refs, tsconfig
   // inheritance. Unchanged from the Eta path — this is the layer we
   // deliberately keep when migrating.
-  const baseFiles = makeBasePackageFiles(preset, pkg, base, deps);
+  const baseFiles = makeBasePackageFiles(preset, pkgWithExports, base, deps);
 
   // Item content goes through the closed-vocabulary substituter and lands
   // under `<base>/<file.path>` (or the file's explicit `target`).

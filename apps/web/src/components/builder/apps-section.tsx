@@ -29,7 +29,6 @@ function groupAppsByLocation(apps: App[]) {
     const a = apps[i];
     if (!a) continue;
     if (!map.has(a.location)) map.set(a.location, []);
-    // biome-ignore lint/style/noNonNullAssertion: just set above
     map.get(a.location)!.push({ app: a, originalIndex: i });
   }
   return [...map.entries()]
