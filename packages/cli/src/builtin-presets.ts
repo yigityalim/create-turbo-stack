@@ -62,7 +62,7 @@ export const BUILTIN_PRESETS: Record<string, unknown> = {
     integrations: {
       analytics: "posthog",
       errorTracking: "sentry",
-      email: "react-email-resend",
+      email: "resend",
       rateLimit: "none",
       ai: "none",
       cache: "upstash",

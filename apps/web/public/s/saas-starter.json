@@ -23,7 +23,7 @@
   "integrations": {
     "analytics": "posthog",
     "errorTracking": "sentry",
-    "email": "react-email-resend",
+    "email": "resend",
     "rateLimit": "none",
     "ai": "none",
     "envValidation": "t3-env"

@@ -112,6 +112,28 @@
               "tsup"
             ]
           },
+          "slot": {
+            "type": "string",
+            "enum": [
+              "app",
+              "auth",
+              "db",
+              "api",
+              "env",
+              "email",
+              "monitoring",
+              "analytics",
+              "rate-limit",
+              "ai",
+              "cache",
+              "typescript-config",
+              "ui"
+            ]
+          },
+          "variant": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
           "categories": {
             "default": [],
             "type": "array",

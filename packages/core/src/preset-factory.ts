@@ -70,7 +70,7 @@ export function makeFullPreset(): Preset {
     integrations: IntegrationsSchema.parse({
       analytics: "posthog",
       errorTracking: "sentry",
-      email: "react-email-resend",
+      email: "resend",
       rateLimit: "upstash",
       ai: "vercel-ai-sdk",
       cache: "upstash",

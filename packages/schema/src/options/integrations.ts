@@ -6,7 +6,7 @@ export type Analytics = z.infer<typeof AnalyticsSchema>;
 export const ErrorTrackingSchema = z.enum(["sentry", "bugsnag", "none"]);
 export type ErrorTracking = z.infer<typeof ErrorTrackingSchema>;
 
-export const EmailSchema = z.enum(["react-email-resend", "nodemailer", "none"]);
+export const EmailSchema = z.enum(["resend", "sendgrid", "plunk", "none"]);
 export type Email = z.infer<typeof EmailSchema>;
 
 export const RateLimitSchema = z.enum(["upstash", "none"]);

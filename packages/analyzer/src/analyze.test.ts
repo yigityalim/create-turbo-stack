@@ -194,10 +194,10 @@ describe("analyze() — SAAS_FULL fixture", () => {
     expect(preset.integrations.errorTracking).toBe("sentry");
   });
 
-  it("preset.integrations.email is react-email-resend", async () => {
+  it("preset.integrations.email is resend", async () => {
     tmp = await createFixture(SAAS_FULL_FIXTURE);
     const { preset } = await analyze(tmp);
-    expect(preset.integrations.email).toBe("react-email-resend");
+    expect(preset.integrations.email).toBe("resend");
   });
 
   it("preset.integrations.rateLimit is upstash", async () => {

@@ -64,12 +64,13 @@ export const REGISTRY_MAP: Record<
   },
   email: {
     none: null,
-    "react-email-resend": [["email", "resend"]],
-    nodemailer: [["email", "nodemailer"]],
+    resend: [["email", "resend"]],
+    sendgrid: [["email", "sendgrid"]],
+    plunk: [["email", "plunk"]],
   },
   rateLimit: {
     none: null,
-    upstash: [["rate-limit", "upstash-ratelimit"]],
+    upstash: [["rate-limit", "upstash"]],
   },
   ai: {
     none: null,
@@ -78,6 +79,6 @@ export const REGISTRY_MAP: Record<
   },
   cache: {
     none: null,
-    upstash: [["cache", "upstash-redis"]],
+    upstash: [["cache", "upstash"]],
   },
 };

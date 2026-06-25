@@ -113,16 +113,23 @@ function detectErrorTracking(pkgs: PkgJson[]): Detection<string> {
 function detectEmail(pkgs: PkgJson[]): Detection<string> {
   if (anyHasDep(pkgs, "resend") || anyHasDep(pkgs, "@react-email/components")) {
     return {
-      value: "react-email-resend",
+      value: "resend",
       confidence: "certain",
       reason: "resend/react-email found",
     };
   }
-  if (anyHasDep(pkgs, "nodemailer")) {
+  if (anyHasDep(pkgs, "@sendgrid/mail")) {
     return {
-      value: "nodemailer",
+      value: "sendgrid",
       confidence: "certain",
-      reason: "nodemailer found",
+      reason: "@sendgrid/mail found",
+    };
+  }
+  if (anyHasDep(pkgs, "@plunk/node")) {
+    return {
+      value: "plunk",
+      confidence: "certain",
+      reason: "@plunk/node found",
     };
   }
   return {

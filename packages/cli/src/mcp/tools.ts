@@ -116,7 +116,7 @@ export function registerTools(server: McpServer, ctx: McpContext): void {
         .string()
         .describe(
           "Provider value. Analytics: posthog|vercel-analytics|plausible|none. " +
-            "Error tracking: sentry|bugsnag|none. Email: react-email-resend|nodemailer|none. " +
+            "Error tracking: sentry|bugsnag|none. Email: resend|sendgrid|plunk|none. " +
             "Rate limit: upstash|none. AI: vercel-ai-sdk|langchain|none. Cache: upstash|none.",
         ),
     },

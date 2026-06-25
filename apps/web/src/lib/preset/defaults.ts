@@ -99,7 +99,7 @@ export const BUILTIN_PRESETS: {
       integrations: {
         analytics: "posthog",
         errorTracking: "sentry",
-        email: "react-email-resend",
+        email: "resend",
         rateLimit: "none",
         ai: "none",
         cache: "upstash",
