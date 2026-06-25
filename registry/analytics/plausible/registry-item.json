@@ -1,13 +1,14 @@
 {
   "name": "analytics-plausible",
   "type": "registry:package",
+  "description": "Privacy-first, cookie-less Plausible analytics — server Events API and a client script helper.",
   "slot": "analytics",
   "variant": "plausible",
   "environment": "universal",
   "build": "none",
   "lib": ["ES2022", "WebWorker"],
   "dependencies": [],
-  "registryDependencies": ["env-t3"],
+  "registryDependencies": ["env"],
   "envVars": {
     "PLAUSIBLE_DOMAIN": "yourdomain.com",
     "PLAUSIBLE_API_HOST": "https://plausible.io"

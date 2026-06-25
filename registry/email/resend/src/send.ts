@@ -1,8 +1,4 @@
-import type {
-  CreateEmailOptions,
-  CreateBatchOptions,
-  ErrorResponse,
-} from "resend";
+import type { CreateBatchOptions, CreateEmailOptions, ErrorResponse } from "resend";
 import { resend } from "./client";
 
 // Known Resend API error names. The string fallback keeps completions while allowing unknown names.
@@ -73,10 +69,7 @@ export interface SendEmailOptions {
 }
 
 // Batch items omit scheduledAt (not supported by batch API) and idempotencyKey (per-batch only).
-export type BatchEmailItem = Omit<
-  SendEmailOptions,
-  "scheduledAt" | "idempotencyKey"
->;
+export type BatchEmailItem = Omit<SendEmailOptions, "scheduledAt" | "idempotencyKey">;
 
 export interface SendBatchSuccess {
   success: true;
@@ -111,13 +104,9 @@ function normalizeError(err: unknown): EmailError {
   if (err !== null && typeof err === "object") {
     const e = err as Record<string, unknown>;
     return {
-      name:
-        typeof e["name"] === "string"
-          ? (e["name"] as EmailErrorName)
-          : "unknown_error",
-      message:
-        typeof e["message"] === "string" ? e["message"] : JSON.stringify(err),
-      statusCode: typeof e["statusCode"] === "number" ? e["statusCode"] : 0,
+      name: typeof e.name === "string" ? (e.name as EmailErrorName) : "unknown_error",
+      message: typeof e.message === "string" ? e.message : JSON.stringify(err),
+      statusCode: typeof e.statusCode === "number" ? e.statusCode : 0,
     };
   }
   return { name: "unknown_error", message: String(err), statusCode: 0 };
@@ -133,9 +122,7 @@ function normalizeError(err: unknown): EmailError {
  *   rate_limit_exceeded — retry with exponential backoff using the same idempotencyKey.
  *   network_error — connection failure; safe to retry with the same idempotencyKey.
  */
-export async function sendEmail(
-  options: SendEmailOptions,
-): Promise<SendEmailResult> {
+export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
   const { idempotencyKey, ...emailOptions } = options;
 
   try {

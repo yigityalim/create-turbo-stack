@@ -1,5 +1,5 @@
-import { PostHog } from "posthog-node";
 import { env } from "{{scope}}/env";
+import { PostHog } from "posthog-node";
 
 // Serverless-safe configuration:
 // - flushAt: 1  — flush after every event (no batching)
@@ -54,9 +54,7 @@ export interface IdentifyOptions {
  * Always pass result.pending to after()/waitUntil() in serverless contexts.
  * Never throws — analytics failures are silent.
  */
-export async function trackEvent(
-  options: TrackEventOptions,
-): Promise<TrackEventResult> {
+export async function trackEvent(options: TrackEventOptions): Promise<TrackEventResult> {
   try {
     const pending = posthog.captureImmediate({
       distinctId: options.distinctId,

@@ -1,6 +1,6 @@
+import { env } from "{{scope}}/env";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { env } from "{{scope}}/env";
 
 // Re-export Ratelimit so callers can access static algorithm factories:
 //   Ratelimit.slidingWindow, Ratelimit.fixedWindow, Ratelimit.tokenBucket
@@ -106,10 +106,7 @@ export function createRateLimiter(options: RateLimiterOptions): Ratelimit {
  * WARNING: Never use the leftmost X-Forwarded-For value for security decisions.
  * It is entirely user-controlled and trivially spoofed to bypass rate limits.
  */
-export function getClientIdentifier(
-  request: Request,
-  options?: ClientIdentifierOptions,
-): string {
+export function getClientIdentifier(request: Request, options?: ClientIdentifierOptions): string {
   if (options?.identifier !== undefined) return options.identifier;
 
   const cfIp = request.headers.get("CF-Connecting-IP");
@@ -139,10 +136,7 @@ export async function checkRateLimit(
   identifier: string,
 ): Promise<RateLimitResult> {
   const raw = await ratelimiter.limit(identifier);
-  const retryAfterSeconds = Math.max(
-    0,
-    Math.ceil((raw.reset - Date.now()) / 1000),
-  );
+  const retryAfterSeconds = Math.max(0, Math.ceil((raw.reset - Date.now()) / 1000));
   return {
     success: raw.success,
     limit: raw.limit,
@@ -158,9 +152,7 @@ export async function checkRateLimit(
  * RateLimit-Reset is in epoch seconds (Upstash gives milliseconds; we convert).
  * Retry-After is included only on 429 responses (success: false).
  */
-export function rateLimitHeaders(
-  result: RateLimitResult,
-): Record<string, string> {
+export function rateLimitHeaders(result: RateLimitResult): Record<string, string> {
   const headers: Record<string, string> = {
     "RateLimit-Limit": String(result.limit),
     "RateLimit-Remaining": String(Math.max(0, result.remaining)),

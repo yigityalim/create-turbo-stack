@@ -1,13 +1,14 @@
 {
   "name": "email-resend",
   "type": "registry:package",
+  "description": "Resend transactional email with a typed Result API, batch send, and idempotency keys.",
   "slot": "email",
   "variant": "resend",
   "environment": "node",
   "build": "none",
   "lib": ["ES2022"],
   "dependencies": ["resend"],
-  "registryDependencies": ["env-t3"],
+  "registryDependencies": ["env"],
   "envVars": {
     "RESEND_API_KEY": "re_xxxxxxxxx"
   },

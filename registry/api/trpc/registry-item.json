@@ -1,0 +1,15 @@
+{
+  "name": "api-trpc",
+  "type": "registry:package",
+  "description": "tRPC v11 server — typed router, public procedure, example health route.",
+  "slot": "api",
+  "variant": "trpc",
+  "environment": "universal",
+  "build": "none",
+  "lib": ["ES2022"],
+  "dependencies": ["@trpc/server"],
+  "exports": ["."],
+  "categories": ["api", "trpc"],
+  "docs": "tRPC v11 server primitives. `router` / `publicProcedure` build your API; `appRouter` is the root router (extend it with your routes) and `AppRouter` is the type clients import for end-to-end type safety. Mount `appRouter` in a Next.js route handler or any fetch-compatible server.",
+  "files": [{ "path": "src/index.ts", "type": "registry:source" }]
+}

@@ -16,8 +16,762 @@ import type { PackageRegistryItem } from "@create-turbo-stack/schema";
 
 export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
   {
+    "name": "analytics-plausible",
+    "type": "registry:package",
+    "description": "Privacy-first, cookie-less Plausible analytics — server Events API and a client script helper.",
+    "dependencies": [],
+    "devDependencies": [],
+    "registryDependencies": [
+      "env"
+    ],
+    "envVars": {
+      "PLAUSIBLE_DOMAIN": "yourdomain.com",
+      "PLAUSIBLE_API_HOST": "https://plausible.io"
+    },
+    "exports": [
+      ".",
+      "./server",
+      "./client"
+    ],
+    "lib": [
+      "ES2022",
+      "WebWorker"
+    ],
+    "environment": "universal",
+    "build": "none",
+    "slot": "analytics",
+    "variant": "plausible",
+    "categories": [
+      "analytics"
+    ],
+    "docs": "Privacy-first, cookie-less Plausible Analytics — server-side Events API with required UA+IP forwarding for accurate visitor counting, client-side script helper with ad-blocker proxy support, self-host via PLAUSIBLE_API_HOST, zero npm dependencies.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "// Server-side (universal — edge, Node, Deno)\nexport type { TrackEventOptions, TrackEventResult } from \"./server\";\nexport { trackEvent } from \"./server\";\n\n// Client-side (browser — guarded with typeof globalThis check)\nexport type { PlausibleScriptProps, ScriptPropsOptions } from \"./client\";\nexport { plausibleScriptProps, trackClientEvent } from \"./client\";\n"
+      },
+      {
+        "path": "src/server.ts",
+        "type": "registry:source",
+        "content": "import { env } from \"{{scope}}/env\";\n\nexport interface TrackEventOptions {\n  /** Event name. Use \"pageview\" for page views, or any custom event name. */\n  name: string;\n  /** Full URL of the page where the event occurred. */\n  url: string;\n  /**\n   * Domain as configured in your Plausible dashboard.\n   * Defaults to PLAUSIBLE_DOMAIN from env.\n   */\n  domain?: string;\n  /**\n   * Raw User-Agent string of the visitor's browser.\n   * Required: Plausible uses this to identify the visitor and populate the\n   * Devices report. Forward directly from the incoming request.\n   */\n  userAgent: string;\n  /**\n   * Real IP address of the visitor.\n   * Required: sent as X-Forwarded-For and used for unique visitor counting.\n   * Must be the actual visitor IP, NOT a CDN, load-balancer, or server IP.\n   * If a non-visitor IP is forwarded, Plausible's bot filter drops the event\n   * silently (returns 202 but sets x-plausible-dropped: 1 in the response).\n   */\n  clientIp: string;\n  referrer?: string;\n  /** Custom event properties. Visible as breakdown dimensions in Plausible. */\n  props?: Record<string, string | number | boolean>;\n  /** Revenue tracking: amount + ISO 4217 currency code. */\n  revenue?: { amount: number; currency: string };\n}\n\nexport interface TrackEventResult {\n  ok: boolean;\n  /**\n   * true when Plausible accepted the HTTP request (202) but dropped the event.\n   * Inspect x-plausible-dropped in the API response.\n   * Most common cause: X-Forwarded-For contains a server/CDN IP instead of the\n   * actual visitor IP. Use X-Debug-Request: true to confirm what IP Plausible sees.\n   */\n  dropped?: boolean;\n}\n\n/**\n * Sends a server-side event to the Plausible Events API.\n *\n * Always returns a result — never throws. Analytics failures are silent so\n * they never interrupt the main request flow.\n *\n * Self-hosting: set PLAUSIBLE_API_HOST in env to your Plausible instance URL.\n */\nexport async function trackEvent(\n  options: TrackEventOptions,\n): Promise<TrackEventResult> {\n  const apiHost = env.PLAUSIBLE_API_HOST;\n  const domain = options.domain ?? env.PLAUSIBLE_DOMAIN;\n\n  const payload: Record<string, unknown> = {\n    name: options.name,\n    url: options.url,\n    domain,\n  };\n\n  if (options.referrer !== undefined) payload[\"referrer\"] = options.referrer;\n  if (options.props !== undefined) payload[\"props\"] = options.props;\n  if (options.revenue !== undefined) payload[\"revenue\"] = options.revenue;\n\n  try {\n    const response = await fetch(`${apiHost}/api/event`, {\n      method: \"POST\",\n      headers: {\n        \"Content-Type\": \"application/json\",\n        \"User-Agent\": options.userAgent,\n        \"X-Forwarded-For\": options.clientIp,\n      },\n      body: JSON.stringify(payload),\n    });\n\n    const dropped = response.headers.get(\"x-plausible-dropped\") === \"1\";\n    return { ok: response.status === 202, dropped: dropped ? true : undefined };\n  } catch {\n    // Analytics errors must never propagate to the caller.\n    return { ok: false };\n  }\n}\n"
+      },
+      {
+        "path": "src/client.ts",
+        "type": "registry:source",
+        "content": "import { env } from \"{{scope}}/env\";\n\n// Plausible's injected window.plausible function signature.\n// Defined locally to avoid importing DOM lib — globalThis cast is used for access.\ntype PlausibleEventOptions = {\n  props?: Record<string, string | number | boolean>;\n  revenue?: { amount: number; currency: string };\n  callback?: () => void;\n};\n\ntype PlausibleFn = (name: string, options?: PlausibleEventOptions) => void;\n\n// Safely resolve window.plausible without referencing the `window` global.\n// In browser context, globalThis === window. In Node/Workers, this returns undefined.\n// This avoids adding lib: DOM which would break the universal environment guarantee.\nfunction resolvePlausible(): PlausibleFn | undefined {\n  const g = globalThis as Record<string, unknown>;\n  const fn = g[\"plausible\"];\n  return typeof fn === \"function\" ? (fn as PlausibleFn) : undefined;\n}\n\nexport interface PlausibleScriptProps {\n  defer: boolean;\n  \"data-domain\": string;\n  src: string;\n  /** Set when using a proxy path to bypass ad-blockers. */\n  \"data-api\"?: string;\n}\n\nexport interface ScriptPropsOptions {\n  /**\n   * Your site domain as configured in Plausible. Defaults to PLAUSIBLE_DOMAIN.\n   */\n  domain?: string;\n  /**\n   * Plausible instance URL. Defaults to PLAUSIBLE_API_HOST (https://plausible.io).\n   * Set to your self-hosted instance for privacy compliance.\n   */\n  apiHost?: string;\n  /**\n   * Proxy path for the Events API. Prevents ad-blockers from blocking analytics.\n   * Set to your own proxy route (e.g. \"/api/stats/event\").\n   * When set, adds data-api attribute to the script tag.\n   */\n  proxyApiPath?: string;\n}\n\n/**\n * Returns props for a <script> element that loads Plausible's tracking script.\n * Pass the result directly to your framework's script component:\n *   Next.js: <Script {...plausibleScriptProps()} />\n *   Plain HTML: <script {...} />\n *\n * Custom events defined in Plausible require a \"goal\" to be created in the dashboard.\n */\nexport function plausibleScriptProps(\n  options: ScriptPropsOptions = {},\n): PlausibleScriptProps {\n  const host = options.apiHost ?? env.PLAUSIBLE_API_HOST;\n  const domain = options.domain ?? env.PLAUSIBLE_DOMAIN;\n\n  const props: PlausibleScriptProps = {\n    defer: true,\n    \"data-domain\": domain,\n    src: `${host}/js/script.js`,\n  };\n\n  if (options.proxyApiPath) {\n    // Proxy the Events API through your own domain to bypass ad-blockers.\n    // Your proxy route should forward to ${host}/api/event.\n    props[\"data-api\"] = options.proxyApiPath;\n  }\n\n  return props;\n}\n\n/**\n * Fires a custom event via window.plausible.\n *\n * Safe to call server-side or before the Plausible script loads — returns without\n * error in those cases. Custom events must be registered as goals in Plausible.\n */\nexport function trackClientEvent(\n  name: string,\n  props?: Record<string, string | number | boolean>,\n  callback?: () => void,\n): void {\n  const plausible = resolvePlausible();\n  if (plausible === undefined) return;\n  plausible(name, { props, callback });\n}\n"
+      }
+    ]
+  },
+  {
+    "name": "analytics-posthog",
+    "type": "registry:package",
+    "description": "PostHog product analytics — serverless-safe server capture, feature flags, and an optional browser client.",
+    "dependencies": [
+      "posthog-node",
+      "posthog-js"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [
+      "env"
+    ],
+    "envVars": {
+      "POSTHOG_API_KEY": "phc_xxxxxxxx",
+      "POSTHOG_HOST": "https://eu.i.posthog.com",
+      "NEXT_PUBLIC_POSTHOG_KEY": "phc_xxxxxxxx",
+      "NEXT_PUBLIC_POSTHOG_HOST": "https://eu.i.posthog.com"
+    },
+    "exports": [
+      ".",
+      "./client"
+    ],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "environment": "node",
+    "build": "none",
+    "slot": "analytics",
+    "variant": "posthog",
+    "categories": [
+      "analytics"
+    ],
+    "docs": "PostHog server-side event capture (serverless-safe: captureImmediate + flushAt:1 + shutdown), feature flags, and optional client helper (posthog-js peer) — EU/self-host via POSTHOG_HOST for KVKK compliance.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "// Server-side (Node.js — posthog-node)\nexport { posthog } from \"./server\";\nexport type {\n  TrackEventOptions,\n  TrackEventResult,\n  IdentifyOptions,\n} from \"./server\";\nexport {\n  trackEvent,\n  identify,\n  isFeatureEnabled,\n  getFeatureFlag,\n  shutdownAnalytics,\n} from \"./server\";\n\n// Client-side (browser — posthog-js optional peer) is at a separate path\n// to avoid bundling posthog-js into server builds:\n//   import { initPosthog, trackClientEvent } from \"{{scope}}/analytics/client\"\n"
+      },
+      {
+        "path": "src/server.ts",
+        "type": "registry:source",
+        "content": "import { env } from \"{{scope}}/env\";\nimport { PostHog } from \"posthog-node\";\n\n// Serverless-safe configuration:\n// - flushAt: 1  — flush after every event (no batching)\n// - flushInterval: 0 — no time-based delay before flush\n// These settings alone are not enough. See the note on captureImmediate below.\nconst posthog = new PostHog(env.POSTHOG_API_KEY, {\n  host: env.POSTHOG_HOST,\n  flushAt: 1,\n  flushInterval: 0,\n});\n\nexport { posthog };\n\nexport interface TrackEventOptions {\n  /**\n   * Unique identifier for the user. Required by PostHog.\n   * For unauthenticated users, generate and persist a session ID:\n   *   import { randomUUID } from \"crypto\";\n   *   const anonId = cookies.get(\"phx_id\") ?? randomUUID();\n   */\n  distinctId: string;\n  event: string;\n  properties?: Record<string, unknown>;\n}\n\nexport interface TrackEventResult {\n  /**\n   * Promise that resolves when the HTTP request to PostHog completes.\n   *\n   * In serverless environments (Next.js App Router, Vercel Functions, Cloudflare Workers),\n   * the runtime may terminate before the request finishes. Pass this to:\n   *   - Next.js 15.1+: after(() => pending)\n   *   - Vercel older / Cloudflare: ctx.waitUntil(pending)\n   *\n   * Without this, events can be silently lost when the function shuts down.\n   */\n  pending: Promise<void>;\n}\n\nexport interface IdentifyOptions {\n  distinctId: string;\n  properties?: Record<string, unknown>;\n}\n\n/**\n * Captures an event server-side using captureImmediate.\n *\n * Uses captureImmediate (not capture) to ensure the HTTP request to PostHog\n * starts before the function continues. Even with flushAt:1/flushInterval:0,\n * plain capture() is still async and can be dropped by serverless runtimes.\n *\n * Always pass result.pending to after()/waitUntil() in serverless contexts.\n * Never throws — analytics failures are silent.\n */\nexport async function trackEvent(options: TrackEventOptions): Promise<TrackEventResult> {\n  try {\n    const pending = posthog.captureImmediate({\n      distinctId: options.distinctId,\n      event: options.event,\n      properties: options.properties,\n    });\n    return { pending };\n  } catch {\n    return { pending: Promise.resolve() };\n  }\n}\n\n/**\n * Sets or updates a user's Person profile in PostHog.\n * Uses identifyImmediate for serverless safety.\n * Never throws.\n */\nexport async function identify(options: IdentifyOptions): Promise<void> {\n  try {\n    await posthog.identifyImmediate({\n      distinctId: options.distinctId,\n      properties: options.properties,\n    });\n  } catch {\n    // Fail silent.\n  }\n}\n\n/**\n * Evaluates a feature flag server-side.\n * Returns undefined on error or if the flag does not exist.\n */\nexport async function isFeatureEnabled(\n  flag: string,\n  distinctId: string,\n): Promise<boolean | undefined> {\n  try {\n    return (await posthog.isFeatureEnabled(flag, distinctId)) ?? undefined;\n  } catch {\n    return undefined;\n  }\n}\n\n/**\n * Returns a feature flag's value (boolean or string variant).\n * Returns undefined on error or if the flag does not exist.\n */\nexport async function getFeatureFlag(\n  flag: string,\n  distinctId: string,\n): Promise<string | boolean | undefined> {\n  try {\n    return (await posthog.getFeatureFlag(flag, distinctId)) ?? undefined;\n  } catch {\n    return undefined;\n  }\n}\n\n/**\n * Shuts down the PostHog client and flushes all pending events.\n *\n * Call this at the end of serverless functions to guarantee delivery.\n * Combine with after() or waitUntil() so it runs after the response is sent.\n *\n * Example (Next.js 15.1+):\n *   after(() => shutdownAnalytics());\n *\n * Example (Vercel waitUntil):\n *   context.waitUntil(shutdownAnalytics());\n */\nexport async function shutdownAnalytics(timeoutMs?: number): Promise<void> {\n  try {\n    await posthog._shutdown(timeoutMs);\n  } catch {\n    // Fail silent — never block the response for analytics cleanup.\n  }\n}\n"
+      },
+      {
+        "path": "src/client.ts",
+        "type": "registry:source",
+        "content": "import { env } from \"{{scope}}/env\";\n// posthog-js is an optional peer dependency. Install it for client-side tracking:\n//   npm install posthog-js\n// The server-side functions in server.ts work without posthog-js.\nimport posthog from \"posthog-js\";\n\nexport interface InitOptions {\n  /**\n   * Proxy the PostHog API through your own domain to bypass ad-blockers.\n   * Set to a route that forwards to the PostHog API host.\n   * Example (Next.js): \"/ingest\" → proxies to https://eu.i.posthog.com\n   */\n  apiProxyPath?: string;\n  /** Disable automatic pageview tracking. Default: false (tracking is on). */\n  disablePageviews?: boolean;\n}\n\n/**\n * Initialises the PostHog browser SDK.\n * Call once in your root layout or app entry point.\n *\n * Uses NEXT_PUBLIC_POSTHOG_KEY and NEXT_PUBLIC_POSTHOG_HOST from env.\n * These must be in your t3-env client block (NEXT_PUBLIC_ prefix).\n */\nexport function initPosthog(options: InitOptions = {}): void {\n  if (typeof window === \"undefined\") return;\n\n  posthog.init(env.NEXT_PUBLIC_POSTHOG_KEY, {\n    api_host: options.apiProxyPath ?? env.NEXT_PUBLIC_POSTHOG_HOST,\n    ui_host: env.NEXT_PUBLIC_POSTHOG_HOST,\n    capture_pageview: !options.disablePageviews,\n    capture_pageleave: true,\n    person_profiles: \"identified_only\",\n  });\n}\n\n/**\n * Tracks a custom event from the browser.\n * No-ops if PostHog has not been initialised.\n * Never throws.\n */\nexport function trackClientEvent(event: string, properties?: Record<string, unknown>): void {\n  try {\n    if (typeof window === \"undefined\") return;\n    posthog.capture(event, properties);\n  } catch {\n    // Fail silent.\n  }\n}\n\n/**\n * Identifies the current user in the browser session.\n * Links anonymous events to a known user profile.\n */\nexport function identifyUser(distinctId: string, properties?: Record<string, unknown>): void {\n  try {\n    if (typeof window === \"undefined\") return;\n    posthog.identify(distinctId, properties);\n  } catch {\n    // Fail silent.\n  }\n}\n\n/**\n * Resets the PostHog identity (on logout).\n * Creates a new anonymous session.\n */\nexport function resetIdentity(): void {\n  try {\n    if (typeof window === \"undefined\") return;\n    posthog.reset();\n  } catch {\n    // Fail silent.\n  }\n}\n"
+      }
+    ]
+  },
+  {
+    "name": "analytics-vercel-analytics",
+    "type": "registry:package",
+    "description": "Vercel Web Analytics — client/server track() and a React component, zero config.",
+    "dependencies": [
+      "@vercel/analytics"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [],
+    "envVars": {},
+    "exports": [
+      ".",
+      "./react",
+      "./server",
+      "./client"
+    ],
+    "lib": [
+      "ES2022",
+      "WebWorker"
+    ],
+    "environment": "universal",
+    "build": "none",
+    "slot": "analytics",
+    "variant": "vercel-analytics",
+    "categories": [
+      "analytics"
+    ],
+    "docs": "Vercel Web Analytics — no env vars (enabled via Vercel dashboard), client and server track() with EventData type constraint, React <Analytics/> component, framework inject helper, dev-mode safe.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "// Server-side (Route Handlers, Server Actions — Pro/Enterprise)\nexport type { EventData, ServerTrackOptions } from \"./server\";\nexport { trackEvent } from \"./server\";\n\n// Client-side (browser events)\nexport { trackClientEvent, inject } from \"./client\";\nexport type { BeforeSend, BeforeSendEvent } from \"./client\";\n\n// React component is at a separate path to keep the core bundle JSX-free:\n//   import { Analytics } from \"{{scope}}/analytics/react\"\n"
+      },
+      {
+        "path": "src/server.ts",
+        "type": "registry:source",
+        "content": "import { track } from \"@vercel/analytics/server\";\n\n/**\n * Allowed values for custom event properties.\n * Nested objects are intentionally excluded — Vercel rejects them at runtime.\n * Max 255 characters per value.\n */\nexport type EventData = Record<string, string | number | boolean | null>;\n\nexport interface ServerTrackOptions {\n  /**\n   * Incoming request headers. Pass these for accurate attribution\n   * (geolocation, referrer) in Route Handlers and Server Actions.\n   */\n  headers?: Record<string, string | string[] | undefined> | Headers;\n}\n\n/**\n * Tracks a custom event from a Route Handler, Server Action, or API Route.\n * Requires Vercel Web Analytics Pro or Enterprise plan.\n *\n * Never throws — analytics failures are silent.\n */\nexport async function trackEvent(\n  name: string,\n  data?: EventData,\n  options?: ServerTrackOptions,\n): Promise<void> {\n  try {\n    await track(name, data, options);\n  } catch {\n    // Analytics must never interrupt the main request flow.\n  }\n}\n"
+      },
+      {
+        "path": "src/client.ts",
+        "type": "registry:source",
+        "content": "import { track, inject } from \"@vercel/analytics\";\nimport type { BeforeSend, BeforeSendEvent } from \"@vercel/analytics\";\nimport type { EventData } from \"./server\";\n\nexport type { EventData, BeforeSend, BeforeSendEvent };\n\n/**\n * Tracks a custom event from the browser.\n * No-ops automatically in development mode.\n * Never throws — analytics failures are silent.\n *\n * Custom events must be registered in your Vercel Analytics dashboard to appear in reports.\n */\nexport function trackClientEvent(name: string, data?: EventData): void {\n  try {\n    track(name, data);\n  } catch {\n    // Fail silent.\n  }\n}\n\n/**\n * Injects Vercel Analytics into non-React frameworks (vanilla JS, SvelteKit via inject, etc.).\n * For SvelteKit, prefer @vercel/analytics/sveltekit's injectAnalytics instead.\n * For React, use the <Analytics /> component from {{scope}}/analytics/react.\n */\nexport { inject };\n"
+      },
+      {
+        "path": "src/react.tsx",
+        "type": "registry:source",
+        "content": "// Re-export for consumers who use the {{scope}}/analytics/react import path.\n// This file requires JSX compilation — your bundler handles this automatically.\nexport { Analytics } from \"@vercel/analytics/react\";\n"
+      }
+    ]
+  },
+  {
+    "name": "api-trpc",
+    "type": "registry:package",
+    "description": "tRPC v11 server — typed router, public procedure, example health route.",
+    "dependencies": [
+      "@trpc/server"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [],
+    "envVars": {},
+    "exports": [
+      "."
+    ],
+    "lib": [
+      "ES2022"
+    ],
+    "environment": "universal",
+    "build": "none",
+    "slot": "api",
+    "variant": "trpc",
+    "categories": [
+      "api",
+      "trpc"
+    ],
+    "docs": "tRPC v11 server primitives. `router` / `publicProcedure` build your API; `appRouter` is the root router (extend it with your routes) and `AppRouter` is the type clients import for end-to-end type safety. Mount `appRouter` in a Next.js route handler or any fetch-compatible server.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "import { initTRPC } from \"@trpc/server\";\n\nconst t = initTRPC.create();\n\nexport const router = t.router;\nexport const publicProcedure = t.procedure;\nexport const createCallerFactory = t.createCallerFactory;\n\n/** Root router — extend with your own procedures. */\nexport const appRouter = router({\n  health: publicProcedure.query(() => ({ status: \"ok\" as const })),\n});\n\nexport type AppRouter = typeof appRouter;\n"
+      }
+    ]
+  },
+  {
+    "name": "app-astro",
+    "type": "registry:package",
+    "description": "Astro 5 starter — content-first pages, ships zero JS by default.",
+    "dependencies": [],
+    "devDependencies": [],
+    "registryDependencies": [],
+    "envVars": {},
+    "exports": [
+      "."
+    ],
+    "build": "none",
+    "slot": "app",
+    "variant": "astro",
+    "categories": [
+      "app",
+      "astro"
+    ],
+    "docs": "Astro app with a single page (`src/pages/index.astro`). Type-checking is `astro check` (it understands `.astro`). Add integrations (React, Tailwind, …) with `bunx astro add <name>`; when the preset consumes a UI package, `@astrojs/react` is already wired into package.json.",
+    "files": [
+      {
+        "path": "astro.config.mjs",
+        "type": "registry:source",
+        "content": "// @ts-check\nimport { defineConfig } from \"astro/config\";\n\n// https://astro.build/config\nexport default defineConfig({});\n"
+      },
+      {
+        "path": "src/pages/index.astro",
+        "type": "registry:source",
+        "content": "---\nconst projectName = \"{{pkg-name}}\";\n---\n\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\" />\n    <link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\" />\n    <meta name=\"viewport\" content=\"width=device-width\" />\n    <meta name=\"generator\" content={Astro.generator} />\n    <title>{projectName}</title>\n  </head>\n  <body>\n    <main>\n      <span>create-turbo-stack</span>\n      <h1>Welcome to {projectName}</h1>\n      <p>Edit <code>src/pages/index.astro</code> and save to get started.</p>\n    </main>\n  </body>\n</html>\n"
+      }
+    ]
+  },
+  {
+    "name": "app-hono-standalone",
+    "type": "registry:package",
+    "description": "Standalone Hono server (Node) — @hono/node-server entry, no frontend.",
+    "dependencies": [],
+    "devDependencies": [],
+    "registryDependencies": [],
+    "envVars": {},
+    "exports": [
+      "."
+    ],
+    "build": "none",
+    "slot": "app",
+    "variant": "hono-standalone",
+    "categories": [
+      "app",
+      "hono",
+      "api"
+    ],
+    "docs": "A standalone Hono HTTP server running on @hono/node-server. `tsx watch` in dev, `tsc` build. Add routes in `src/index.ts` or split them into a router module.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "import { serve } from \"@hono/node-server\";\nimport { Hono } from \"hono\";\n\nconst app = new Hono();\n\napp.get(\"/\", (c) => {\n  return c.text(\"Hello Hono!\");\n});\n\nserve(\n  {\n    fetch: app.fetch,\n    port: 3000,\n  },\n  (info) => {\n    console.log(`Server is running on http://localhost:${info.port}`);\n  },\n);\n"
+      }
+    ]
+  },
+  {
+    "name": "app-nextjs",
+    "type": "registry:package",
+    "description": "Next.js 16 App Router skeleton — root layout, home page, Tailwind v4 + shadcn-ready globals.css.",
+    "dependencies": [],
+    "devDependencies": [],
+    "registryDependencies": [],
+    "envVars": {},
+    "exports": [
+      "."
+    ],
+    "build": "none",
+    "slot": "app",
+    "variant": "nextjs",
+    "categories": [
+      "app",
+      "nextjs"
+    ],
+    "docs": "App-router Next.js 16 app. globals.css lives at the app root and uses Tailwind v4 (`@import \"tailwindcss\"`) with shadcn css-variables; `{{css-sources}}` expands to `@source` directives for every CSS-producing workspace package the app consumes.",
+    "files": [
+      {
+        "path": "next.config.ts",
+        "type": "registry:source",
+        "content": "import type { NextConfig } from \"next\";\n\nconst nextConfig: NextConfig = {\n  reactStrictMode: true,\n  // Workspace packages ship raw TypeScript (build: none) — Next.js compiles\n  // them in-app. Empty when this app consumes no workspace packages.\n  transpilePackages: [{{workspace-deps}}],\n};\n\nexport default nextConfig;\n"
+      },
+      {
+        "path": "postcss.config.mjs",
+        "type": "registry:source",
+        "content": "const config = {\n  plugins: {\n    \"@tailwindcss/postcss\": {},\n  },\n};\n\nexport default config;\n"
+      },
+      {
+        "path": "globals.css",
+        "type": "registry:source",
+        "content": "@import \"tailwindcss\";\n@import \"tw-animate-css\";\n\n@custom-variant dark (&:is(.dark *));\n\n/* Scan CSS-producing workspace packages this app consumes. */\n{{css-sources}}\n\n@theme inline {\n  --color-background: var(--background);\n  --color-foreground: var(--foreground);\n  --font-sans: var(--font-sans);\n  --font-mono: var(--font-mono);\n  --color-card: var(--card);\n  --color-card-foreground: var(--card-foreground);\n  --color-popover: var(--popover);\n  --color-popover-foreground: var(--popover-foreground);\n  --color-primary: var(--primary);\n  --color-primary-foreground: var(--primary-foreground);\n  --color-secondary: var(--secondary);\n  --color-secondary-foreground: var(--secondary-foreground);\n  --color-muted: var(--muted);\n  --color-muted-foreground: var(--muted-foreground);\n  --color-accent: var(--accent);\n  --color-accent-foreground: var(--accent-foreground);\n  --color-destructive: var(--destructive);\n  --color-border: var(--border);\n  --color-input: var(--input);\n  --color-ring: var(--ring);\n  --radius-sm: calc(var(--radius) - 4px);\n  --radius-md: calc(var(--radius) - 2px);\n  --radius-lg: var(--radius);\n  --radius-xl: calc(var(--radius) + 4px);\n}\n\n:root {\n  --radius: 0.625rem;\n  --background: oklch(1 0 0);\n  --foreground: oklch(0.145 0 0);\n  --card: oklch(1 0 0);\n  --card-foreground: oklch(0.145 0 0);\n  --popover: oklch(1 0 0);\n  --popover-foreground: oklch(0.145 0 0);\n  --primary: oklch(0.205 0 0);\n  --primary-foreground: oklch(0.985 0 0);\n  --secondary: oklch(0.97 0 0);\n  --secondary-foreground: oklch(0.205 0 0);\n  --muted: oklch(0.97 0 0);\n  --muted-foreground: oklch(0.556 0 0);\n  --accent: oklch(0.97 0 0);\n  --accent-foreground: oklch(0.205 0 0);\n  --destructive: oklch(0.577 0.245 27.325);\n  --border: oklch(0.922 0 0);\n  --input: oklch(0.922 0 0);\n  --ring: oklch(0.708 0 0);\n}\n\n.dark {\n  --background: oklch(0.145 0 0);\n  --foreground: oklch(0.985 0 0);\n  --card: oklch(0.205 0 0);\n  --card-foreground: oklch(0.985 0 0);\n  --popover: oklch(0.205 0 0);\n  --popover-foreground: oklch(0.985 0 0);\n  --primary: oklch(0.922 0 0);\n  --primary-foreground: oklch(0.205 0 0);\n  --secondary: oklch(0.269 0 0);\n  --secondary-foreground: oklch(0.985 0 0);\n  --muted: oklch(0.269 0 0);\n  --muted-foreground: oklch(0.708 0 0);\n  --accent: oklch(0.269 0 0);\n  --accent-foreground: oklch(0.985 0 0);\n  --destructive: oklch(0.704 0.191 22.216);\n  --border: oklch(1 0 0 / 10%);\n  --input: oklch(1 0 0 / 15%);\n  --ring: oklch(0.556 0 0);\n}\n\n@layer base {\n  * {\n    @apply border-border outline-ring/50;\n  }\n  body {\n    @apply bg-background text-foreground;\n  }\n  html {\n    @apply font-sans;\n  }\n}\n"
+      },
+      {
+        "path": "src/app/layout.tsx",
+        "type": "registry:source",
+        "content": "import type { Metadata } from \"next\";\nimport { Geist, Geist_Mono } from \"next/font/google\";\nimport \"../../globals.css\";\n\nconst geistSans = Geist({\n  variable: \"--font-sans\",\n  subsets: [\"latin\"],\n});\n\nconst geistMono = Geist_Mono({\n  variable: \"--font-mono\",\n  subsets: [\"latin\"],\n});\n\nexport const metadata: Metadata = {\n  title: \"{{pkg-name}}\",\n  description: \"Created with create-turbo-stack\",\n};\n\nexport default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {\n  return (\n    <html lang=\"en\" suppressHydrationWarning>\n      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</body>\n    </html>\n  );\n}\n"
+      },
+      {
+        "path": "src/app/page.tsx",
+        "type": "registry:source",
+        "content": "export default function Home() {\n  return (\n    <main className=\"mx-auto flex min-h-svh max-w-2xl flex-col items-center justify-center gap-6 px-6 text-center\">\n      <span className=\"rounded-full border border-border bg-muted/40 px-3 py-1 font-mono text-muted-foreground text-xs\">\n        create-turbo-stack\n      </span>\n      <h1 className=\"text-balance font-bold text-4xl tracking-tight sm:text-5xl\">\n        Welcome to {\"{{pkg-name}}\"}\n      </h1>\n      <p className=\"text-balance text-muted-foreground\">\n        Edit{\" \"}\n        <code className=\"rounded bg-muted px-1.5 py-0.5 font-mono text-sm\">src/app/page.tsx</code>{\" \"}\n        and save to get started.\n      </p>\n      <div className=\"flex flex-wrap items-center justify-center gap-3\">\n        <a\n          className=\"rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground text-sm transition-opacity hover:opacity-90\"\n          href=\"https://create-turbo-stack.dev\"\n          target=\"_blank\"\n          rel=\"noreferrer\"\n        >\n          Documentation\n        </a>\n        <a\n          className=\"rounded-md border border-border px-4 py-2 font-medium text-sm transition-colors hover:bg-accent\"\n          href=\"https://turborepo.com\"\n          target=\"_blank\"\n          rel=\"noreferrer\"\n        >\n          Turborepo\n        </a>\n      </div>\n    </main>\n  );\n}\n"
+      }
+    ]
+  },
+  {
+    "name": "app-nextjs-api-only",
+    "type": "registry:package",
+    "description": "Next.js 16 headless API — App Router route handlers, no UI.",
+    "dependencies": [],
+    "devDependencies": [],
+    "registryDependencies": [],
+    "envVars": {},
+    "exports": [
+      "."
+    ],
+    "build": "none",
+    "slot": "app",
+    "variant": "nextjs-api-only",
+    "categories": [
+      "app",
+      "nextjs",
+      "api"
+    ],
+    "docs": "App-router Next.js 16 app with only route handlers (`app/route.ts`, `app/[slug]/route.ts`) — no pages, no CSS. `{{workspace-deps}}` is expanded into `transpilePackages` for the raw-TS workspace packages it consumes.",
+    "files": [
+      {
+        "path": "next.config.ts",
+        "type": "registry:source",
+        "content": "import type { NextConfig } from \"next\";\n\nconst nextConfig: NextConfig = {\n  reactStrictMode: true,\n  // Workspace packages ship raw TypeScript (build: none) — Next.js compiles\n  // them in-app. Empty when this app consumes no workspace packages.\n  transpilePackages: [{{workspace-deps}}],\n};\n\nexport default nextConfig;\n"
+      },
+      {
+        "path": "src/app/route.ts",
+        "type": "registry:source",
+        "content": "import { NextResponse } from \"next/server\";\n\nexport async function GET() {\n  return NextResponse.json({ message: \"Hello world!\" });\n}\n"
+      },
+      {
+        "path": "src/app/[slug]/route.ts",
+        "type": "registry:source",
+        "content": "import { type NextRequest, NextResponse } from \"next/server\";\n\nexport async function GET(\n  _request: NextRequest,\n  { params }: { params: Promise<{ slug: string }> },\n) {\n  const { slug } = await params;\n  return NextResponse.json({ message: `Hello ${slug}!` });\n}\n"
+      }
+    ]
+  },
+  {
+    "name": "app-sveltekit",
+    "type": "registry:package",
+    "description": "SvelteKit (Svelte 5) starter — adapter-auto, a single route, ready for svelte-kit sync.",
+    "dependencies": [],
+    "devDependencies": [],
+    "registryDependencies": [],
+    "envVars": {},
+    "exports": [
+      "."
+    ],
+    "build": "none",
+    "slot": "app",
+    "variant": "sveltekit",
+    "categories": [
+      "app",
+      "sveltekit",
+      "svelte"
+    ],
+    "docs": "SvelteKit app on Svelte 5 with `@sveltejs/adapter-auto`. `svelte-kit sync` generates `.svelte-kit/tsconfig.json` (the app's tsconfig extends it); type-check with `svelte-check`. Add routes under `src/routes/`.",
+    "files": [
+      {
+        "path": "svelte.config.js",
+        "type": "registry:source",
+        "content": "import adapter from \"@sveltejs/adapter-auto\";\nimport { vitePreprocess } from \"@sveltejs/vite-plugin-svelte\";\n\n/** @type {import('@sveltejs/kit').Config} */\nconst config = {\n  preprocess: vitePreprocess(),\n  kit: {\n    adapter: adapter(),\n  },\n};\n\nexport default config;\n"
+      },
+      {
+        "path": "vite.config.ts",
+        "type": "registry:source",
+        "content": "import { sveltekit } from \"@sveltejs/kit/vite\";\nimport { defineConfig } from \"vite\";\n\nexport default defineConfig({\n  plugins: [sveltekit()],\n});\n"
+      },
+      {
+        "path": "src/app.html",
+        "type": "registry:source",
+        "content": "<!doctype html>\n<html lang=\"en\">\n\t<head>\n\t\t<meta charset=\"utf-8\" />\n\t\t<link rel=\"icon\" href=\"%sveltekit.assets%/favicon.png\" />\n\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n\t\t%sveltekit.head%\n\t</head>\n\t<body data-sveltekit-preload-data=\"hover\">\n\t\t<div style=\"display: contents\">%sveltekit.body%</div>\n\t</body>\n</html>\n"
+      },
+      {
+        "path": "src/app.d.ts",
+        "type": "registry:source",
+        "content": "// See https://svelte.dev/docs/kit/types#app.d.ts\n// for information about these interfaces\ndeclare global {\n  namespace App {\n    // interface Error {}\n    // interface Locals {}\n    // interface PageData {}\n    // interface PageState {}\n    // interface Platform {}\n  }\n}\n\nexport {};\n"
+      },
+      {
+        "path": "src/routes/+page.svelte",
+        "type": "registry:source",
+        "content": "<h1>Welcome to {{pkg-name}}</h1>\n<p>Edit <code>src/routes/+page.svelte</code> and save to get started.</p>\n"
+      }
+    ]
+  },
+  {
+    "name": "app-vite-react",
+    "type": "registry:package",
+    "description": "Vite + React 19 SPA — Tailwind v4 (@tailwindcss/vite), shadcn-ready index.css.",
+    "dependencies": [],
+    "devDependencies": [],
+    "registryDependencies": [],
+    "envVars": {},
+    "exports": [
+      "."
+    ],
+    "build": "none",
+    "slot": "app",
+    "variant": "vite-react",
+    "categories": [
+      "app",
+      "vite",
+      "react"
+    ],
+    "docs": "Vite + React 19 single-page app. `index.css` lives at the app root and uses Tailwind v4 via the first-party `@tailwindcss/vite` plugin; `{{css-sources}}` expands to `@source` directives for the CSS-producing workspace packages the app consumes.",
+    "files": [
+      {
+        "path": "index.html",
+        "type": "registry:source",
+        "content": "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>{{pkg-name}}</title>\n  </head>\n  <body>\n    <div id=\"root\"></div>\n    <script type=\"module\" src=\"/src/main.tsx\"></script>\n  </body>\n</html>\n"
+      },
+      {
+        "path": "vite.config.ts",
+        "type": "registry:source",
+        "content": "import tailwindcss from \"@tailwindcss/vite\";\nimport react from \"@vitejs/plugin-react\";\nimport { defineConfig } from \"vite\";\n\nexport default defineConfig({\n  plugins: [react(), tailwindcss()],\n});\n"
+      },
+      {
+        "path": "index.css",
+        "type": "registry:source",
+        "content": "@import \"tailwindcss\";\n@import \"tw-animate-css\";\n\n@custom-variant dark (&:is(.dark *));\n\n/* Scan CSS-producing workspace packages this app consumes. */\n{{css-sources}}\n\n@theme inline {\n  --color-background: var(--background);\n  --color-foreground: var(--foreground);\n  --font-sans: var(--font-sans);\n  --font-mono: var(--font-mono);\n  --color-card: var(--card);\n  --color-card-foreground: var(--card-foreground);\n  --color-popover: var(--popover);\n  --color-popover-foreground: var(--popover-foreground);\n  --color-primary: var(--primary);\n  --color-primary-foreground: var(--primary-foreground);\n  --color-secondary: var(--secondary);\n  --color-secondary-foreground: var(--secondary-foreground);\n  --color-muted: var(--muted);\n  --color-muted-foreground: var(--muted-foreground);\n  --color-accent: var(--accent);\n  --color-accent-foreground: var(--accent-foreground);\n  --color-destructive: var(--destructive);\n  --color-border: var(--border);\n  --color-input: var(--input);\n  --color-ring: var(--ring);\n  --radius-sm: calc(var(--radius) - 4px);\n  --radius-md: calc(var(--radius) - 2px);\n  --radius-lg: var(--radius);\n  --radius-xl: calc(var(--radius) + 4px);\n}\n\n:root {\n  --radius: 0.625rem;\n  --background: oklch(1 0 0);\n  --foreground: oklch(0.145 0 0);\n  --card: oklch(1 0 0);\n  --card-foreground: oklch(0.145 0 0);\n  --popover: oklch(1 0 0);\n  --popover-foreground: oklch(0.145 0 0);\n  --primary: oklch(0.205 0 0);\n  --primary-foreground: oklch(0.985 0 0);\n  --secondary: oklch(0.97 0 0);\n  --secondary-foreground: oklch(0.205 0 0);\n  --muted: oklch(0.97 0 0);\n  --muted-foreground: oklch(0.556 0 0);\n  --accent: oklch(0.97 0 0);\n  --accent-foreground: oklch(0.205 0 0);\n  --destructive: oklch(0.577 0.245 27.325);\n  --border: oklch(0.922 0 0);\n  --input: oklch(0.922 0 0);\n  --ring: oklch(0.708 0 0);\n}\n\n.dark {\n  --background: oklch(0.145 0 0);\n  --foreground: oklch(0.985 0 0);\n  --card: oklch(0.205 0 0);\n  --card-foreground: oklch(0.985 0 0);\n  --popover: oklch(0.205 0 0);\n  --popover-foreground: oklch(0.985 0 0);\n  --primary: oklch(0.922 0 0);\n  --primary-foreground: oklch(0.205 0 0);\n  --secondary: oklch(0.269 0 0);\n  --secondary-foreground: oklch(0.985 0 0);\n  --muted: oklch(0.269 0 0);\n  --muted-foreground: oklch(0.708 0 0);\n  --accent: oklch(0.269 0 0);\n  --accent-foreground: oklch(0.985 0 0);\n  --destructive: oklch(0.704 0.191 22.216);\n  --border: oklch(1 0 0 / 10%);\n  --input: oklch(1 0 0 / 15%);\n  --ring: oklch(0.556 0 0);\n}\n\n@layer base {\n  * {\n    @apply border-border outline-ring/50;\n  }\n  body {\n    @apply bg-background text-foreground;\n  }\n  html {\n    @apply font-sans;\n  }\n}\n"
+      },
+      {
+        "path": "src/main.tsx",
+        "type": "registry:source",
+        "content": "import { StrictMode } from \"react\";\nimport { createRoot } from \"react-dom/client\";\nimport App from \"./App\";\nimport \"../index.css\";\n\n// biome-ignore lint/style/noNonNullAssertion: index.html always ships #root\nconst root = document.getElementById(\"root\")!;\n\ncreateRoot(root).render(\n  <StrictMode>\n    <App />\n  </StrictMode>,\n);\n"
+      },
+      {
+        "path": "src/App.tsx",
+        "type": "registry:source",
+        "content": "export default function App() {\n  return (\n    <main className=\"mx-auto flex min-h-svh max-w-2xl flex-col items-center justify-center gap-6 px-6 text-center\">\n      <span className=\"rounded-full border border-border bg-muted/40 px-3 py-1 font-mono text-muted-foreground text-xs\">\n        create-turbo-stack\n      </span>\n      <h1 className=\"text-balance font-bold text-4xl tracking-tight sm:text-5xl\">\n        Welcome to {\"{{pkg-name}}\"}\n      </h1>\n      <p className=\"text-balance text-muted-foreground\">\n        Edit{\" \"}\n        <code className=\"rounded bg-muted px-1.5 py-0.5 font-mono text-sm\">src/App.tsx</code> and\n        save to get started.\n      </p>\n    </main>\n  );\n}\n"
+      }
+    ]
+  },
+  {
+    "name": "auth-supabase-auth",
+    "type": "registry:package",
+    "description": "Supabase Auth (@supabase/ssr) — browser + cookie-bound server client factories.",
+    "dependencies": [
+      "@supabase/ssr",
+      "@supabase/supabase-js"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [
+      "env"
+    ],
+    "envVars": {
+      "NEXT_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "your-anon-key"
+    },
+    "exports": [
+      "."
+    ],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "environment": "universal",
+    "build": "none",
+    "slot": "auth",
+    "variant": "supabase-auth",
+    "categories": [
+      "auth",
+      "supabase"
+    ],
+    "docs": "Supabase Auth via @supabase/ssr. `createClient()` returns a browser client; `createServerSupabaseClient(cookies)` takes your framework's cookie adapter (`getAll` + `setAll`, e.g. from Next.js `cookies()`) and returns a cookie-bound server client that refreshes sessions automatically.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "import { env } from \"{{scope}}/env\";\nimport { type CookieMethodsServer, createBrowserClient, createServerClient } from \"@supabase/ssr\";\n\n/** Browser Supabase client — use in client components. */\nexport function createClient() {\n  return createBrowserClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY);\n}\n\n/**\n * Cookie-bound server client. Pass your framework's cookie adapter\n * (`getAll` + `setAll`) — e.g. built from Next.js `cookies()` in a Server\n * Component, Route Handler, or middleware.\n */\nexport function createServerSupabaseClient(cookies: CookieMethodsServer) {\n  return createServerClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {\n    cookies,\n  });\n}\n"
+      }
+    ]
+  },
+  {
+    "name": "cache-upstash-redis",
+    "type": "registry:package",
+    "description": "Read-through Redis cache (Upstash) — SWR, tag invalidation, TTL jitter, and batch ops for serverless/edge.",
+    "dependencies": [
+      "@upstash/redis"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [
+      "env"
+    ],
+    "envVars": {
+      "UPSTASH_REDIS_REST_URL": "https://your-db.upstash.io",
+      "UPSTASH_REDIS_REST_TOKEN": "your-rest-token"
+    },
+    "exports": [
+      ".",
+      "./client",
+      "./cache",
+      "./tags",
+      "./batch"
+    ],
+    "lib": [
+      "ES2022",
+      "WebWorker"
+    ],
+    "environment": "universal",
+    "build": "none",
+    "slot": "cache",
+    "variant": "upstash",
+    "categories": [
+      "foundation",
+      "cache"
+    ],
+    "docs": "Read-through cache, stale-while-revalidate with waitUntil wiring, tag-based group invalidation, TTL jitter, negative caching, namespace isolation, and pipeline batch ops — all backed by Upstash Redis, designed for serverless and edge environments.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "export { redis, createCache } from \"./client\";\nexport type { CacheNamespace } from \"./client\";\n\nexport type { CachedOptions, FlexibleResult } from \"./cache\";\nexport { cached, cachedFlexible, invalidate, invalidateMany } from \"./cache\";\n\nexport { cachedWithTags, invalidateTag } from \"./tags\";\n\nexport type { MsetEntry } from \"./batch\";\nexport { mget, mset } from \"./batch\";\n"
+      },
+      {
+        "path": "src/client.ts",
+        "type": "registry:source",
+        "content": "import { Redis } from \"@upstash/redis\";\nimport { env } from \"{{scope}}/env\";\n\n// Shared Redis client. Not fromEnv() — that reads process.env directly and bypasses\n// the application's env validation layer.\nexport const redis = new Redis({\n  url: env.UPSTASH_REDIS_REST_URL,\n  token: env.UPSTASH_REDIS_REST_TOKEN,\n});\n\nimport type { CachedOptions, FlexibleResult } from \"./cache\";\nimport { cached, cachedFlexible, invalidate, invalidateMany } from \"./cache\";\nimport { cachedWithTags, invalidateTag } from \"./tags\";\nimport { mget, mset } from \"./batch\";\n\n/** Namespaced cache bound to a key prefix. Prevents collision in multi-tenant setups. */\nexport interface CacheNamespace {\n  cached<T>(\n    key: string,\n    ttlSeconds: number,\n    fn: () => Promise<T | null>,\n    options?: CachedOptions,\n  ): Promise<T | null>;\n  cachedFlexible<T>(\n    key: string,\n    ttls: [freshTtl: number, staleTtl: number],\n    fn: () => Promise<T>,\n  ): Promise<FlexibleResult<T>>;\n  cachedWithTags<T>(\n    key: string,\n    ttlSeconds: number,\n    tags: string[],\n    fn: () => Promise<T | null>,\n  ): Promise<T | null>;\n  invalidate(key: string): Promise<number>;\n  invalidateMany(keys: string[]): Promise<void>;\n  invalidateTag(tag: string): Promise<void>;\n  mget<T>(keys: string[]): Promise<(T | null)[]>;\n  mset<T>(\n    entries: Array<{ key: string; value: T }>,\n    ttlSeconds?: number,\n  ): Promise<void>;\n}\n\n/**\n * Returns a namespaced cache API. All keys and tag sets are automatically prefixed\n * with `<namespace>:`, preventing collisions between feature areas or tenants.\n *\n * Create once at module level, not inside handlers:\n *   const productCache = createCache(\"product\");\n *   const userCache    = createCache(\"user\");\n */\nexport function createCache(namespace: string): CacheNamespace {\n  const k = (key: string) => `${namespace}:${key}`;\n  const t = (tag: string) => `${namespace}:tag:${tag}`;\n\n  return {\n    cached: (key, ttlSeconds, fn, options) =>\n      cached(k(key), ttlSeconds, fn, options),\n    cachedFlexible: (key, ttls, fn) => cachedFlexible(k(key), ttls, fn),\n    cachedWithTags: (key, ttlSeconds, tags, fn) =>\n      cachedWithTags(k(key), ttlSeconds, tags.map(t), fn),\n    invalidate: (key) => invalidate(k(key)),\n    invalidateMany: (keys) => invalidateMany(keys.map(k)),\n    invalidateTag: (tag) => invalidateTag(t(tag)),\n    mget: <T>(keys: string[]) => mget<T>(keys.map(k)),\n    mset: <T>(entries: Array<{ key: string; value: T }>, ttlSeconds?: number) =>\n      mset(\n        entries.map((e) => ({ ...e, key: k(e.key) })),\n        ttlSeconds,\n      ),\n  };\n}\n"
+      },
+      {
+        "path": "src/cache.ts",
+        "type": "registry:source",
+        "content": "import { redis } from \"./client\";\n\n// Sentinel stored in Redis when a null/undefined result is negatively cached.\n// Prevents cache penetration: repeated misses for non-existent records hit Redis,\n// not the origin. Using a sentinel instead of an absent key lets us distinguish\n// \"not cached yet\" from \"cached as null\".\n/** @constant */\nconst NULL_SENTINEL = \"__cts_null__\" as const;\n\n// Wrapper for SWR-cached values. Stored alongside the actual value so we can\n// determine freshness without a separate TTL key. The outer Redis TTL is staleTtl;\n// freshness is computed from _t in application code.\ninterface FlexibleEntry<T> {\n  _t: number; // write timestamp in epoch milliseconds\n  _v: T; // actual value\n}\n\nexport interface CachedOptions {\n  /**\n   * Add ±10% random jitter to the TTL. Default: true.\n   * Distributes expiration across time, preventing thundering-herd when many\n   * keys were written simultaneously (e.g., after a cache flush or deployment).\n   */\n  jitter?: boolean;\n  /**\n   * Cache null/undefined results from fn with a short TTL. Default: false.\n   * Prevents cache penetration — without this, repeated reads for a non-existent\n   * record bypass the cache and hammer the origin on every request.\n   */\n  cacheNull?: boolean;\n  /**\n   * TTL for negatively cached (null) results in seconds. Default: 30.\n   * Keep this short: if the record is created, callers should see it within this window.\n   */\n  nullTtlSeconds?: number;\n}\n\nexport interface FlexibleResult<T> {\n  value: T | null;\n  /**\n   * Resolves after the background revalidation write completes.\n   * In edge runtimes, pass this to context.waitUntil() to prevent the runtime from\n   * terminating before the refresh is written to Redis.\n   */\n  pending: Promise<unknown>;\n}\n\nfunction applyJitter(ttl: number): number {\n  const delta = Math.floor(ttl * 0.1 * Math.random());\n  const sign = Math.random() < 0.5 ? 1 : -1;\n  return Math.max(1, ttl + sign * delta);\n}\n\n/**\n * Read-through cache. Returns cached value if present; otherwise calls fn,\n * caches the result, and returns it.\n *\n * Options:\n * - jitter: distributes TTL expiration to avoid stampede (default: on)\n * - cacheNull + nullTtlSeconds: negative caching for non-existent records\n *\n * Upstash auto-deserializes stored JSON — do not JSON.parse the result.\n */\nexport async function cached<T>(\n  key: string,\n  ttlSeconds: number,\n  fn: () => Promise<T | null>,\n  options: CachedOptions = {},\n): Promise<T | null> {\n  const { jitter = true, cacheNull = false, nullTtlSeconds = 30 } = options;\n\n  const raw = await redis.get<unknown>(key);\n\n  if (raw === NULL_SENTINEL) return null; // negative cache hit\n  if (raw !== null) return raw as T; // cache hit\n\n  // Cache miss — call origin\n  const value = await fn();\n\n  if (value === null || value === undefined) {\n    if (cacheNull) {\n      const ttl = jitter ? applyJitter(nullTtlSeconds) : nullTtlSeconds;\n      await redis.set(key, NULL_SENTINEL, { ex: ttl });\n    }\n    return null;\n  }\n\n  const ttl = jitter ? applyJitter(ttlSeconds) : ttlSeconds;\n  await redis.set(key, value, { ex: ttl });\n  return value;\n}\n\n/**\n * Stale-while-revalidate cache. Returns data immediately even when stale,\n * then refreshes in the background.\n *\n * ttls = [freshTtl, staleTtl] in seconds:\n * - Within freshTtl of write time: return fresh data, no background work.\n * - Between freshTtl and staleTtl: return stale data immediately + schedule refresh.\n * - Beyond staleTtl (or cache miss): fetch fresh, block until written.\n *\n * The background refresh Promise is returned as `pending`. Pass it to\n * context.waitUntil() in edge runtimes — if the runtime terminates before\n * the refresh completes, the stale entry persists and the next request must\n * fetch fresh again.\n *\n * Metadata (_t timestamp) is stored with the value because Redis does not\n * natively expose write time through its TTL commands.\n */\nexport async function cachedFlexible<T>(\n  key: string,\n  ttls: [freshTtl: number, staleTtl: number],\n  fn: () => Promise<T>,\n): Promise<FlexibleResult<T>> {\n  const [freshTtl, staleTtl] = ttls;\n\n  const stored = await redis.get<FlexibleEntry<T>>(key);\n\n  async function writeEntry(value: T): Promise<void> {\n    const entry: FlexibleEntry<T> = { _t: Date.now(), _v: value };\n    await redis.set(key, entry, { ex: staleTtl });\n  }\n\n  if (stored === null) {\n    // Cold miss — fetch synchronously, block caller\n    const value = await fn();\n    const pending = writeEntry(value);\n    await pending;\n    return { value, pending: Promise.resolve() };\n  }\n\n  const ageSeconds = (Date.now() - stored._t) / 1000;\n\n  if (ageSeconds <= freshTtl) {\n    // Fresh — no background work needed\n    return { value: stored._v, pending: Promise.resolve() };\n  }\n\n  // Stale — return immediately, refresh in background\n  const pending = fn().then(writeEntry);\n  return { value: stored._v, pending };\n}\n\n/** Deletes a single cache key. Returns number of keys deleted (0 or 1). */\nexport async function invalidate(key: string): Promise<number> {\n  return redis.del(key);\n}\n\n/**\n * Deletes multiple cache keys in a single pipeline (one HTTP round-trip to Upstash).\n * Each REST call to Upstash costs ~30ms of latency; batching matters at scale.\n */\nexport async function invalidateMany(keys: string[]): Promise<void> {\n  if (keys.length === 0) return;\n  const p = redis.pipeline();\n  for (const key of keys) {\n    p.del(key);\n  }\n  await p.exec();\n}\n"
+      },
+      {
+        "path": "src/tags.ts",
+        "type": "registry:source",
+        "content": "import { redis } from \"./client\";\n\nfunction tagSetKey(tag: string): string {\n  return `tag:${tag}`;\n}\n\n/**\n * Read-through cache with tag tracking. On a cache miss, calls fn, stores the value,\n * and registers the key in each tag's set (SADD tag:<tag> <key>).\n *\n * Tag registration and value storage are pipelined into a single HTTP round-trip.\n *\n * Use invalidateTag to flush all keys belonging to a tag:\n *   await cachedWithTags(\"user:42:profile\", 300, [\"user:42\", \"profiles\"], fetchProfile);\n *   // later, on user update:\n *   await invalidateTag(\"user:42\"); // clears all keys tagged with \"user:42\"\n */\nexport async function cachedWithTags<T>(\n  key: string,\n  ttlSeconds: number,\n  tags: string[],\n  fn: () => Promise<T | null>,\n): Promise<T | null> {\n  const raw = await redis.get<unknown>(key);\n  if (raw !== null) return raw as T;\n\n  const value = await fn();\n  if (value === null || value === undefined) return null;\n\n  // Store value + register key in each tag set — single pipeline, one round-trip\n  const p = redis.pipeline();\n  p.set(key, value, { ex: ttlSeconds });\n  for (const tag of tags) {\n    p.sadd(tagSetKey(tag), key);\n  }\n  await p.exec();\n\n  return value;\n}\n\n/**\n * Invalidates all cache keys associated with a tag.\n *\n * Steps (pipelined — single round-trip after the SMEMBERS):\n *   1. SMEMBERS tag:<tag> → list of registered keys\n *   2. UNLINK <keys...> + UNLINK tag:<tag> → async deletion\n *\n * UNLINK is preferred over DEL: it reclaims memory asynchronously without blocking\n * the Redis event loop, which matters for large tag sets.\n *\n * Limitation: tag sets accumulate keys even after those keys have naturally expired.\n * The UNLINK on expired keys is a no-op, but the pipeline still contains those commands.\n * For very high-churn caches, periodically rebuilding tag sets or using short-lived tags\n * keeps set sizes manageable.\n */\nexport async function invalidateTag(tag: string): Promise<void> {\n  const tagKey = tagSetKey(tag);\n  const keys = await redis.smembers<string[]>(tagKey);\n\n  if (keys.length === 0) {\n    // Tag set is empty or already gone; clean up the set key anyway\n    await redis.del(tagKey);\n    return;\n  }\n\n  const p = redis.pipeline();\n  // Unlink all cached keys registered under this tag\n  p.unlink(...keys);\n  // Unlink the tag set itself so it does not accumulate stale members\n  p.unlink(tagKey);\n  await p.exec();\n}\n"
+      },
+      {
+        "path": "src/batch.ts",
+        "type": "registry:source",
+        "content": "import { redis } from \"./client\";\n\n/**\n * Fetches multiple cache keys in a single HTTP request.\n *\n * Upstash REST adds ~30ms of round-trip latency per call. Reading 10 keys\n * individually would cost 300ms; mget costs the same as reading one key.\n * Returns null for keys that do not exist.\n *\n * Upstash auto-deserializes values — do not JSON.parse results.\n */\nexport async function mget<T>(keys: string[]): Promise<(T | null)[]> {\n  if (keys.length === 0) return [];\n  return redis.mget<Array<T | null>>(...keys);\n}\n\nexport interface MsetEntry<T> {\n  key: string;\n  value: T;\n}\n\n/**\n * Writes multiple cache entries in a single pipeline (one HTTP request).\n *\n * If ttlSeconds is provided, each entry expires after that duration.\n * Without ttlSeconds, entries persist until manually deleted or evicted by Redis.\n *\n * Note: mset does not support per-key TTLs; use a pipeline of individual set calls\n * if you need different TTLs per key.\n */\nexport async function mset<T>(\n  entries: Array<MsetEntry<T>>,\n  ttlSeconds?: number,\n): Promise<void> {\n  if (entries.length === 0) return;\n\n  const p = redis.pipeline();\n  for (const { key, value } of entries) {\n    if (ttlSeconds !== undefined) {\n      p.set(key, value, { ex: ttlSeconds });\n    } else {\n      p.set(key, value);\n    }\n  }\n  await p.exec();\n}\n"
+      }
+    ]
+  },
+  {
+    "name": "db-drizzle-postgres",
+    "type": "registry:package",
+    "description": "Drizzle ORM + PostgreSQL (postgres-js) — typed client, example schema, drizzle-kit config.",
+    "dependencies": [
+      "drizzle-orm",
+      "postgres"
+    ],
+    "devDependencies": [
+      "drizzle-kit"
+    ],
+    "registryDependencies": [
+      "env"
+    ],
+    "envVars": {
+      "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/postgres"
+    },
+    "exports": [
+      "."
+    ],
+    "build": "none",
+    "slot": "db",
+    "variant": "drizzle-postgres",
+    "categories": [
+      "database",
+      "drizzle"
+    ],
+    "docs": "Drizzle ORM over PostgreSQL via the postgres-js driver. Exports a typed `db` client and the schema. Generate/run migrations with `bunx drizzle-kit generate` / `migrate` (reads `DATABASE_URL`).",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "import { env } from \"{{scope}}/env\";\nimport { drizzle } from \"drizzle-orm/postgres-js\";\nimport postgres from \"postgres\";\nimport * as schema from \"./schema\";\n\nconst client = postgres(env.DATABASE_URL);\nexport const db = drizzle(client, { schema });\n\nexport * from \"./schema\";\n"
+      },
+      {
+        "path": "src/schema.ts",
+        "type": "registry:source",
+        "content": "import { pgTable, serial, text, timestamp } from \"drizzle-orm/pg-core\";\n\nexport const users = pgTable(\"users\", {\n  id: serial(\"id\").primaryKey(),\n  name: text(\"name\").notNull(),\n  email: text(\"email\").notNull().unique(),\n  createdAt: timestamp(\"created_at\").defaultNow().notNull(),\n});\n"
+      },
+      {
+        "path": "drizzle.config.ts",
+        "type": "registry:source",
+        "content": "import { defineConfig } from \"drizzle-kit\";\n\nexport default defineConfig({\n  schema: \"./src/schema.ts\",\n  out: \"./drizzle\",\n  dialect: \"postgresql\",\n  dbCredentials: {\n    url: process.env.DATABASE_URL ?? \"\",\n  },\n});\n"
+      }
+    ]
+  },
+  {
+    "name": "db-supabase",
+    "type": "registry:package",
+    "description": "Supabase data client (@supabase/supabase-js) — anon key, RLS-enforced.",
+    "dependencies": [
+      "@supabase/supabase-js"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [
+      "env"
+    ],
+    "envVars": {
+      "NEXT_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "your-anon-key"
+    },
+    "exports": [
+      "."
+    ],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "environment": "universal",
+    "build": "none",
+    "slot": "db",
+    "variant": "supabase",
+    "categories": [
+      "database",
+      "supabase"
+    ],
+    "docs": "Supabase data client built on the public anon key (Row Level Security enforced). For auth-aware, cookie-bound clients use the `auth` package (`{{scope}}/auth`).",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "import { env } from \"{{scope}}/env\";\nimport { createClient } from \"@supabase/supabase-js\";\n\n/**\n * Supabase data client (anon key, RLS-enforced). For auth-aware,\n * cookie-bound clients use {{scope}}/auth.\n */\nexport const supabase = createClient(\n  env.NEXT_PUBLIC_SUPABASE_URL,\n  env.NEXT_PUBLIC_SUPABASE_ANON_KEY,\n);\n\nexport { createClient };\n"
+      }
+    ]
+  },
+  {
+    "name": "email-plunk",
+    "type": "registry:package",
+    "description": "Plunk transactional email (open-source, self-hostable) — same sendEmail interface as the other email providers.",
+    "dependencies": [
+      "@plunk/node"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [
+      "env"
+    ],
+    "envVars": {
+      "PLUNK_API_KEY": "sk_xxxxxxxx",
+      "PLUNK_BASE_URL": "https://api.useplunk.com"
+    },
+    "exports": [
+      "."
+    ],
+    "lib": [
+      "ES2022"
+    ],
+    "environment": "node",
+    "build": "none",
+    "slot": "email",
+    "variant": "plunk",
+    "categories": [
+      "email"
+    ],
+    "docs": "Plunk transactional email transport (open-source / self-hostable) with the same sendEmail interface as email/resend and email/sendgrid — set PLUNK_BASE_URL to your own Plunk instance for KVKK/privacy compliance.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "export { plunk } from \"./client\";\n\nexport type {\n  EmailErrorName,\n  EmailError,\n  SendEmailOptions,\n  SendEmailResult,\n  SendEmailSuccess,\n  SendEmailFailure,\n} from \"./send\";\nexport { sendEmail } from \"./send\";\n"
+      },
+      {
+        "path": "src/client.ts",
+        "type": "registry:source",
+        "content": "import Plunk from \"@plunk/node\";\nimport { env } from \"{{scope}}/env\";\n\n// PLUNK_BASE_URL is optional. Leave empty for Plunk cloud.\n// Set to your self-hosted Plunk instance URL for KVKK/privacy compliance:\n//   e.g. \"https://plunk.yourcompany.com/api/v1/\"\nexport const plunk = new Plunk(\n  env.PLUNK_API_KEY,\n  env.PLUNK_BASE_URL ? { baseUrl: env.PLUNK_BASE_URL } : undefined,\n);\n"
+      },
+      {
+        "path": "src/send.ts",
+        "type": "registry:source",
+        "content": "import Plunk from \"@plunk/node\";\nimport { env } from \"{{scope}}/env\";\n\n// PLUNK_BASE_URL is optional. Leave empty for Plunk cloud.\n// Set to your self-hosted Plunk instance URL for KVKK/privacy compliance:\n//   e.g. \"https://plunk.yourcompany.com/api/v1/\"\nexport const plunk = new Plunk(\n  env.PLUNK_API_KEY,\n  env.PLUNK_BASE_URL ? { baseUrl: env.PLUNK_BASE_URL } : undefined,\n);\n"
+      }
+    ]
+  },
+  {
+    "name": "email-resend",
+    "type": "registry:package",
+    "description": "Resend transactional email with a typed Result API, batch send, and idempotency keys.",
+    "dependencies": [
+      "resend"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [
+      "env"
+    ],
+    "envVars": {
+      "RESEND_API_KEY": "re_xxxxxxxxx"
+    },
+    "exports": [
+      ".",
+      "./send",
+      "./client"
+    ],
+    "lib": [
+      "ES2022"
+    ],
+    "environment": "node",
+    "build": "none",
+    "slot": "email",
+    "variant": "resend",
+    "categories": [
+      "email"
+    ],
+    "docs": "Resend transactional email transport with typed Result pattern, idempotency key support, batch send (up to 100), and html/text/react body — template rendering is handled by the caller or a future email-templates package.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "export { resend } from \"./client\";\n\nexport type {\n  EmailErrorName,\n  EmailError,\n  SendEmailOptions,\n  SendEmailResult,\n  SendEmailSuccess,\n  SendEmailFailure,\n  BatchEmailItem,\n  SendBatchResult,\n  SendBatchSuccess,\n  SendBatchFailure,\n} from \"./send\";\nexport { sendEmail, sendBatchEmail } from \"./send\";\n"
+      },
+      {
+        "path": "src/client.ts",
+        "type": "registry:source",
+        "content": "import { env } from \"{{scope}}/env\";\nimport { Resend } from \"resend\";\n\n// Shared Resend client. Not process.env — always use the application env layer.\nexport const resend = new Resend(env.RESEND_API_KEY);\n"
+      },
+      {
+        "path": "src/send.ts",
+        "type": "registry:source",
+        "content": "import type { CreateBatchOptions, CreateEmailOptions, ErrorResponse } from \"resend\";\nimport { resend } from \"./client\";\n\n// Known Resend API error names. The string fallback keeps completions while allowing unknown names.\nexport type EmailErrorName =\n  | \"invalid_api_key\"\n  | \"not_allowed\" // domain not verified in Resend dashboard\n  | \"validation_error\"\n  | \"missing_required_field\"\n  | \"rate_limit_exceeded\"\n  | \"invalid_idempotency_key\"\n  | \"invalid_idempotent_request\" // same key + different payload — retry is useless\n  | \"concurrent_idempotent_requests\" // safe to retry after a short delay\n  | \"network_error\" // connection refused, timeout, DNS failure\n  | (string & {});\n\nexport interface EmailError {\n  name: EmailErrorName;\n  message: string;\n  statusCode: number;\n}\n\nexport interface SendEmailSuccess {\n  success: true;\n  id: string;\n}\n\nexport interface SendEmailFailure {\n  success: false;\n  error: EmailError;\n}\n\nexport type SendEmailResult = SendEmailSuccess | SendEmailFailure;\n\nexport interface SendEmailOptions {\n  /** Sender address. Format: \"Name <email@verified-domain.com>\". Domain must be verified in Resend. */\n  from: string;\n  /** Recipient address(es). Max 50 per email. */\n  to: string | string[];\n  subject: string;\n\n  /** HTML body. */\n  html?: string;\n  /** Plain text fallback. Auto-generated from html if omitted. */\n  text?: string;\n  /**\n   * React element. Resend renders it server-side — do not call renderToString yourself.\n   * Only available in the Node.js SDK. Pass the result of calling your React Email component.\n   */\n  react?: CreateEmailOptions[\"react\"];\n\n  replyTo?: string | string[];\n  cc?: string | string[];\n  bcc?: string | string[];\n  headers?: Record<string, string>;\n  tags?: Array<{ name: string; value: string }>;\n  attachments?: CreateEmailOptions[\"attachments\"];\n  /** ISO 8601 timestamp. Schedules delivery. Not supported in batch sends. */\n  scheduledAt?: string;\n\n  /**\n   * Idempotency key (1–256 characters). Prevents duplicate delivery on retry.\n   * Resend stores keys for 24 hours. Recommended format: \"event-type/entity-id\".\n   *\n   * 409 invalid_idempotent_request — same key, different payload. Change key or payload before retrying.\n   * 409 concurrent_idempotent_requests — parallel request in progress. Safe to retry after a short delay.\n   */\n  idempotencyKey?: string;\n}\n\n// Batch items omit scheduledAt (not supported by batch API) and idempotencyKey (per-batch only).\nexport type BatchEmailItem = Omit<SendEmailOptions, \"scheduledAt\" | \"idempotencyKey\">;\n\nexport interface SendBatchSuccess {\n  success: true;\n  /** Email IDs in the same order as the input array. */\n  ids: string[];\n}\n\nexport interface SendBatchFailure {\n  success: false;\n  error: EmailError;\n}\n\nexport type SendBatchResult = SendBatchSuccess | SendBatchFailure;\n\nfunction normalizeError(err: unknown): EmailError {\n  // instanceof Error must come first — Error instances are also \"objects\" so the\n  // generic object branch would otherwise catch them and return err.name === \"Error\",\n  // not \"network_error\".\n  if (err instanceof Error) {\n    const anyErr = err as Error & { statusCode?: number; name?: string };\n    return {\n      // Plain JS errors (network failures, timeouts) have err.name === \"Error\" —\n      // map those to \"network_error\" for a meaningful caller signal.\n      name:\n        anyErr.name === \"Error\"\n          ? \"network_error\"\n          : ((anyErr.name as EmailErrorName) ?? \"network_error\"),\n      message: anyErr.message,\n      statusCode: typeof anyErr.statusCode === \"number\" ? anyErr.statusCode : 0,\n    };\n  }\n  if (err !== null && typeof err === \"object\") {\n    const e = err as Record<string, unknown>;\n    return {\n      name: typeof e.name === \"string\" ? (e.name as EmailErrorName) : \"unknown_error\",\n      message: typeof e.message === \"string\" ? e.message : JSON.stringify(err),\n      statusCode: typeof e.statusCode === \"number\" ? e.statusCode : 0,\n    };\n  }\n  return { name: \"unknown_error\", message: String(err), statusCode: 0 };\n}\n\n/**\n * Sends a single transactional email via Resend.\n *\n * Never throws — always returns a Result. Inspect `success` before using `id` or `error`.\n *\n * Common errors:\n *   not_allowed — the from domain is not verified in the Resend dashboard.\n *   rate_limit_exceeded — retry with exponential backoff using the same idempotencyKey.\n *   network_error — connection failure; safe to retry with the same idempotencyKey.\n */\nexport async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {\n  const { idempotencyKey, ...emailOptions } = options;\n\n  try {\n    // Cast required: CreateEmailOptions is a discriminated union; TypeScript cannot narrow\n    // optional body fields (html/text/react) to a specific variant automatically.\n    const { data, error } = await resend.emails.send(\n      emailOptions as CreateEmailOptions,\n      idempotencyKey !== undefined ? { idempotencyKey } : undefined,\n    );\n\n    if (error) {\n      return { success: false, error: normalizeError(error as ErrorResponse) };\n    }\n    if (!data) {\n      return {\n        success: false,\n        error: {\n          name: \"unknown_error\",\n          message: \"Empty response from Resend\",\n          statusCode: 0,\n        },\n      };\n    }\n\n    return { success: true, id: data.id };\n  } catch (err) {\n    return { success: false, error: normalizeError(err) };\n  }\n}\n\n/**\n * Sends up to 100 emails in a single API call (one HTTP round-trip).\n *\n * Batch limitations: attachments and scheduledAt are not supported.\n * Use sendEmail individually for those.\n *\n * The idempotencyKey covers the entire batch. Recommended format: \"batch-event/batch-id\".\n */\nexport async function sendBatchEmail(\n  emails: BatchEmailItem[],\n  options?: { idempotencyKey?: string },\n): Promise<SendBatchResult> {\n  if (emails.length === 0) {\n    return { success: true, ids: [] };\n  }\n  if (emails.length > 100) {\n    return {\n      success: false,\n      error: {\n        name: \"validation_error\",\n        message: `Batch size ${emails.length} exceeds the maximum of 100. Split into smaller batches.`,\n        statusCode: 400,\n      },\n    };\n  }\n\n  try {\n    const { data, error } = await resend.batch.send(\n      emails as CreateBatchOptions,\n      options?.idempotencyKey !== undefined\n        ? { idempotencyKey: options.idempotencyKey }\n        : undefined,\n    );\n\n    if (error) {\n      return { success: false, error: normalizeError(error as ErrorResponse) };\n    }\n    if (!data) {\n      return {\n        success: false,\n        error: {\n          name: \"unknown_error\",\n          message: \"Empty response from Resend\",\n          statusCode: 0,\n        },\n      };\n    }\n\n    // The Resend SDK wraps the batch response in a { data: [...] } envelope.\n    const envelope = data as unknown as { data: Array<{ id: string }> };\n    return { success: true, ids: envelope.data.map((item) => item.id) };\n  } catch (err) {\n    return { success: false, error: normalizeError(err) };\n  }\n}\n"
+      }
+    ]
+  },
+  {
+    "name": "email-sendgrid",
+    "type": "registry:package",
+    "description": "SendGrid transactional email — drop-in provider swap with a typed Result API.",
+    "dependencies": [
+      "@sendgrid/mail"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [
+      "env"
+    ],
+    "envVars": {
+      "SENDGRID_API_KEY": "SG.xxxxxxxx"
+    },
+    "exports": [
+      "."
+    ],
+    "lib": [
+      "ES2022"
+    ],
+    "environment": "node",
+    "build": "none",
+    "slot": "email",
+    "variant": "sendgrid",
+    "categories": [
+      "email"
+    ],
+    "docs": "SendGrid transactional email transport with the same sendEmail interface as email/resend — drop-in provider swap, typed Result pattern, html/text body, optional dynamic templates, silently drops idempotencyKey (no native SendGrid equivalent).",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "export { sgMail } from \"./client\";\n\nexport type {\n  EmailErrorName,\n  EmailError,\n  SendEmailOptions,\n  SendEmailResult,\n  SendEmailSuccess,\n  SendEmailFailure,\n} from \"./send\";\nexport { sendEmail } from \"./send\";\n"
+      },
+      {
+        "path": "src/client.ts",
+        "type": "registry:source",
+        "content": "import sgMail from \"@sendgrid/mail\";\nimport { env } from \"{{scope}}/env\";\n\n// setApiKey is called at module load. Not process.env — use the application env layer.\nsgMail.setApiKey(env.SENDGRID_API_KEY);\n\nexport { sgMail };\n"
+      },
+      {
+        "path": "src/send.ts",
+        "type": "registry:source",
+        "content": "import { sgMail } from \"./client\";\n\n// Error name union matching email/resend — callers can handle errors uniformly across providers.\nexport type EmailErrorName =\n  | \"invalid_api_key\"\n  | \"not_allowed\" // sender domain/address not verified in SendGrid\n  | \"validation_error\"\n  | \"missing_required_field\"\n  | \"rate_limit_exceeded\"\n  | \"network_error\"\n  | (string & {});\n\nexport interface EmailError {\n  name: EmailErrorName;\n  message: string;\n  statusCode: number;\n}\n\n// Result types — identical shape to email/resend. Swap providers, keep callers unchanged.\nexport interface SendEmailSuccess {\n  success: true;\n  id: string;\n}\n\nexport interface SendEmailFailure {\n  success: false;\n  error: EmailError;\n}\n\nexport type SendEmailResult = SendEmailSuccess | SendEmailFailure;\n\n/**\n * Email options — identical shape to email/resend for drop-in provider swap.\n *\n * Differences from the Resend variant:\n *   - `react` field is absent: SendGrid does not render React. Render with\n *     email-templates' `render(<Email />)` and pass the resulting `html` string.\n *   - `idempotencyKey` is accepted but silently ignored: SendGrid does not expose\n *     a native idempotency mechanism. See README for workaround options.\n *   - `templateId` + `dynamicTemplateData`: SendGrid dynamic templates (optional).\n *     When `templateId` is set, `html`/`text` are ignored by SendGrid.\n */\nexport interface SendEmailOptions {\n  /** Sender address. Must be verified in SendGrid. Format: \"Name <email@domain.com>\" or \"email@domain.com\". */\n  from: string;\n  /** Recipient address(es). */\n  to: string | string[];\n  subject: string;\n\n  /** HTML body. Ignored when templateId is set. */\n  html?: string;\n  /** Plain text body. Ignored when templateId is set. */\n  text?: string;\n\n  replyTo?: string | string[];\n  cc?: string | string[];\n  bcc?: string | string[];\n  headers?: Record<string, string>;\n  tags?: Array<{ name: string; value: string }>;\n\n  /** ISO 8601 timestamp. Schedules delivery (converted to Unix epoch seconds for SendGrid). */\n  scheduledAt?: string;\n\n  /**\n   * Accepted for interface compatibility with email/resend.\n   * SendGrid has no native idempotency key mechanism — this field is silently ignored.\n   */\n  idempotencyKey?: string;\n\n  // SendGrid-specific extensions (no equivalent in email/resend)\n\n  /** SendGrid dynamic template ID (e.g. \"d-xxxxxxxx\"). When set, html/text are ignored. */\n  templateId?: string;\n  /** Data for dynamic template substitution. Only used when templateId is set. */\n  dynamicTemplateData?: Record<string, unknown>;\n\n  attachments?: Array<{\n    /** Base64-encoded file content. */\n    content: string;\n    filename: string;\n    type?: string;\n    disposition?: \"attachment\" | \"inline\";\n  }>;\n}\n\n// SendGrid error shape from the thrown error object\ninterface SendGridErrorBody {\n  errors?: Array<{ message?: string; field?: string; help?: string }>;\n}\n\ninterface SendGridError extends Error {\n  code?: number;\n  response?: { body?: SendGridErrorBody };\n}\n\nfunction httpStatusToName(status: number): EmailErrorName {\n  if (status === 401) return \"invalid_api_key\";\n  if (status === 403) return \"not_allowed\";\n  if (status === 400) return \"validation_error\";\n  if (status === 429) return \"rate_limit_exceeded\";\n  return \"unknown_error\";\n}\n\nfunction normalizeError(err: unknown): EmailError {\n  if (err instanceof Error) {\n    const sgErr = err as SendGridError;\n    const statusCode = typeof sgErr.code === \"number\" ? sgErr.code : 0;\n\n    // Prefer the detailed message from SendGrid's response body\n    const bodyErrors = sgErr.response?.body?.errors;\n    const message =\n      bodyErrors && bodyErrors.length > 0 && bodyErrors[0]?.message\n        ? bodyErrors[0].message\n        : sgErr.message;\n\n    const name =\n      statusCode > 0 ? httpStatusToName(statusCode) : \"network_error\";\n    return { name, message, statusCode };\n  }\n  return { name: \"unknown_error\", message: String(err), statusCode: 0 };\n}\n\n/**\n * Sends a single transactional email via SendGrid.\n *\n * Never throws — always returns a Result. Check `success` before using `id` or `error`.\n * SendGrid throws on failure; this function catches and normalises all errors.\n *\n * Common errors:\n *   not_allowed (403) — the from address or domain is not verified in SendGrid.\n *   invalid_api_key (401) — check env.SENDGRID_API_KEY.\n *   validation_error (400) — malformed request; inspect error.message for details.\n */\nexport async function sendEmail(\n  options: SendEmailOptions,\n): Promise<SendEmailResult> {\n  try {\n    // Build SendGrid message — map common fields to SDK shape.\n    // Cast required: MailDataRequired is a discriminated union (html|text|templateId must be string,\n    // not undefined). We know at least one will be set at runtime; TypeScript cannot narrow this.\n    const msg = {\n      to: options.to,\n      from: options.from,\n      subject: options.subject,\n      html: options.html,\n      text: options.text,\n      replyTo:\n        typeof options.replyTo === \"string\"\n          ? options.replyTo\n          : options.replyTo?.[0],\n      cc: options.cc,\n      bcc: options.bcc,\n      headers: options.headers,\n      // tags.name → categories (SendGrid uses string[] for tracking categories)\n      categories: options.tags?.map((t) => t.name),\n      // scheduledAt (ISO 8601) → sendAt (Unix epoch seconds)\n      sendAt: options.scheduledAt\n        ? Math.floor(new Date(options.scheduledAt).getTime() / 1000)\n        : undefined,\n      // SendGrid dynamic templates\n      templateId: options.templateId,\n      dynamicTemplateData: options.dynamicTemplateData,\n      attachments: options.attachments,\n      // idempotencyKey is silently ignored — SendGrid has no native equivalent\n    };\n\n    const [response] = await sgMail.send(\n      msg as Parameters<typeof sgMail.send>[0],\n    );\n\n    // x-message-id is SendGrid's message identifier\n    const rawId = response.headers[\"x-message-id\"] as string | undefined;\n    const id = rawId ?? `sg-${response.statusCode}`;\n\n    return { success: true, id };\n  } catch (err) {\n    return { success: false, error: normalizeError(err) };\n  }\n}\n"
+      }
+    ]
+  },
+  {
     "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
-    "name": "env-t3",
+    "name": "env",
     "type": "registry:package",
     "title": "Env (t3-env)",
     "description": "Type-safe environment variables via @t3-oss/env-nextjs. Validates server and client env at boot, fails loudly on missing or malformed values. The generated `env` package becomes the single import path the rest of the workspace reads from — never `process.env` directly.",
@@ -46,6 +800,88 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
         "target": "src/index.ts",
         "type": "registry:source",
         "content": "/**\n * {{scope}}/env — type-safe, validated environment variables.\n *\n * Authoring notes (delete when adapting for a real provider variant):\n *\n *  • This file is committed as-is to the registry. The resolver does plain\n *    string substitution on `{{scope}}` etc. before writing into the user's\n *    monorepo, so a literal `{{scope}}/env` in a TS string survives until\n *    materialize and lands as `@saas/env` (or whatever the preset scope is).\n *\n *  • Imports across the workspace go through `{{scope}}/<pkg-name>` —\n *    NEVER hard-code `@saas/...` here. The user's scope is unknown at\n *    authoring time.\n *\n *  • Anything you read at runtime via `env.SOMETHING` MUST be declared in\n *    the manifest's `envVars` map (with an example value). That's how the\n *    name + example land in `.env.example` on install. Forgetting this is\n *    the #1 bug-source for slot items.\n *\n *  • No conditionals — if your provider has driver-level variations,\n *    split into multiple variants (`env-t3-nextjs`, `env-t3-vite`, …)\n *    rather than branching here.\n */\n\nimport { createEnv } from \"@t3-oss/env-nextjs\";\nimport { z } from \"zod\";\n\nexport const env = createEnv({\n  /**\n   * Server-side env vars — never sent to the browser. Anything that\n   * shouldn't leak (DB URLs, API secrets, signing keys) goes here.\n   */\n  server: {\n    NODE_ENV: z.enum([\"development\", \"test\", \"production\"]).default(\"development\"),\n  },\n\n  /**\n   * Client-side env vars — bundled into the browser build. MUST be prefixed\n   * with `NEXT_PUBLIC_` for Next.js to expose them, even when the package\n   * isn't strictly Next-only. t3-env enforces that prefix automatically.\n   */\n  client: {},\n\n  /**\n   * Real runtime values. Each key declared in `server` / `client` must appear\n   * here — t3-env validates types against this map at startup.\n   */\n  runtimeEnv: {\n    NODE_ENV: process.env.NODE_ENV,\n  },\n\n  /**\n   * Treat blank strings as undefined so a `.env` line like `FOO=` triggers\n   * the \"missing\" branch instead of failing a `z.string().min(1)` check.\n   */\n  emptyStringAsUndefined: true,\n});\n"
+      }
+    ]
+  },
+  {
+    "name": "monitoring-sentry",
+    "type": "registry:package",
+    "description": "Sentry error tracking (@sentry/node) — server-side init helper and re-exported SDK.",
+    "dependencies": [
+      "@sentry/node"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [
+      "env"
+    ],
+    "envVars": {
+      "SENTRY_DSN": "https://examplePublicKey@o0.ingest.sentry.io/0"
+    },
+    "exports": [
+      "."
+    ],
+    "lib": [
+      "ES2022"
+    ],
+    "environment": "node",
+    "build": "none",
+    "slot": "monitoring",
+    "variant": "sentry",
+    "categories": [
+      "monitoring",
+      "observability"
+    ],
+    "docs": "Server-side Sentry via @sentry/node. Call `initMonitoring()` once at startup (before other imports) to wire up error + performance capture; `captureException` and the full SDK are re-exported as `Sentry`. Next.js apps additionally get `@sentry/nextjs` from the app scaffold for client/edge coverage.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "import { env } from \"{{scope}}/env\";\nimport * as Sentry from \"@sentry/node\";\n\n/**\n * Initialize Sentry. Call once at server/process startup — ideally as the\n * first import of your entry file so instrumentation wraps everything else.\n */\nexport function initMonitoring(): void {\n  Sentry.init({\n    dsn: env.SENTRY_DSN,\n    tracesSampleRate: 1.0,\n  });\n}\n\nexport { Sentry };\n"
+      }
+    ]
+  },
+  {
+    "name": "rate-limit-upstash-ratelimit",
+    "type": "registry:package",
+    "description": "Framework-agnostic rate limiting (Upstash) — Web Request/Response, safe client-IP, IETF 429 headers.",
+    "dependencies": [
+      "@upstash/ratelimit",
+      "@upstash/redis"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [
+      "env"
+    ],
+    "envVars": {
+      "UPSTASH_REDIS_REST_URL": "https://your-db.upstash.io",
+      "UPSTASH_REDIS_REST_TOKEN": "your-rest-token"
+    },
+    "exports": [
+      "."
+    ],
+    "lib": [
+      "ES2022",
+      "WebWorker"
+    ],
+    "environment": "universal",
+    "build": "none",
+    "slot": "rate-limit",
+    "variant": "upstash",
+    "categories": [
+      "rate-limit",
+      "security"
+    ],
+    "docs": "Framework-agnostic rate limiting backed by Upstash Redis — Web-standard `Request`/`Response`, safe client-IP extraction (no leftmost-XFF), spec-correct 429 with IETF rate-limit headers, and pending/waitUntil wiring. Works in any runtime; wire it into your framework's middleware.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "// Framework-agnostic rate limiting over Web-standard Request/Response.\n// Wire `limitRequest` / `rateLimitResponse` into your framework's middleware.\n\nexport { Ratelimit } from \"./core\";\nexport type {\n  RateLimiterOptions,\n  ClientIdentifierOptions,\n  RateLimitResult,\n  LimitRequestResult,\n} from \"./core\";\nexport {\n  createRateLimiter,\n  getClientIdentifier,\n  checkRateLimit,\n  rateLimitHeaders,\n  rateLimitResponse,\n  limitRequest,\n} from \"./core\";\n"
+      },
+      {
+        "path": "src/core.ts",
+        "type": "registry:source",
+        "content": "import { env } from \"{{scope}}/env\";\nimport { Ratelimit } from \"@upstash/ratelimit\";\nimport { Redis } from \"@upstash/redis\";\n\n// Re-export Ratelimit so callers can access static algorithm factories:\n//   Ratelimit.slidingWindow, Ratelimit.fixedWindow, Ratelimit.tokenBucket\nexport { Ratelimit };\n\n// Derive the limiter type from the Ratelimit constructor without hard-coding internals.\ntype RatelimitConstructorConfig = ConstructorParameters<typeof Ratelimit>[0];\n\nexport interface RateLimiterOptions {\n  /**\n   * Rate limiting algorithm. Obtain via:\n   *   Ratelimit.slidingWindow(n, \"10 s\")  — smoother, costs 2 Redis commands\n   *   Ratelimit.fixedWindow(n, \"10 s\")    — cheaper, stampede at window boundary\n   *   Ratelimit.tokenBucket(n, \"10 s\", b) — fixed burst tolerance b\n   */\n  limiter: RatelimitConstructorConfig[\"limiter\"];\n  /** Redis key prefix. Defaults to \"@upstash/ratelimit\". */\n  prefix?: string;\n  /** Send request analytics to the Upstash console. Default: false. */\n  analytics?: boolean;\n  /**\n   * In-memory Map for caching blocked identifiers. Create outside your handler\n   * so warm serverless instances skip Redis for known-blocked IDs.\n   * Pass false to disable. Defaults to a new Map() if omitted.\n   */\n  ephemeralCache?: Map<string, number> | false;\n  /**\n   * Fail-open timeout in milliseconds. If Redis does not respond within this\n   * window the request is allowed to pass. Default: 5000.\n   */\n  timeout?: number;\n}\n\nexport interface ClientIdentifierOptions {\n  /** Use this value directly, skipping header inspection. */\n  identifier?: string;\n  /**\n   * Number of proxies you trust between the internet and your server.\n   * Used to extract the real IP from X-Forwarded-For by counting from the right.\n   *\n   * Example: one reverse proxy → trustedProxyCount: 1\n   * Only configure this if you fully control and verify your proxy topology.\n   */\n  trustedProxyCount?: number;\n}\n\nexport interface RateLimitResult {\n  success: boolean;\n  limit: number;\n  remaining: number;\n  /** Unix timestamp in milliseconds when the window resets (from Upstash). */\n  reset: number;\n  /**\n   * Resolves after background analytics / multi-region sync completes.\n   * On Vercel Edge or Cloudflare Workers, pass this to context.waitUntil()\n   * to prevent the runtime from terminating before the work finishes.\n   */\n  pending: Promise<unknown>;\n  /** Seconds until the rate limit resets. Use directly as the Retry-After value. */\n  retryAfterSeconds: number;\n}\n\nexport interface LimitRequestResult {\n  result: RateLimitResult;\n  /** null if the request is allowed; a 429 Response if rate-limited. */\n  response: Response | null;\n}\n\n/**\n * Constructs an Upstash Ratelimit instance backed by a Redis client from env.\n * Uses env.UPSTASH_REDIS_REST_URL / env.UPSTASH_REDIS_REST_TOKEN — not fromEnv()\n * which would bypass the application's env validation layer.\n */\nexport function createRateLimiter(options: RateLimiterOptions): Ratelimit {\n  const redis = new Redis({\n    url: env.UPSTASH_REDIS_REST_URL,\n    token: env.UPSTASH_REDIS_REST_TOKEN,\n  });\n\n  return new Ratelimit({\n    redis,\n    limiter: options.limiter,\n    prefix: options.prefix,\n    analytics: options.analytics,\n    ephemeralCache: options.ephemeralCache,\n    timeout: options.timeout,\n  });\n}\n\n/**\n * Extracts a rate-limiting identifier from a Request using a safe priority chain.\n *\n * Priority:\n *   1. options.identifier (explicit override)\n *   2. CF-Connecting-IP  — Cloudflare sets this; end users cannot spoof it\n *   3. True-Client-IP    — Akamai / Cloudflare Enterprise\n *   4. X-Forwarded-For rightmost-N  — only when trustedProxyCount is set;\n *      counting from the right skips spoofable client-controlled entries\n *   5. X-Real-IP         — nginx proxy; trust depends on your infrastructure\n *   6. \"unknown\"         — all unidentified traffic shares one bucket; replace\n *      this with a meaningful application-level fallback in production\n *\n * WARNING: Never use the leftmost X-Forwarded-For value for security decisions.\n * It is entirely user-controlled and trivially spoofed to bypass rate limits.\n */\nexport function getClientIdentifier(request: Request, options?: ClientIdentifierOptions): string {\n  if (options?.identifier !== undefined) return options.identifier;\n\n  const cfIp = request.headers.get(\"CF-Connecting-IP\");\n  if (cfIp) return cfIp.trim();\n\n  const trueClientIp = request.headers.get(\"True-Client-IP\");\n  if (trueClientIp) return trueClientIp.trim();\n\n  const xff = request.headers.get(\"X-Forwarded-For\");\n  if (xff !== null && options?.trustedProxyCount !== undefined) {\n    const ips = xff.split(\",\").map((ip) => ip.trim());\n    // e.g. trustedProxyCount=1 → take the second-to-last entry\n    const safeIndex = ips.length - 1 - options.trustedProxyCount;\n    const ip = safeIndex >= 0 ? ips[safeIndex] : undefined;\n    if (ip) return ip;\n  }\n\n  const realIp = request.headers.get(\"X-Real-IP\");\n  if (realIp) return realIp.trim();\n\n  return \"unknown\";\n}\n\n/** Calls ratelimiter.limit and normalises the result. */\nexport async function checkRateLimit(\n  ratelimiter: Ratelimit,\n  identifier: string,\n): Promise<RateLimitResult> {\n  const raw = await ratelimiter.limit(identifier);\n  const retryAfterSeconds = Math.max(0, Math.ceil((raw.reset - Date.now()) / 1000));\n  return {\n    success: raw.success,\n    limit: raw.limit,\n    remaining: raw.remaining,\n    reset: raw.reset,\n    pending: raw.pending,\n    retryAfterSeconds,\n  };\n}\n\n/**\n * Returns IETF-draft rate-limit response headers.\n * RateLimit-Reset is in epoch seconds (Upstash gives milliseconds; we convert).\n * Retry-After is included only on 429 responses (success: false).\n */\nexport function rateLimitHeaders(result: RateLimitResult): Record<string, string> {\n  const headers: Record<string, string> = {\n    \"RateLimit-Limit\": String(result.limit),\n    \"RateLimit-Remaining\": String(Math.max(0, result.remaining)),\n    \"RateLimit-Reset\": String(Math.ceil(result.reset / 1000)),\n  };\n  if (!result.success) {\n    headers[\"Retry-After\"] = String(result.retryAfterSeconds);\n  }\n  return headers;\n}\n\n/** Returns a spec-correct 429 Response with IETF rate-limit headers. */\nexport function rateLimitResponse(result: RateLimitResult): Response {\n  return new Response(\"Too Many Requests\", {\n    status: 429,\n    headers: rateLimitHeaders(result),\n  });\n}\n\n/**\n * Single-call guard: extracts the client identifier, checks the rate limit, and\n * returns both the normalised result and a ready-to-return 429 Response if limited.\n * The caller is responsible for passing result.pending to waitUntil in edge runtimes.\n */\nexport async function limitRequest(\n  ratelimiter: Ratelimit,\n  request: Request,\n  options?: ClientIdentifierOptions,\n): Promise<LimitRequestResult> {\n  const identifier = getClientIdentifier(request, options);\n  const result = await checkRateLimit(ratelimiter, identifier);\n  return {\n    result,\n    response: result.success ? null : rateLimitResponse(result),\n  };\n}\n"
       }
     ]
   },
@@ -108,8 +944,52 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
         "content": "{\n  \"$schema\": \"https://json.schemastore.org/tsconfig\",\n  \"display\": \"Next.js\",\n  \"extends\": \"./base.json\",\n  \"compilerOptions\": {\n    \"lib\": [\"ES2022\", \"DOM\", \"DOM.Iterable\"],\n    \"jsx\": \"preserve\",\n    \"plugins\": [{ \"name\": \"next\" }],\n    \"allowJs\": true,\n    \"types\": [\"node\"]\n  }\n}\n"
       }
     ]
+  },
+  {
+    "name": "ui-shadcn-starter",
+    "type": "registry:package",
+    "description": "shadcn/ui starter package — cn() helper and a Button component, ready for `shadcn add`.",
+    "dependencies": [
+      "react",
+      "radix-ui",
+      "class-variance-authority",
+      "clsx",
+      "tailwind-merge",
+      "lucide-react"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [],
+    "envVars": {},
+    "exports": [
+      "."
+    ],
+    "build": "none",
+    "slot": "ui",
+    "variant": "shadcn-starter",
+    "categories": [
+      "ui",
+      "components"
+    ],
+    "docs": "A workspace UI package in the shadcn/ui style. Re-exports `Button`, `buttonVariants`, and the `cn` class-merge helper from a barrel (`{{scope}}/ui`). Apps consume it via the workspace dependency and Tailwind scans `src/` through the app's `@source` directive. Add more components with `bunx shadcn@latest add <name>`.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "export { cn } from \"./lib/utils\";\nexport { Button, buttonVariants } from \"./components/button\";\n"
+      },
+      {
+        "path": "src/lib/utils.ts",
+        "type": "registry:source",
+        "content": "import { type ClassValue, clsx } from \"clsx\";\nimport { twMerge } from \"tailwind-merge\";\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs));\n}\n"
+      },
+      {
+        "path": "src/components/button.tsx",
+        "type": "registry:source",
+        "content": "import { type VariantProps, cva } from \"class-variance-authority\";\nimport { Slot } from \"radix-ui\";\nimport type * as React from \"react\";\nimport { cn } from \"../lib/utils\";\n\nconst buttonVariants = cva(\n  \"group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground hover:bg-primary/80\",\n        outline:\n          \"border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground\",\n        ghost:\n          \"hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50\",\n        destructive:\n          \"bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default:\n          \"h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2\",\n        xs: \"h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3\",\n        sm: \"h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5\",\n        lg: \"h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2\",\n        icon: \"size-8\",\n        \"icon-xs\":\n          \"size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3\",\n        \"icon-sm\":\n          \"size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg\",\n        \"icon-lg\": \"size-9\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n);\n\nfunction Button({\n  className,\n  variant = \"default\",\n  size = \"default\",\n  asChild = false,\n  ...props\n}: React.ComponentProps<\"button\"> &\n  VariantProps<typeof buttonVariants> & {\n    asChild?: boolean;\n  }) {\n  const Comp = asChild ? Slot.Root : \"button\";\n\n  return (\n    <Comp\n      data-slot=\"button\"\n      data-variant={variant}\n      data-size={size}\n      className={cn(buttonVariants({ variant, size, className }))}\n      {...props}\n    />\n  );\n}\n\nexport { Button, buttonVariants };\n"
+      }
+    ]
   }
 ] as const;
 
 /** Number of items the engine has available. Logged by `cts doctor`. */
-export const BUILTIN_REGISTRY_ITEM_COUNT = 2;
+export const BUILTIN_REGISTRY_ITEM_COUNT = 22;

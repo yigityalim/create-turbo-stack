@@ -1,13 +1,14 @@
 {
   "name": "email-sendgrid",
   "type": "registry:package",
+  "description": "SendGrid transactional email — drop-in provider swap with a typed Result API.",
   "slot": "email",
   "variant": "sendgrid",
   "environment": "node",
   "build": "none",
   "lib": ["ES2022"],
   "dependencies": ["@sendgrid/mail"],
-  "registryDependencies": ["env-t3"],
+  "registryDependencies": ["env"],
   "envVars": {
     "SENDGRID_API_KEY": "SG.xxxxxxxx"
   },

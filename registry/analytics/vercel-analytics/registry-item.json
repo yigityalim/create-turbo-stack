@@ -1,6 +1,7 @@
 {
   "name": "analytics-vercel-analytics",
   "type": "registry:package",
+  "description": "Vercel Web Analytics — client/server track() and a React component, zero config.",
   "slot": "analytics",
   "variant": "vercel-analytics",
   "environment": "universal",

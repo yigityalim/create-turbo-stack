@@ -1,8 +1,8 @@
+import { env } from "{{scope}}/env";
 // posthog-js is an optional peer dependency. Install it for client-side tracking:
 //   npm install posthog-js
 // The server-side functions in server.ts work without posthog-js.
 import posthog from "posthog-js";
-import { env } from "{{scope}}/env";
 
 export interface InitOptions {
   /**
@@ -28,7 +28,7 @@ export function initPosthog(options: InitOptions = {}): void {
   posthog.init(env.NEXT_PUBLIC_POSTHOG_KEY, {
     api_host: options.apiProxyPath ?? env.NEXT_PUBLIC_POSTHOG_HOST,
     ui_host: env.NEXT_PUBLIC_POSTHOG_HOST,
-    capture_pageview: options.disablePageviews ? false : true,
+    capture_pageview: !options.disablePageviews,
     capture_pageleave: true,
     person_profiles: "identified_only",
   });
@@ -39,10 +39,7 @@ export function initPosthog(options: InitOptions = {}): void {
  * No-ops if PostHog has not been initialised.
  * Never throws.
  */
-export function trackClientEvent(
-  event: string,
-  properties?: Record<string, unknown>,
-): void {
+export function trackClientEvent(event: string, properties?: Record<string, unknown>): void {
   try {
     if (typeof window === "undefined") return;
     posthog.capture(event, properties);
@@ -55,10 +52,7 @@ export function trackClientEvent(
  * Identifies the current user in the browser session.
  * Links anonymous events to a known user profile.
  */
-export function identifyUser(
-  distinctId: string,
-  properties?: Record<string, unknown>,
-): void {
+export function identifyUser(distinctId: string, properties?: Record<string, unknown>): void {
   try {
     if (typeof window === "undefined") return;
     posthog.identify(distinctId, properties);

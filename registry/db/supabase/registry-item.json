@@ -1,0 +1,20 @@
+{
+  "name": "db-supabase",
+  "type": "registry:package",
+  "description": "Supabase data client (@supabase/supabase-js) — anon key, RLS-enforced.",
+  "slot": "db",
+  "variant": "supabase",
+  "environment": "universal",
+  "build": "none",
+  "lib": ["ES2022", "DOM"],
+  "dependencies": ["@supabase/supabase-js"],
+  "registryDependencies": ["env"],
+  "envVars": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "your-anon-key"
+  },
+  "exports": ["."],
+  "categories": ["database", "supabase"],
+  "docs": "Supabase data client built on the public anon key (Row Level Security enforced). For auth-aware, cookie-bound clients use the `auth` package (`{{scope}}/auth`).",
+  "files": [{ "path": "src/index.ts", "type": "registry:source" }]
+}
