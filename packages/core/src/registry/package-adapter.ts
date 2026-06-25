@@ -56,16 +56,30 @@ export function materializeAsAutoPackage(
     deps[`${preset.basics.scope}/${sibling}`] = "workspace:*";
   }
 
+  // Item dev deps → package.json devDependencies as catalog refs (same
+  // treatment as runtime deps; the catalog pins the version).
+  const devDeps: Record<string, string> = {};
+  for (const dep of item.devDependencies) {
+    devDeps[parseDep(dep).name] = "catalog:";
+  }
+
   // Use the item's declared exports if present — the auto-package stub
   // always has `exports: ["."]` which resolves to a TypeScript source path,
   // which is wrong for JSON-only packages like typescript-config.
   const pkgWithExports: Package = item.exports.length ? { ...pkg, exports: item.exports } : pkg;
 
+  // React packages (the `ui` slot) need the React tsconfig base + React
+  // type deps. `makeBasePackageFiles` adds `@types/react` only when told.
+  const react = pkg.type === "ui" || pkg.type === "react-library";
+
   // makeBasePackageFiles owns package.json + tsconfig.json + linter configs.
   // It's the "rules" half: catalog merging, workspace refs, tsconfig
   // inheritance. Unchanged from the Eta path — this is the layer we
   // deliberately keep when migrating.
-  const baseFiles = makeBasePackageFiles(preset, pkgWithExports, base, deps);
+  const baseFiles = makeBasePackageFiles(preset, pkgWithExports, base, deps, devDeps, {
+    react,
+    lib: item.lib,
+  });
 
   // Item content goes through the closed-vocabulary substituter and lands
   // under `<base>/<file.path>` (or the file's explicit `target`).

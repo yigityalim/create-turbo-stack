@@ -25,7 +25,10 @@ export function resolveAutoPackages(preset: Preset): Package[] {
     if (req.slot === "app") continue;
     auto.push({
       name: req.pkgName,
-      type: req.slot === "typescript-config" ? "config" : "library",
+      // The `ui` slot ships React components (.tsx) — it needs the React
+      // tsconfig base (JSX) and React type deps. `typescript-config` is
+      // JSON-only. Everything else is a plain TS library.
+      type: req.slot === "typescript-config" ? "config" : req.slot === "ui" ? "ui" : "library",
       location: locOf(req.pkgName, preset),
       producesCSS: false,
       exports: ["."],
