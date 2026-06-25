@@ -54,6 +54,22 @@ export function computeCatalog(
     add("tw-animate-css", VERSIONS.twAnimateCss);
     add("clsx", VERSIONS.clsx);
     add("tailwind-merge", VERSIONS.tailwindMerge);
+    // The shadcn `ui` package is React regardless of which app framework
+    // consumes it — pin React + its types even when no app is React-based
+    // (e.g. a SvelteKit app that imports the UI package's styles).
+    add("react", VERSIONS.react);
+    add("react-dom", VERSIONS.reactDom);
+    add("@types/react", VERSIONS.typesReact);
+    add("@types/react-dom", VERSIONS.typesReactDom);
+  }
+
+  // Next.js apps pull in @sentry/nextjs directly (client + edge + build
+  // plugin) — the app-type adds it to package.json, so it needs a catalog pin.
+  if (
+    preset.integrations.errorTracking === "sentry" &&
+    preset.apps.some((a) => a.type === "nextjs" || a.type === "nextjs-api-only")
+  ) {
+    add("@sentry/nextjs", VERSIONS.sentryNextjs);
   }
 
   for (const app of preset.apps) {

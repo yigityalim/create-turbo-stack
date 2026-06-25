@@ -44,7 +44,7 @@ export const viteReactAppType = defineAppType({
 
   buildTsconfig(_preset, _app, { scope }) {
     return {
-      extends: `${scope}/typescript-config/react.json`,
+      extends: `${scope}/typescript-config/react-library.json`,
       compilerOptions: {
         // Vite owns the build; tsc is type-check only. vite/client adds
         // import.meta.env + asset module types.

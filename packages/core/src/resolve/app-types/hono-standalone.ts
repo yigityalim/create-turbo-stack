@@ -37,6 +37,10 @@ export const honoStandaloneAppType = defineAppType({
     return {
       extends: `${scope}/typescript-config/library.json`,
       compilerOptions: {
+        // The base config is no-emit (internal packages export source). A
+        // standalone server is the exception: `build` runs `tsc` to `dist/`
+        // and `start` runs `node dist/index.js`, so it must emit.
+        noEmit: false,
         outDir: "./dist",
         rootDir: "./src",
       },

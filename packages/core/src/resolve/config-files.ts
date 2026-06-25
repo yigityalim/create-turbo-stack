@@ -118,6 +118,7 @@ build
 .env.local
 .env.*.local
 *.tsbuildinfo
+next-env.d.ts
 .DS_Store
 coverage
 `,

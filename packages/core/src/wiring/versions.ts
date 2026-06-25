@@ -25,7 +25,7 @@ export const VERSIONS = {
   tailwindVite: "^4.0.0",
   twAnimateCss: "^1.0.0",
   clsx: "^2.1.1",
-  tailwindMerge: "^2.5.0",
+  tailwindMerge: "^3.0.0",
 
   // React / Next.js
   next: "^15.0.0",
@@ -43,7 +43,7 @@ export const VERSIONS = {
   svelte: "^5.0.0",
   sveltejsKit: "^2.0.0",
   sveltejsAdapterAuto: "^3.0.0",
-  sveltejsVitePluginSvelte: "^4.0.0",
+  sveltejsVitePluginSvelte: "^5.0.0",
   svelteCheck: "^4.0.0",
 
   // Astro
