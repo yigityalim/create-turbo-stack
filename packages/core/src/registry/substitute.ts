@@ -35,6 +35,23 @@ export interface SubstitutionContext {
   pkgName: string;
   /** Selected package manager, for `{{pm-*}}` delegation. */
   pm: PackageManager;
+  /**
+   * Tailwind `@source` paths for this app, relative to the app root (where
+   * the app item places `globals.css`). Computed by `computeCssSourceMap`
+   * and injected by the app adapter. `{{css-sources}}` expands to one
+   * `@source "<path>";` line per entry — the only way the single, branch-free
+   * `globals.css` an app ships can pick up the CSS-producing packages it
+   * actually consumes. Undefined / empty for apps that consume none.
+   */
+  cssSources?: string[];
+  /**
+   * Workspace package import names this app consumes (`"@scope/ui"`, …),
+   * from `computeWorkspaceRefs`. `{{workspace-deps}}` expands to a
+   * comma-separated, quoted list so a framework config (Next.js
+   * `transpilePackages`, etc.) can transpile the raw-TS workspace packages
+   * the app pulls in. Undefined / empty for apps that consume none.
+   */
+  workspaceDeps?: string[];
 }
 
 /**
@@ -56,11 +73,22 @@ export function substituteRegistryItem(text: string, ctx: SubstitutionContext): 
   // end up replacing `{{scope}}` inside an already-resolved import path.
   const pkgImport = `${ctx.scope}/${ctx.pkgName}`;
 
+  // `{{css-sources}}` → one Tailwind `@source` directive per consumed
+  // CSS package. Empty list collapses to an empty string so a no-CSS app
+  // doesn't ship a dangling placeholder.
+  const cssSources = (ctx.cssSources ?? []).map((p) => `@source "${p}";`).join("\n");
+
+  // `{{workspace-deps}}` → quoted, comma-separated import names for a config
+  // array literal (`transpilePackages: [{{workspace-deps}}]`).
+  const workspaceDeps = (ctx.workspaceDeps ?? []).map((d) => `"${d}"`).join(", ");
+
   return substitutePm(
     text
       .replace(/\{\{pkg-import\}\}/g, pkgImport)
       .replace(/\{\{scope\}\}/g, ctx.scope)
-      .replace(/\{\{pkg-name\}\}/g, ctx.pkgName),
+      .replace(/\{\{pkg-name\}\}/g, ctx.pkgName)
+      .replace(/\{\{css-sources\}\}/g, cssSources)
+      .replace(/\{\{workspace-deps\}\}/g, workspaceDeps),
     ctx.pm,
   );
 }
@@ -74,6 +102,8 @@ export const KNOWN_PLACEHOLDERS = [
   "scope",
   "pkg-name",
   "pkg-import",
+  "css-sources",
+  "workspace-deps",
   "pm",
   "pm-install",
   "pm-add",

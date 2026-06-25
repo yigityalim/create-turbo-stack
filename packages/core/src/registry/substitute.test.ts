@@ -61,6 +61,35 @@ describe("substituteRegistryItem — pm delegation", () => {
   });
 });
 
+describe("substituteRegistryItem — {{css-sources}}", () => {
+  it("expands to one @source directive per path", () => {
+    const out = substituteRegistryItem("{{css-sources}}", {
+      ...ctx,
+      cssSources: ["../../packages/ui/src", "../../packages/billing/src"],
+    });
+    expect(out).toBe('@source "../../packages/ui/src";\n@source "../../packages/billing/src";');
+  });
+
+  it("collapses to empty string when there are no css sources", () => {
+    expect(substituteRegistryItem("a{{css-sources}}b", ctx)).toBe("ab");
+    expect(substituteRegistryItem("a{{css-sources}}b", { ...ctx, cssSources: [] })).toBe("ab");
+  });
+});
+
+describe("substituteRegistryItem — {{workspace-deps}}", () => {
+  it("expands to a quoted, comma-separated list", () => {
+    const out = substituteRegistryItem("transpilePackages: [{{workspace-deps}}]", {
+      ...ctx,
+      workspaceDeps: ["@saas/ui", "@saas/env"],
+    });
+    expect(out).toBe('transpilePackages: ["@saas/ui", "@saas/env"]');
+  });
+
+  it("collapses to empty when the app consumes no workspace packages", () => {
+    expect(substituteRegistryItem("[{{workspace-deps}}]", ctx)).toBe("[]");
+  });
+});
+
 describe("substituteRegistryItem — applied to env/t3-env example", () => {
   // Lifts the real reference example's content to exercise the substituter
   // end-to-end. Keep this snippet in sync with `registry/env/t3-env/src/index.ts`
