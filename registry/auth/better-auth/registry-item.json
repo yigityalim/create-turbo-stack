@@ -1,0 +1,20 @@
+{
+  "name": "auth-better-auth",
+  "type": "registry:package",
+  "description": "Better Auth — framework-agnostic auth, email/password enabled, ready for a DB adapter.",
+  "slot": "auth",
+  "variant": "better-auth",
+  "environment": "node",
+  "build": "none",
+  "lib": ["ES2022"],
+  "dependencies": ["better-auth"],
+  "registryDependencies": ["env"],
+  "envVars": {
+    "BETTER_AUTH_SECRET": "generate-a-long-random-string",
+    "BETTER_AUTH_URL": "http://localhost:3000"
+  },
+  "exports": ["."],
+  "categories": ["auth", "better-auth"],
+  "docs": "Better Auth instance with email/password enabled. Add a database adapter (drizzleAdapter / prismaAdapter from better-auth/adapters) bound to your db package before production — without one it falls back to in-memory storage. Generate the auth schema with `bunx @better-auth/cli generate`.",
+  "files": [{ "path": "src/index.ts", "type": "registry:source" }]
+}
