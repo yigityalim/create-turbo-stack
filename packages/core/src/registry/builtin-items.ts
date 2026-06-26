@@ -544,6 +544,52 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     ]
   },
   {
+    "name": "db-drizzle-mysql",
+    "type": "registry:package",
+    "description": "Drizzle ORM + MySQL (mysql2) — typed client, example schema, drizzle-kit config.",
+    "dependencies": [
+      "drizzle-orm",
+      "mysql2"
+    ],
+    "devDependencies": [
+      "drizzle-kit"
+    ],
+    "registryDependencies": [
+      "env"
+    ],
+    "envVars": {
+      "DATABASE_URL": "mysql://root:root@localhost:3306/mydb"
+    },
+    "exports": [
+      "."
+    ],
+    "build": "none",
+    "slot": "db",
+    "variant": "drizzle-mysql",
+    "categories": [
+      "database",
+      "drizzle"
+    ],
+    "docs": "Drizzle ORM over MySQL via the mysql2 driver. Exports a typed `db` client and the schema. Generate/run migrations with `bunx drizzle-kit generate` / `migrate` (reads `DATABASE_URL`).",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "import { env } from \"{{scope}}/env\";\nimport { drizzle } from \"drizzle-orm/mysql2\";\nimport mysql from \"mysql2/promise\";\nimport * as schema from \"./schema\";\n\nconst pool = mysql.createPool(env.DATABASE_URL);\nexport const db = drizzle(pool, { schema, mode: \"default\" });\n\nexport * from \"./schema\";\n"
+      },
+      {
+        "path": "src/schema.ts",
+        "type": "registry:source",
+        "content": "import { int, mysqlTable, timestamp, varchar } from \"drizzle-orm/mysql-core\";\n\nexport const users = mysqlTable(\"users\", {\n  id: int(\"id\").primaryKey().autoincrement(),\n  name: varchar(\"name\", { length: 255 }).notNull(),\n  email: varchar(\"email\", { length: 255 }).notNull().unique(),\n  createdAt: timestamp(\"created_at\").defaultNow().notNull(),\n});\n"
+      },
+      {
+        "path": "drizzle.config.ts",
+        "type": "registry:source",
+        "content": "import { defineConfig } from \"drizzle-kit\";\n\nexport default defineConfig({\n  schema: \"./src/schema.ts\",\n  out: \"./drizzle\",\n  dialect: \"mysql\",\n  dbCredentials: {\n    url: process.env.DATABASE_URL ?? \"\",\n  },\n});\n"
+      }
+    ]
+  },
+  {
     "name": "db-drizzle-postgres",
     "type": "registry:package",
     "description": "Drizzle ORM + PostgreSQL (postgres-js) — typed client, example schema, drizzle-kit config.",
@@ -586,6 +632,53 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
         "path": "drizzle.config.ts",
         "type": "registry:source",
         "content": "import { defineConfig } from \"drizzle-kit\";\n\nexport default defineConfig({\n  schema: \"./src/schema.ts\",\n  out: \"./drizzle\",\n  dialect: \"postgresql\",\n  dbCredentials: {\n    url: process.env.DATABASE_URL ?? \"\",\n  },\n});\n"
+      }
+    ]
+  },
+  {
+    "name": "db-drizzle-sqlite",
+    "type": "registry:package",
+    "description": "Drizzle ORM + SQLite (better-sqlite3) — typed client, example schema, drizzle-kit config.",
+    "dependencies": [
+      "drizzle-orm",
+      "better-sqlite3"
+    ],
+    "devDependencies": [
+      "drizzle-kit",
+      "@types/better-sqlite3"
+    ],
+    "registryDependencies": [
+      "env"
+    ],
+    "envVars": {
+      "DATABASE_URL": "./local.db"
+    },
+    "exports": [
+      "."
+    ],
+    "build": "none",
+    "slot": "db",
+    "variant": "drizzle-sqlite",
+    "categories": [
+      "database",
+      "drizzle"
+    ],
+    "docs": "Drizzle ORM over SQLite via the better-sqlite3 driver (synchronous, file-backed). `DATABASE_URL` is a file path (or `:memory:`). Generate/run migrations with `bunx drizzle-kit generate` / `migrate`.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "import { env } from \"{{scope}}/env\";\nimport Database from \"better-sqlite3\";\nimport { drizzle } from \"drizzle-orm/better-sqlite3\";\nimport * as schema from \"./schema\";\n\nconst sqlite = new Database(env.DATABASE_URL);\nexport const db = drizzle(sqlite, { schema });\n\nexport * from \"./schema\";\n"
+      },
+      {
+        "path": "src/schema.ts",
+        "type": "registry:source",
+        "content": "import { integer, sqliteTable, text } from \"drizzle-orm/sqlite-core\";\n\nexport const users = sqliteTable(\"users\", {\n  id: integer(\"id\").primaryKey({ autoIncrement: true }),\n  name: text(\"name\").notNull(),\n  email: text(\"email\").notNull().unique(),\n  createdAt: integer(\"created_at\", { mode: \"timestamp\" })\n    .notNull()\n    .$defaultFn(() => new Date()),\n});\n"
+      },
+      {
+        "path": "drizzle.config.ts",
+        "type": "registry:source",
+        "content": "import { defineConfig } from \"drizzle-kit\";\n\nexport default defineConfig({\n  schema: \"./src/schema.ts\",\n  out: \"./drizzle\",\n  dialect: \"sqlite\",\n  dbCredentials: {\n    url: process.env.DATABASE_URL ?? \"./local.db\",\n  },\n});\n"
       }
     ]
   },
@@ -992,4 +1085,4 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
 ] as const;
 
 /** Number of items the engine has available. Logged by `cts doctor`. */
-export const BUILTIN_REGISTRY_ITEM_COUNT = 22;
+export const BUILTIN_REGISTRY_ITEM_COUNT = 24;
