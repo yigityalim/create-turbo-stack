@@ -79,6 +79,7 @@ export function materializeAsAutoPackage(
   const baseFiles = makeBasePackageFiles(preset, pkgWithExports, base, deps, devDeps, {
     react,
     lib: item.lib,
+    scripts: item.scripts,
   });
 
   // Item content goes through the closed-vocabulary substituter and lands

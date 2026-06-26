@@ -69,6 +69,16 @@
               "type": "string"
             }
           },
+          "scripts": {
+            "default": {},
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
           "envVars": {
             "default": {},
             "type": "object",
@@ -197,6 +207,7 @@
           "dependencies",
           "devDependencies",
           "registryDependencies",
+          "scripts",
           "envVars",
           "exports",
           "build",

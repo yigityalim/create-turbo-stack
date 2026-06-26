@@ -20,7 +20,7 @@ export function makeBasePackageFiles(
   base: string,
   extraDeps: Record<string, string> = {},
   extraDevDeps: Record<string, string> = {},
-  opts: { react?: boolean; lib?: string[] } = {},
+  opts: { react?: boolean; lib?: string[]; scripts?: Record<string, string> } = {},
 ): FileTreeNode[] {
   const nodes: FileTreeNode[] = [];
   const scope = preset.basics.scope;
@@ -46,6 +46,7 @@ export function makeBasePackageFiles(
     scripts: {
       ...(isTsConfigPkg ? {} : { lint: linter.lintScript }),
       ...(isTsConfigPkg ? {} : { "type-check": "tsc --noEmit" }),
+      ...(opts.scripts ?? {}),
     },
     dependencies: { ...extraDeps },
     devDependencies: {
