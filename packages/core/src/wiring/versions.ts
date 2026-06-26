@@ -87,7 +87,9 @@ export const VERSIONS = {
 
   betterAuth: "^1.0.0",
   clerkNextjs: "^6.0.0",
-  nextAuth: "^5.0.0",
+  // next-auth v5 (Auth.js) is the app-router-native API but still ships under
+  // the beta tag — `^5.0.0` won't resolve, so pin the beta explicitly.
+  nextAuth: "5.0.0-beta.31",
 
   // Env
   t3Env: "^0.12.0",

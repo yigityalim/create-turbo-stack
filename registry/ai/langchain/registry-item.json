@@ -1,0 +1,19 @@
+{
+  "name": "ai-langchain",
+  "type": "registry:package",
+  "description": "LangChain — ChatOpenAI model bound to OPENAI_API_KEY.",
+  "slot": "ai",
+  "variant": "langchain",
+  "environment": "node",
+  "build": "none",
+  "lib": ["ES2022"],
+  "dependencies": ["@langchain/openai", "@langchain/core"],
+  "registryDependencies": ["env"],
+  "envVars": {
+    "OPENAI_API_KEY": "sk-xxxxxxxx"
+  },
+  "exports": ["."],
+  "categories": ["ai", "langchain"],
+  "docs": "LangChain with a preconfigured `ChatOpenAI` model reading `OPENAI_API_KEY`. Compose it with chains, agents, and tools from `@langchain/core`. Swap in another provider package (`@langchain/anthropic`, …) the same way.",
+  "files": [{ "path": "src/index.ts", "type": "registry:source" }]
+}

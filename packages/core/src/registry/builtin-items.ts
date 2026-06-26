@@ -16,6 +16,45 @@ import type { PackageRegistryItem } from "@create-turbo-stack/schema";
 
 export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
   {
+    "name": "ai-langchain",
+    "type": "registry:package",
+    "description": "LangChain — ChatOpenAI model bound to OPENAI_API_KEY.",
+    "dependencies": [
+      "@langchain/openai",
+      "@langchain/core"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [
+      "env"
+    ],
+    "scripts": {},
+    "envVars": {
+      "OPENAI_API_KEY": "sk-xxxxxxxx"
+    },
+    "exports": [
+      "."
+    ],
+    "lib": [
+      "ES2022"
+    ],
+    "environment": "node",
+    "build": "none",
+    "slot": "ai",
+    "variant": "langchain",
+    "categories": [
+      "ai",
+      "langchain"
+    ],
+    "docs": "LangChain with a preconfigured `ChatOpenAI` model reading `OPENAI_API_KEY`. Compose it with chains, agents, and tools from `@langchain/core`. Swap in another provider package (`@langchain/anthropic`, …) the same way.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "import { ChatOpenAI } from \"@langchain/openai\";\nimport { env } from \"{{scope}}/env\";\n\nexport const model = new ChatOpenAI({\n  apiKey: env.OPENAI_API_KEY,\n  model: \"gpt-4o-mini\",\n});\n"
+      }
+    ]
+  },
+  {
     "name": "ai-vercel-ai-sdk",
     "type": "registry:package",
     "description": "Vercel AI SDK — OpenAI provider preconfigured, generateText/streamText re-exported.",
@@ -644,6 +683,43 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
         "path": "src/index.ts",
         "type": "registry:source",
         "content": "export { auth, clerkClient, currentUser } from \"@clerk/nextjs/server\";\n"
+      }
+    ]
+  },
+  {
+    "name": "auth-next-auth",
+    "type": "registry:package",
+    "description": "NextAuth.js v5 (Auth.js) — handlers/auth/signIn/signOut, JWT sessions, no DB.",
+    "dependencies": [
+      "next-auth"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [],
+    "scripts": {},
+    "envVars": {
+      "AUTH_SECRET": "generate-with-npx-auth-secret"
+    },
+    "exports": [
+      "."
+    ],
+    "lib": [
+      "ES2022"
+    ],
+    "environment": "node",
+    "build": "none",
+    "slot": "auth",
+    "variant": "next-auth",
+    "categories": [
+      "auth",
+      "next-auth",
+      "authjs"
+    ],
+    "docs": "NextAuth.js v5 (Auth.js) config. Exports `handlers`, `auth`, `signIn`, `signOut` (JWT sessions by default — no database). Add providers to the `providers` array, mount `handlers` in `app/api/auth/[...nextauth]/route.ts`, and use `auth` in middleware. Reads `AUTH_SECRET` from the env.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "import NextAuth, { type NextAuthResult } from \"next-auth\";\n\n// Add providers (GitHub, Google, Credentials, …) to the array below.\nconst result = NextAuth({\n  providers: [],\n});\n\n// Explicit annotations: NextAuth's inferred return type isn't portable across\n// a bun/pnpm symlinked monorepo (TS2742), so name each export via NextAuthResult.\nexport const handlers: NextAuthResult[\"handlers\"] = result.handlers;\nexport const auth: NextAuthResult[\"auth\"] = result.auth;\nexport const signIn: NextAuthResult[\"signIn\"] = result.signIn;\nexport const signOut: NextAuthResult[\"signOut\"] = result.signOut;\n"
       }
     ]
   },
@@ -1400,4 +1476,4 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
 ] as const;
 
 /** Number of items the engine has available. Logged by `cts doctor`. */
-export const BUILTIN_REGISTRY_ITEM_COUNT = 31;
+export const BUILTIN_REGISTRY_ITEM_COUNT = 33;

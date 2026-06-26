@@ -1,0 +1,18 @@
+{
+  "name": "auth-next-auth",
+  "type": "registry:package",
+  "description": "NextAuth.js v5 (Auth.js) — handlers/auth/signIn/signOut, JWT sessions, no DB.",
+  "slot": "auth",
+  "variant": "next-auth",
+  "environment": "node",
+  "build": "none",
+  "lib": ["ES2022"],
+  "dependencies": ["next-auth"],
+  "envVars": {
+    "AUTH_SECRET": "generate-with-npx-auth-secret"
+  },
+  "exports": ["."],
+  "categories": ["auth", "next-auth", "authjs"],
+  "docs": "NextAuth.js v5 (Auth.js) config. Exports `handlers`, `auth`, `signIn`, `signOut` (JWT sessions by default — no database). Add providers to the `providers` array, mount `handlers` in `app/api/auth/[...nextauth]/route.ts`, and use `auth` in middleware. Reads `AUTH_SECRET` from the env.",
+  "files": [{ "path": "src/index.ts", "type": "registry:source" }]
+}

@@ -79,6 +79,11 @@ export function computeCatalog(
     add("prisma", VERSIONS.prisma);
   }
 
+  // next-auth's stable `latest` is still v4; pin the v5 beta the item targets.
+  if (preset.auth.provider === "next-auth") {
+    add("next-auth", VERSIONS.nextAuth);
+  }
+
   for (const app of preset.apps) {
     if (app.type === "nextjs" || app.type === "nextjs-api-only") {
       add("next", VERSIONS.next);
