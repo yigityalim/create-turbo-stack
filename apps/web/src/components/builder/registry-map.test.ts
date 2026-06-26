@@ -1,3 +1,4 @@
+import { BUILTIN_REGISTRY_ITEMS } from "@create-turbo-stack/core";
 import { describe, expect, it } from "vitest";
 import { REGISTRY_MAP } from "./registry-map";
 
@@ -119,5 +120,32 @@ describe("REGISTRY_MAP — integration entries", () => {
   it("database.drizzle has 3 driver variants", () => {
     const pairs = REGISTRY_MAP.database?.drizzle;
     expect(pairs).toHaveLength(3);
+  });
+});
+
+// ─── REGISTRY_MAP ↔ built items ───────────────────────────────────────────────
+
+describe("REGISTRY_MAP — every mapped pair is a built registry item", () => {
+  // A non-null entry promises a real item; `null` is the escape hatch for
+  // "no item / not built yet". This keeps the map from drifting to stale
+  // variant names (e.g. prisma-postgres after consolidating to one `prisma`).
+  const built = new Set(
+    BUILTIN_REGISTRY_ITEMS.filter((i) => (i.files?.length ?? 0) > 0).map(
+      (i) => `${i.slot}:${i.variant}`,
+    ),
+  );
+
+  it("each non-null [slot, variant] exists in BUILTIN_REGISTRY_ITEMS", () => {
+    for (const [group, values] of Object.entries(REGISTRY_MAP)) {
+      for (const [value, pairs] of Object.entries(values)) {
+        if (!pairs) continue;
+        for (const [slot, variant] of pairs) {
+          expect(
+            built.has(`${slot}:${variant}`),
+            `REGISTRY_MAP["${group}"]["${value}"] -> ${slot}:${variant} is not a built item`,
+          ).toBe(true);
+        }
+      }
+    }
   });
 });

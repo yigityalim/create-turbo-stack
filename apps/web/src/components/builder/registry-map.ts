@@ -14,11 +14,7 @@ export const REGISTRY_MAP: Record<
       ["db", "drizzle-mysql"],
       ["db", "drizzle-sqlite"],
     ],
-    prisma: [
-      ["db", "prisma-postgres"],
-      ["db", "prisma-mysql"],
-      ["db", "prisma-sqlite"],
-    ],
+    prisma: [["db", "prisma"]],
   },
   driver: {
     postgres: null,
@@ -31,10 +27,9 @@ export const REGISTRY_MAP: Record<
   api: {
     none: null,
     trpc: [["api", "trpc"]],
-    hono: [
-      ["api", "hono-route"],
-      ["api", "hono-standalone"],
-    ],
+    // Hono standalone-app is served by the app slot, not an api package;
+    // the api slot only has the route-handler variant.
+    hono: [["api", "hono-route"]],
     "rest-nextjs": null,
   },
   auth: {
@@ -42,7 +37,7 @@ export const REGISTRY_MAP: Record<
     "better-auth": [["auth", "better-auth"]],
     clerk: [["auth", "clerk"]],
     "supabase-auth": [["auth", "supabase-auth"]],
-    "next-auth": [["auth", "authjs"]],
+    "next-auth": [["auth", "next-auth"]],
     lucia: null,
   },
   css: { tailwind4: null, vanilla: null, "css-modules": null },
