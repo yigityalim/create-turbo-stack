@@ -38,6 +38,10 @@ export const VERSIONS = {
   // Vite
   vite: "^6.0.0",
   vitejsPluginReact: "^4.0.0",
+  vue: "^3.5.0",
+  vitejsPluginVue: "^5.2.0",
+  vueTsc: "^2.2.0",
+  vueTsconfig: "^0.7.0",
 
   // Svelte / SvelteKit
   svelte: "^5.0.0",

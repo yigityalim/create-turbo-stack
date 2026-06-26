@@ -523,6 +523,55 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     ]
   },
   {
+    "name": "app-vite-vue",
+    "type": "registry:package",
+    "description": "Vite + Vue 3 SPA — <script setup>, Tailwind v4 via @tailwindcss/vite.",
+    "dependencies": [],
+    "devDependencies": [],
+    "registryDependencies": [],
+    "scripts": {},
+    "envVars": {},
+    "exports": [
+      "."
+    ],
+    "build": "none",
+    "slot": "app",
+    "variant": "vite-vue",
+    "categories": [
+      "app",
+      "vite",
+      "vue"
+    ],
+    "docs": "Vite + Vue 3 single-page app using `<script setup>`. `style.css` lives at the app root and uses Tailwind v4 (`@tailwindcss/vite`); `{{css-sources}}` expands to `@source` directives for CSS-producing workspace packages the app consumes. Type-checking is `vue-tsc` (it understands `.vue`).",
+    "files": [
+      {
+        "path": "index.html",
+        "type": "registry:source",
+        "content": "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>{{pkg-name}}</title>\n  </head>\n  <body>\n    <div id=\"app\"></div>\n    <script type=\"module\" src=\"/src/main.ts\"></script>\n  </body>\n</html>\n"
+      },
+      {
+        "path": "vite.config.ts",
+        "type": "registry:source",
+        "content": "import tailwindcss from \"@tailwindcss/vite\";\nimport vue from \"@vitejs/plugin-vue\";\nimport { defineConfig } from \"vite\";\n\nexport default defineConfig({\n  plugins: [vue(), tailwindcss()],\n});\n"
+      },
+      {
+        "path": "style.css",
+        "type": "registry:source",
+        "content": "@import \"tailwindcss\";\n\n/* Scan CSS-producing workspace packages this app consumes. */\n{{css-sources}}\n@layer base {\n  body {\n    @apply bg-white text-zinc-900 antialiased;\n  }\n}\n"
+      },
+      {
+        "path": "src/main.ts",
+        "type": "registry:source",
+        "content": "import { createApp } from \"vue\";\nimport App from \"./App.vue\";\nimport \"../style.css\";\n\ncreateApp(App).mount(\"#app\");\n"
+      },
+      {
+        "path": "src/App.vue",
+        "type": "registry:source",
+        "content": "<script setup lang=\"ts\"></script>\n\n<template>\n  <main\n    class=\"mx-auto flex min-h-svh max-w-2xl flex-col items-center justify-center gap-6 px-6 text-center\"\n  >\n    <span\n      class=\"rounded-full border border-zinc-200 bg-zinc-100 px-3 py-1 font-mono text-xs text-zinc-500\"\n    >\n      create-turbo-stack\n    </span>\n    <h1 class=\"text-4xl font-bold tracking-tight sm:text-5xl\">Welcome to your Vue app</h1>\n    <p class=\"text-zinc-500\">\n      Edit <code class=\"rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-sm\">src/App.vue</code> and\n      save to get started.\n    </p>\n  </main>\n</template>\n"
+      }
+    ]
+  },
+  {
     "name": "auth-better-auth",
     "type": "registry:package",
     "description": "Better Auth — framework-agnostic auth, email/password enabled, ready for a DB adapter.",
@@ -1351,4 +1400,4 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
 ] as const;
 
 /** Number of items the engine has available. Logged by `cts doctor`. */
-export const BUILTIN_REGISTRY_ITEM_COUNT = 30;
+export const BUILTIN_REGISTRY_ITEM_COUNT = 31;

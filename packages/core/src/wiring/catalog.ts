@@ -101,6 +101,15 @@ export function computeCatalog(
       add("@types/react-dom", VERSIONS.typesReactDom);
       if (preset.css.framework === "tailwind4") add("@tailwindcss/vite", VERSIONS.tailwindVite);
     }
+    if (app.type === "vite-vue") {
+      add("vue", VERSIONS.vue);
+      add("@vitejs/plugin-vue", VERSIONS.vitejsPluginVue);
+      add("@vue/tsconfig", VERSIONS.vueTsconfig);
+      add("vue-tsc", VERSIONS.vueTsc);
+      add("vite", VERSIONS.vite);
+      add("@types/node", VERSIONS.typesNode);
+      if (preset.css.framework === "tailwind4") add("@tailwindcss/vite", VERSIONS.tailwindVite);
+    }
     if (app.type === "sveltekit") {
       add("@sveltejs/kit", VERSIONS.sveltejsKit);
       add("svelte", VERSIONS.svelte);
