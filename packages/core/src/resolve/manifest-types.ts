@@ -28,6 +28,8 @@ export interface PackageJson {
   version?: string;
   private?: boolean;
   type?: "module" | "commonjs";
+  /** Entry point — used by frameworks that need it (e.g. Expo's `index.ts`). */
+  main?: string;
   exports?: PackageExports;
   scripts?: Record<string, string>;
   dependencies?: Record<string, string>;

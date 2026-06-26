@@ -348,6 +348,45 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     ]
   },
   {
+    "name": "app-expo",
+    "type": "registry:package",
+    "description": "Expo (React Native) app — blank TypeScript template.",
+    "dependencies": [],
+    "devDependencies": [],
+    "registryDependencies": [],
+    "scripts": {},
+    "envVars": {},
+    "exports": [
+      "."
+    ],
+    "build": "none",
+    "slot": "app",
+    "variant": "expo",
+    "categories": [
+      "app",
+      "expo",
+      "react-native"
+    ],
+    "docs": "Expo + React Native app (blank TypeScript template). `expo start` runs the dev server (Expo Go or a native build); `--android` / `--ios` / `--web` target a platform. Add app icons/splash under `assets/` and reference them in `app.json`. Note: React Native's native install does not run in a Windows + bun monorepo (MAX_PATH); use Linux/CI or `pnpm` for the full install.",
+    "files": [
+      {
+        "path": "index.ts",
+        "type": "registry:source",
+        "content": "import { registerRootComponent } from \"expo\";\nimport App from \"./App\";\n\n// registerRootComponent calls AppRegistry.registerComponent(\"main\", () => App)\n// and sets the environment up for Expo Go and native builds.\nregisterRootComponent(App);\n"
+      },
+      {
+        "path": "App.tsx",
+        "type": "registry:source",
+        "content": "import { StatusBar } from \"expo-status-bar\";\nimport { StyleSheet, Text, View } from \"react-native\";\n\nexport default function App() {\n  return (\n    <View style={styles.container}>\n      <Text>Open up App.tsx to start working on your app!</Text>\n      <StatusBar style=\"auto\" />\n    </View>\n  );\n}\n\nconst styles = StyleSheet.create({\n  container: {\n    flex: 1,\n    backgroundColor: \"#fff\",\n    alignItems: \"center\",\n    justifyContent: \"center\",\n  },\n});\n"
+      },
+      {
+        "path": "app.json",
+        "type": "registry:source",
+        "content": "{\n  \"expo\": {\n    \"name\": \"{{pkg-name}}\",\n    \"slug\": \"{{pkg-name}}\",\n    \"version\": \"1.0.0\",\n    \"orientation\": \"portrait\",\n    \"userInterfaceStyle\": \"automatic\",\n    \"ios\": {\n      \"supportsTablet\": true\n    },\n    \"android\": {},\n    \"web\": {}\n  }\n}\n"
+      }
+    ]
+  },
+  {
     "name": "app-hono-standalone",
     "type": "registry:package",
     "description": "Standalone Hono server (Node) — @hono/node-server entry, no frontend.",
@@ -1476,4 +1515,4 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
 ] as const;
 
 /** Number of items the engine has available. Logged by `cts doctor`. */
-export const BUILTIN_REGISTRY_ITEM_COUNT = 33;
+export const BUILTIN_REGISTRY_ITEM_COUNT = 34;

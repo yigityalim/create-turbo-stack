@@ -115,6 +115,13 @@ export function computeCatalog(
       add("@types/node", VERSIONS.typesNode);
       if (preset.css.framework === "tailwind4") add("@tailwindcss/vite", VERSIONS.tailwindVite);
     }
+    if (app.type === "expo") {
+      add("expo", VERSIONS.expo);
+      add("expo-status-bar", VERSIONS.expoStatusBar);
+      add("react", VERSIONS.react);
+      add("react-native", VERSIONS.reactNative);
+      add("@types/react", VERSIONS.typesReact);
+    }
     if (app.type === "sveltekit") {
       add("@sveltejs/kit", VERSIONS.sveltejsKit);
       add("svelte", VERSIONS.svelte);

@@ -43,6 +43,11 @@ export const VERSIONS = {
   vueTsc: "^2.2.0",
   vueTsconfig: "^0.7.0",
 
+  // Expo / React Native
+  expo: "~56.0.0",
+  expoStatusBar: "~56.0.0",
+  reactNative: "0.85.3",
+
   // Svelte / SvelteKit
   svelte: "^5.0.0",
   sveltejsKit: "^2.0.0",
