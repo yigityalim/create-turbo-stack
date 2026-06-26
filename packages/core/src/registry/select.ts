@@ -167,8 +167,8 @@ function computeApiVariant(api: Preset["api"]): string | null {
     const mode = (api as { mode?: string }).mode;
     // `standalone-app`: the Hono server IS the app (`slot: app`,
     // variant `hono-standalone`) — there's no separate `packages/api`.
-    // Only `route-handler` (Hono mounted inside another app) needs a package.
-    if (mode === "route-handler") return "hono-route";
+    // Only `nextjs-route` (Hono mounted inside another app) needs a package.
+    if (mode === "nextjs-route") return "hono-route";
     return null;
   }
   return api.strategy;

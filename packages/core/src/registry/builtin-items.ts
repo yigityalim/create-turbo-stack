@@ -16,6 +16,43 @@ import type { PackageRegistryItem } from "@create-turbo-stack/schema";
 
 export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
   {
+    "name": "ai-vercel-ai-sdk",
+    "type": "registry:package",
+    "description": "Vercel AI SDK — OpenAI provider preconfigured, generateText/streamText re-exported.",
+    "dependencies": [
+      "ai",
+      "@ai-sdk/openai"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [
+      "env"
+    ],
+    "envVars": {
+      "OPENAI_API_KEY": "sk-xxxxxxxx"
+    },
+    "exports": [
+      "."
+    ],
+    "lib": [
+      "ES2022"
+    ],
+    "environment": "node",
+    "build": "none",
+    "slot": "ai",
+    "variant": "vercel-ai-sdk",
+    "categories": [
+      "ai"
+    ],
+    "docs": "Vercel AI SDK with the OpenAI provider wired to `OPENAI_API_KEY`. `openai(\"model\")` builds a model; `generateText` / `streamText` are re-exported. Swap in another provider package (`@ai-sdk/anthropic`, …) the same way.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "import { createOpenAI } from \"@ai-sdk/openai\";\nimport { env } from \"{{scope}}/env\";\n\n/** OpenAI provider bound to the validated OPENAI_API_KEY. */\nexport const openai = createOpenAI({ apiKey: env.OPENAI_API_KEY });\n\nexport { generateText, streamText } from \"ai\";\n"
+      }
+    ]
+  },
+  {
     "name": "analytics-plausible",
     "type": "registry:package",
     "description": "Privacy-first, cookie-less Plausible analytics — server Events API and a client script helper.",
@@ -163,6 +200,39 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
         "path": "src/react.tsx",
         "type": "registry:source",
         "content": "// Re-export for consumers who use the {{scope}}/analytics/react import path.\n// This file requires JSX compilation — your bundler handles this automatically.\nexport { Analytics } from \"@vercel/analytics/react\";\n"
+      }
+    ]
+  },
+  {
+    "name": "api-hono-route",
+    "type": "registry:package",
+    "description": "Hono API router — mount inside a Next.js route handler or any fetch server.",
+    "dependencies": [
+      "hono"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [],
+    "envVars": {},
+    "exports": [
+      "."
+    ],
+    "lib": [
+      "ES2022"
+    ],
+    "environment": "universal",
+    "build": "none",
+    "slot": "api",
+    "variant": "hono-route",
+    "categories": [
+      "api",
+      "hono"
+    ],
+    "docs": "A framework-agnostic Hono app (`api`) you mount inside another app — e.g. a Next.js catch-all route handler (`app/api/[[...route]]/route.ts`) re-exporting `api.fetch`. `ApiRouter` is the type for an RPC client.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "import { Hono } from \"hono\";\n\nexport const api = new Hono().get(\"/health\", (c) => c.json({ status: \"ok\" }));\n\nexport type ApiRouter = typeof api;\n"
       }
     ]
   },
@@ -437,6 +507,42 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
         "path": "src/App.tsx",
         "type": "registry:source",
         "content": "export default function App() {\n  return (\n    <main className=\"mx-auto flex min-h-svh max-w-2xl flex-col items-center justify-center gap-6 px-6 text-center\">\n      <span className=\"rounded-full border border-border bg-muted/40 px-3 py-1 font-mono text-muted-foreground text-xs\">\n        create-turbo-stack\n      </span>\n      <h1 className=\"text-balance font-bold text-4xl tracking-tight sm:text-5xl\">\n        Welcome to {\"{{pkg-name}}\"}\n      </h1>\n      <p className=\"text-balance text-muted-foreground\">\n        Edit{\" \"}\n        <code className=\"rounded bg-muted px-1.5 py-0.5 font-mono text-sm\">src/App.tsx</code> and\n        save to get started.\n      </p>\n    </main>\n  );\n}\n"
+      }
+    ]
+  },
+  {
+    "name": "auth-clerk",
+    "type": "registry:package",
+    "description": "Clerk authentication (@clerk/nextjs) — server helpers re-exported.",
+    "dependencies": [
+      "@clerk/nextjs"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [],
+    "envVars": {
+      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_xxxxxxxx",
+      "CLERK_SECRET_KEY": "sk_test_xxxxxxxx"
+    },
+    "exports": [
+      "."
+    ],
+    "lib": [
+      "ES2022"
+    ],
+    "environment": "node",
+    "build": "none",
+    "slot": "auth",
+    "variant": "clerk",
+    "categories": [
+      "auth",
+      "clerk"
+    ],
+    "docs": "Clerk auth for Next.js. Re-exports the server helpers (`auth`, `currentUser`, `clerkClient`). Wrap your app in `<ClerkProvider>` and add Clerk's middleware in the app; Clerk reads its keys from the env automatically.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "export { auth, clerkClient, currentUser } from \"@clerk/nextjs/server\";\n"
       }
     ]
   },
@@ -897,6 +1003,43 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     ]
   },
   {
+    "name": "monitoring-bugsnag",
+    "type": "registry:package",
+    "description": "Bugsnag error tracking (@bugsnag/js) — start helper and re-exported client.",
+    "dependencies": [
+      "@bugsnag/js"
+    ],
+    "devDependencies": [],
+    "registryDependencies": [
+      "env"
+    ],
+    "envVars": {
+      "BUGSNAG_API_KEY": "your-bugsnag-api-key"
+    },
+    "exports": [
+      "."
+    ],
+    "lib": [
+      "ES2022"
+    ],
+    "environment": "node",
+    "build": "none",
+    "slot": "monitoring",
+    "variant": "bugsnag",
+    "categories": [
+      "monitoring",
+      "observability"
+    ],
+    "docs": "Bugsnag error + performance tracking. Call `initMonitoring()` once at startup; the configured `Bugsnag` client is re-exported for `Bugsnag.notify(err)`.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "import Bugsnag from \"@bugsnag/js\";\nimport { env } from \"{{scope}}/env\";\n\n/** Initialize Bugsnag. Call once at server/process startup. */\nexport function initMonitoring(): void {\n  Bugsnag.start({ apiKey: env.BUGSNAG_API_KEY });\n}\n\nexport { Bugsnag };\n"
+      }
+    ]
+  },
+  {
     "name": "monitoring-sentry",
     "type": "registry:package",
     "description": "Sentry error tracking (@sentry/node) — server-side init helper and re-exported SDK.",
@@ -1085,4 +1228,4 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
 ] as const;
 
 /** Number of items the engine has available. Logged by `cts doctor`. */
-export const BUILTIN_REGISTRY_ITEM_COUNT = 24;
+export const BUILTIN_REGISTRY_ITEM_COUNT = 28;

@@ -1,0 +1,19 @@
+{
+  "name": "ai-vercel-ai-sdk",
+  "type": "registry:package",
+  "description": "Vercel AI SDK — OpenAI provider preconfigured, generateText/streamText re-exported.",
+  "slot": "ai",
+  "variant": "vercel-ai-sdk",
+  "environment": "node",
+  "build": "none",
+  "lib": ["ES2022"],
+  "dependencies": ["ai", "@ai-sdk/openai"],
+  "registryDependencies": ["env"],
+  "envVars": {
+    "OPENAI_API_KEY": "sk-xxxxxxxx"
+  },
+  "exports": ["."],
+  "categories": ["ai"],
+  "docs": "Vercel AI SDK with the OpenAI provider wired to `OPENAI_API_KEY`. `openai(\"model\")` builds a model; `generateText` / `streamText` are re-exported. Swap in another provider package (`@ai-sdk/anthropic`, …) the same way.",
+  "files": [{ "path": "src/index.ts", "type": "registry:source" }]
+}

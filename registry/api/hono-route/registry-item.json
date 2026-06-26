@@ -1,0 +1,15 @@
+{
+  "name": "api-hono-route",
+  "type": "registry:package",
+  "description": "Hono API router — mount inside a Next.js route handler or any fetch server.",
+  "slot": "api",
+  "variant": "hono-route",
+  "environment": "universal",
+  "build": "none",
+  "lib": ["ES2022"],
+  "dependencies": ["hono"],
+  "exports": ["."],
+  "categories": ["api", "hono"],
+  "docs": "A framework-agnostic Hono app (`api`) you mount inside another app — e.g. a Next.js catch-all route handler (`app/api/[[...route]]/route.ts`) re-exporting `api.fetch`. `ApiRouter` is the type for an RPC client.",
+  "files": [{ "path": "src/index.ts", "type": "registry:source" }]
+}

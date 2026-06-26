@@ -84,9 +84,9 @@ describe("selectRegistryItems — api variant computation", () => {
     expect(requests.find((r) => r.slot === "api")).toBeUndefined();
   });
 
-  it("hono route handler → hono-route variant", () => {
+  it("hono nextjs-route → hono-route variant", () => {
     const requests = selectRegistryItems(
-      basePreset({ api: { strategy: "hono", mode: "route-handler" } }),
+      basePreset({ api: { strategy: "hono", mode: "nextjs-route" } }),
     );
     const api = requests.find((r) => r.slot === "api");
     expect(api?.variant).toBe("hono-route");
