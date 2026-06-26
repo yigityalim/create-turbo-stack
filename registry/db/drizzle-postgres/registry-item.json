@@ -6,6 +6,11 @@
   "variant": "drizzle-postgres",
   "dependencies": ["drizzle-orm", "postgres"],
   "devDependencies": ["drizzle-kit"],
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push"
+  },
   "registryDependencies": ["env"],
   "envVars": {
     "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/postgres"

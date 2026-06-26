@@ -6,6 +6,11 @@
   "variant": "drizzle-sqlite",
   "dependencies": ["drizzle-orm", "better-sqlite3"],
   "devDependencies": ["drizzle-kit", "@types/better-sqlite3"],
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push"
+  },
   "registryDependencies": ["env"],
   "envVars": {
     "DATABASE_URL": "./local.db"

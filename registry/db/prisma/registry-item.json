@@ -1,0 +1,25 @@
+{
+  "name": "db-prisma",
+  "type": "registry:package",
+  "description": "Prisma ORM — generated client, example schema, generate/migrate scripts.",
+  "slot": "db",
+  "variant": "prisma",
+  "dependencies": ["@prisma/client"],
+  "devDependencies": ["prisma"],
+  "scripts": {
+    "postinstall": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio"
+  },
+  "envVars": {
+    "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/postgres"
+  },
+  "exports": ["."],
+  "categories": ["database", "prisma"],
+  "docs": "Prisma ORM. The client is generated from `prisma/schema.prisma` on `postinstall`; `db:push` / `db:migrate` manage the database (reads `DATABASE_URL`). Change the datasource `provider` for MySQL/SQLite.",
+  "files": [
+    { "path": "src/index.ts", "type": "registry:source" },
+    { "path": "prisma/schema.prisma", "type": "registry:source" }
+  ]
+}

@@ -27,6 +27,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "registryDependencies": [
       "env"
     ],
+    "scripts": {},
     "envVars": {
       "OPENAI_API_KEY": "sk-xxxxxxxx"
     },
@@ -61,6 +62,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "registryDependencies": [
       "env"
     ],
+    "scripts": {},
     "envVars": {
       "PLAUSIBLE_DOMAIN": "yourdomain.com",
       "PLAUSIBLE_API_HOST": "https://plausible.io"
@@ -112,6 +114,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "registryDependencies": [
       "env"
     ],
+    "scripts": {},
     "envVars": {
       "POSTHOG_API_KEY": "phc_xxxxxxxx",
       "POSTHOG_HOST": "https://eu.i.posthog.com",
@@ -161,6 +164,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     ],
     "devDependencies": [],
     "registryDependencies": [],
+    "scripts": {},
     "envVars": {},
     "exports": [
       ".",
@@ -212,6 +216,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     ],
     "devDependencies": [],
     "registryDependencies": [],
+    "scripts": {},
     "envVars": {},
     "exports": [
       "."
@@ -245,6 +250,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     ],
     "devDependencies": [],
     "registryDependencies": [],
+    "scripts": {},
     "envVars": {},
     "exports": [
       "."
@@ -276,6 +282,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "dependencies": [],
     "devDependencies": [],
     "registryDependencies": [],
+    "scripts": {},
     "envVars": {},
     "exports": [
       "."
@@ -308,6 +315,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "dependencies": [],
     "devDependencies": [],
     "registryDependencies": [],
+    "scripts": {},
     "envVars": {},
     "exports": [
       "."
@@ -336,6 +344,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "dependencies": [],
     "devDependencies": [],
     "registryDependencies": [],
+    "scripts": {},
     "envVars": {},
     "exports": [
       "."
@@ -383,6 +392,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "dependencies": [],
     "devDependencies": [],
     "registryDependencies": [],
+    "scripts": {},
     "envVars": {},
     "exports": [
       "."
@@ -421,6 +431,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "dependencies": [],
     "devDependencies": [],
     "registryDependencies": [],
+    "scripts": {},
     "envVars": {},
     "exports": [
       "."
@@ -469,6 +480,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "dependencies": [],
     "devDependencies": [],
     "registryDependencies": [],
+    "scripts": {},
     "envVars": {},
     "exports": [
       "."
@@ -521,6 +533,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "registryDependencies": [
       "env"
     ],
+    "scripts": {},
     "envVars": {
       "BETTER_AUTH_SECRET": "generate-a-long-random-string",
       "BETTER_AUTH_URL": "http://localhost:3000"
@@ -557,6 +570,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     ],
     "devDependencies": [],
     "registryDependencies": [],
+    "scripts": {},
     "envVars": {
       "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_xxxxxxxx",
       "CLERK_SECRET_KEY": "sk_test_xxxxxxxx"
@@ -596,6 +610,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "registryDependencies": [
       "env"
     ],
+    "scripts": {},
     "envVars": {
       "NEXT_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
       "NEXT_PUBLIC_SUPABASE_ANON_KEY": "your-anon-key"
@@ -635,6 +650,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "registryDependencies": [
       "env"
     ],
+    "scripts": {},
     "envVars": {
       "UPSTASH_REDIS_REST_URL": "https://your-db.upstash.io",
       "UPSTASH_REDIS_REST_TOKEN": "your-rest-token"
@@ -701,6 +717,11 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "registryDependencies": [
       "env"
     ],
+    "scripts": {
+      "db:generate": "drizzle-kit generate",
+      "db:migrate": "drizzle-kit migrate",
+      "db:push": "drizzle-kit push"
+    },
     "envVars": {
       "DATABASE_URL": "mysql://root:root@localhost:3306/mydb"
     },
@@ -747,6 +768,11 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "registryDependencies": [
       "env"
     ],
+    "scripts": {
+      "db:generate": "drizzle-kit generate",
+      "db:migrate": "drizzle-kit migrate",
+      "db:push": "drizzle-kit push"
+    },
     "envVars": {
       "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/postgres"
     },
@@ -794,6 +820,11 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "registryDependencies": [
       "env"
     ],
+    "scripts": {
+      "db:generate": "drizzle-kit generate",
+      "db:migrate": "drizzle-kit migrate",
+      "db:push": "drizzle-kit push"
+    },
     "envVars": {
       "DATABASE_URL": "./local.db"
     },
@@ -827,6 +858,50 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     ]
   },
   {
+    "name": "db-prisma",
+    "type": "registry:package",
+    "description": "Prisma ORM — generated client, example schema, generate/migrate scripts.",
+    "dependencies": [
+      "@prisma/client"
+    ],
+    "devDependencies": [
+      "prisma"
+    ],
+    "registryDependencies": [],
+    "scripts": {
+      "postinstall": "prisma generate",
+      "db:push": "prisma db push",
+      "db:migrate": "prisma migrate dev",
+      "db:studio": "prisma studio"
+    },
+    "envVars": {
+      "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/postgres"
+    },
+    "exports": [
+      "."
+    ],
+    "build": "none",
+    "slot": "db",
+    "variant": "prisma",
+    "categories": [
+      "database",
+      "prisma"
+    ],
+    "docs": "Prisma ORM. The client is generated from `prisma/schema.prisma` on `postinstall`; `db:push` / `db:migrate` manage the database (reads `DATABASE_URL`). Change the datasource `provider` for MySQL/SQLite.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "type": "registry:source",
+        "content": "import { PrismaClient } from \"@prisma/client\";\n\nexport const prisma = new PrismaClient();\n\nexport * from \"@prisma/client\";\n"
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "type": "registry:source",
+        "content": "// Prisma schema — https://pris.ly/d/prisma-schema\n\ngenerator client {\n  provider = \"prisma-client-js\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel User {\n  id        Int      @id @default(autoincrement())\n  email     String   @unique\n  name      String?\n  createdAt DateTime @default(now())\n}\n"
+      }
+    ]
+  },
+  {
     "name": "db-supabase",
     "type": "registry:package",
     "description": "Supabase data client (@supabase/supabase-js) — anon key, RLS-enforced.",
@@ -837,6 +912,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "registryDependencies": [
       "env"
     ],
+    "scripts": {},
     "envVars": {
       "NEXT_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
       "NEXT_PUBLIC_SUPABASE_ANON_KEY": "your-anon-key"
@@ -876,6 +952,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "registryDependencies": [
       "env"
     ],
+    "scripts": {},
     "envVars": {
       "PLUNK_API_KEY": "sk_xxxxxxxx",
       "PLUNK_BASE_URL": "https://api.useplunk.com"
@@ -923,6 +1000,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "registryDependencies": [
       "env"
     ],
+    "scripts": {},
     "envVars": {
       "RESEND_API_KEY": "re_xxxxxxxxx"
     },
@@ -971,6 +1049,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "registryDependencies": [
       "env"
     ],
+    "scripts": {},
     "envVars": {
       "SENDGRID_API_KEY": "SG.xxxxxxxx"
     },
@@ -1019,6 +1098,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     ],
     "devDependencies": [],
     "registryDependencies": [],
+    "scripts": {},
     "envVars": {},
     "exports": [
       "."
@@ -1051,6 +1131,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "registryDependencies": [
       "env"
     ],
+    "scripts": {},
     "envVars": {
       "BUGSNAG_API_KEY": "your-bugsnag-api-key"
     },
@@ -1088,6 +1169,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "registryDependencies": [
       "env"
     ],
+    "scripts": {},
     "envVars": {
       "SENTRY_DSN": "https://examplePublicKey@o0.ingest.sentry.io/0"
     },
@@ -1126,6 +1208,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     "registryDependencies": [
       "env"
     ],
+    "scripts": {},
     "envVars": {
       "UPSTASH_REDIS_REST_URL": "https://your-db.upstash.io",
       "UPSTASH_REDIS_REST_TOKEN": "your-rest-token"
@@ -1171,6 +1254,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
       "typescript"
     ],
     "registryDependencies": [],
+    "scripts": {},
     "envVars": {},
     "exports": [
       "./base.json",
@@ -1233,6 +1317,7 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
     ],
     "devDependencies": [],
     "registryDependencies": [],
+    "scripts": {},
     "envVars": {},
     "exports": [
       "."
@@ -1266,4 +1351,4 @@ export const BUILTIN_REGISTRY_ITEMS: ReadonlyArray<PackageRegistryItem> = [
 ] as const;
 
 /** Number of items the engine has available. Logged by `cts doctor`. */
-export const BUILTIN_REGISTRY_ITEM_COUNT = 29;
+export const BUILTIN_REGISTRY_ITEM_COUNT = 30;

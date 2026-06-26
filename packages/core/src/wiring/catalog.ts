@@ -72,6 +72,13 @@ export function computeCatalog(
     add("@sentry/nextjs", VERSIONS.sentryNextjs);
   }
 
+  // Prisma ships a new client every major with breaking codegen changes —
+  // pin it (the items declare the deps but the catalog owns the version).
+  if (preset.database.strategy === "prisma") {
+    add("@prisma/client", VERSIONS.prismaClient);
+    add("prisma", VERSIONS.prisma);
+  }
+
   for (const app of preset.apps) {
     if (app.type === "nextjs" || app.type === "nextjs-api-only") {
       add("next", VERSIONS.next);

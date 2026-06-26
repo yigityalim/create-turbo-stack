@@ -6,6 +6,11 @@
   "variant": "drizzle-mysql",
   "dependencies": ["drizzle-orm", "mysql2"],
   "devDependencies": ["drizzle-kit"],
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push"
+  },
   "registryDependencies": ["env"],
   "envVars": {
     "DATABASE_URL": "mysql://root:root@localhost:3306/mydb"
