@@ -61,6 +61,10 @@ export async function run() {
     .option("--yes", "Accept all defaults")
     .option("--dry-run", "Print what would be done without writing")
     .option("--no-install", "Skip dependency installation")
+    .option(
+      "--registry <url|path>",
+      "Registry URL or local path used to resolve a preset's registryPackages",
+    )
     .action((projectName, options) => createCommand(projectName, options, userConfig));
 
   program

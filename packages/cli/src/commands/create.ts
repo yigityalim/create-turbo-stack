@@ -25,7 +25,7 @@ import { addRegistryCommand } from "./add-registry";
 
 export async function createCommand(
   projectName: string | undefined,
-  options: { preset?: string; yes?: boolean; dryRun?: boolean; install?: boolean },
+  options: { preset?: string; yes?: boolean; dryRun?: boolean; install?: boolean; registry?: string },
   userConfig?: UserConfig,
 ) {
   let preset: Preset;
@@ -177,7 +177,7 @@ export async function createCommand(
   // their catalog deps). Best-effort — a missing/unreachable registry warns.
   for (const ref of validated.registryPackages ?? []) {
     try {
-      await addRegistryCommand(ref, { cwd: outputDir, yes: true });
+      await addRegistryCommand(ref, { cwd: outputDir, yes: true, registry: options.registry });
     } catch (err) {
       p.log.warn(`Could not add registry package "${ref}": ${(err as Error).message}`);
     }
