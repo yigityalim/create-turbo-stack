@@ -1,0 +1,20 @@
+{
+  "name": "auth-supabase-auth",
+  "type": "registry:package",
+  "description": "Supabase Auth (@supabase/ssr) — browser + cookie-bound server client factories.",
+  "slot": "auth",
+  "variant": "supabase-auth",
+  "environment": "universal",
+  "build": "none",
+  "lib": ["ES2022", "DOM"],
+  "dependencies": ["@supabase/ssr", "@supabase/supabase-js"],
+  "registryDependencies": ["env"],
+  "envVars": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "your-anon-key"
+  },
+  "exports": ["."],
+  "categories": ["auth", "supabase"],
+  "docs": "Supabase Auth via @supabase/ssr. `createClient()` returns a browser client; `createServerSupabaseClient(cookies)` takes your framework's cookie adapter (`getAll` + `setAll`, e.g. from Next.js `cookies()`) and returns a cookie-bound server client that refreshes sessions automatically.",
+  "files": [{ "path": "src/index.ts", "type": "registry:source" }]
+}

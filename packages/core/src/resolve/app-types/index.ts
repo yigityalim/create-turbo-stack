@@ -5,19 +5,23 @@
  */
 
 import { astroAppType } from "./astro";
+import { expoAppType } from "./expo";
 import { honoStandaloneAppType } from "./hono-standalone";
 import { nextjsApiOnlyAppType, nextjsAppType } from "./nextjs";
 import { registerAppType } from "./registry";
 import { sveltekitAppType } from "./sveltekit";
 import { viteReactAppType } from "./vite-react";
+import { viteVueAppType } from "./vite-vue";
 
 const BUILT_IN_APP_TYPES = [
   nextjsAppType,
   nextjsApiOnlyAppType,
   honoStandaloneAppType,
   viteReactAppType,
+  viteVueAppType,
   sveltekitAppType,
   astroAppType,
+  expoAppType,
 ];
 
 for (const def of BUILT_IN_APP_TYPES) {

@@ -1,0 +1,14 @@
+{
+  "name": "app-expo",
+  "type": "registry:package",
+  "description": "Expo (React Native) app — blank TypeScript template.",
+  "slot": "app",
+  "variant": "expo",
+  "categories": ["app", "expo", "react-native"],
+  "docs": "Expo + React Native app (blank TypeScript template). `expo start` runs the dev server (Expo Go or a native build); `--android` / `--ios` / `--web` target a platform. Add app icons/splash under `assets/` and reference them in `app.json`. Note: React Native's native install does not run in a Windows + bun monorepo (MAX_PATH); use Linux/CI or `pnpm` for the full install.",
+  "files": [
+    { "path": "index.ts", "type": "registry:source" },
+    { "path": "App.tsx", "type": "registry:source" },
+    { "path": "app.json", "type": "registry:source" }
+  ]
+}

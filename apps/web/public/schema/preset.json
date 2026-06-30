@@ -310,8 +310,9 @@
           "default": "none",
           "type": "string",
           "enum": [
-            "react-email-resend",
-            "nodemailer",
+            "resend",
+            "sendgrid",
+            "plunk",
             "none"
           ]
         },
@@ -341,8 +342,12 @@
           ]
         },
         "envValidation": {
-          "default": true,
-          "type": "boolean"
+          "default": "t3-env",
+          "type": "string",
+          "enum": [
+            "t3-env",
+            "none"
+          ]
         }
       },
       "required": [
@@ -381,6 +386,12 @@
               "tauri"
             ]
           },
+          "location": {
+            "default": "apps",
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9-]*(\\/[a-z0-9][a-z0-9-]*)*$"
+          },
           "port": {
             "type": "integer",
             "minimum": 1000,
@@ -401,6 +412,7 @@
         "required": [
           "name",
           "type",
+          "location",
           "port",
           "i18n",
           "consumes"
@@ -428,6 +440,12 @@
               "library",
               "react-library"
             ]
+          },
+          "location": {
+            "default": "packages",
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9-]*(\\/[a-z0-9][a-z0-9-]*)*$"
           },
           "producesCSS": {
             "default": false,
@@ -462,6 +480,7 @@
         "required": [
           "name",
           "type",
+          "location",
           "producesCSS",
           "exports"
         ],
@@ -537,6 +556,17 @@
           }
         },
         "additionalProperties": false
+      }
+    },
+    "autoPackageLocations": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[a-z0-9][a-z0-9-]*(\\/[a-z0-9][a-z0-9-]*)*$"
       }
     }
   },

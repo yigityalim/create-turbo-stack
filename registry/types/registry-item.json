@@ -1,0 +1,18 @@
+{
+  "name": "types",
+  "type": "registry:package",
+  "environment": "universal",
+  "build": "none",
+  "lib": ["ES2022"],
+  "dependencies": ["zod"],
+  "exports": ["."],
+  "description": "Shared TypeScript utility types, common Zod schemas, and a Database type slot.",
+  "categories": ["foundation", "types"],
+  "docs": "Shared, dependency-light TypeScript building blocks.\n\n- Utility types: `Brand` (nominal types), `Prettify`, `Maybe`, `Nullable`, `Awaitable`, `ValueOf`, `DeepPartial`, `RequireKeys`, `OptionalKeys`.\n- Common Zod schemas: `emailSchema`, `uuidSchema`, `slugSchema` (kebab-case), `idSchema`, `paginationSchema` (coerced `page`/`pageSize` with bounds).\n- A recursive `Json` type and a `Database` type slot — replace `Database` with your generated DB types (Supabase `gen types`, ORM-inferred, etc.).\n\nRequires `zod` for the schemas; drop `src/schemas.ts` and its re-export if you only want the types.",
+  "files": [
+    { "path": "src/index.ts", "type": "registry:source" },
+    { "path": "src/utility.ts", "type": "registry:source" },
+    { "path": "src/schemas.ts", "type": "registry:source" },
+    { "path": "src/database.ts", "type": "registry:source" }
+  ]
+}

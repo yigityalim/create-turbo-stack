@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+/* Scan CSS-producing workspace packages this app consumes. */
+{{css-sources}}
+@layer base {
+  body {
+    @apply bg-white text-zinc-900 antialiased;
+  }
+}

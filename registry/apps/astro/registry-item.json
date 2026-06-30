@@ -1,0 +1,13 @@
+{
+  "name": "app-astro",
+  "type": "registry:package",
+  "description": "Astro 5 starter — content-first pages, ships zero JS by default.",
+  "slot": "app",
+  "variant": "astro",
+  "categories": ["app", "astro"],
+  "docs": "Astro app with a single page (`src/pages/index.astro`). Type-checking is `astro check` (it understands `.astro`). Add integrations (React, Tailwind, …) with `bunx astro add <name>`; when the preset consumes a UI package, `@astrojs/react` is already wired into package.json.",
+  "files": [
+    { "path": "astro.config.mjs", "type": "registry:source" },
+    { "path": "src/pages/index.astro", "type": "registry:source" }
+  ]
+}

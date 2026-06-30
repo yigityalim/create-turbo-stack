@@ -118,8 +118,8 @@ describe("INTEGRATION_PROVIDER_VALUES", () => {
     expect(INTEGRATION_PROVIDER_VALUES.errorTracking).toContain("sentry");
   });
 
-  it("email includes 'react-email-resend'", () => {
-    expect(INTEGRATION_PROVIDER_VALUES.email).toContain("react-email-resend");
+  it("email includes 'resend'", () => {
+    expect(INTEGRATION_PROVIDER_VALUES.email).toContain("resend");
   });
 
   it("unknown category key is undefined", () => {

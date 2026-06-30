@@ -1,0 +1,19 @@
+{
+  "name": "monitoring-bugsnag",
+  "type": "registry:package",
+  "description": "Bugsnag error tracking (@bugsnag/js) — start helper and re-exported client.",
+  "slot": "monitoring",
+  "variant": "bugsnag",
+  "environment": "node",
+  "build": "none",
+  "lib": ["ES2022"],
+  "dependencies": ["@bugsnag/js"],
+  "registryDependencies": ["env"],
+  "envVars": {
+    "BUGSNAG_API_KEY": "your-bugsnag-api-key"
+  },
+  "exports": ["."],
+  "categories": ["monitoring", "observability"],
+  "docs": "Bugsnag error + performance tracking. Call `initMonitoring()` once at startup; the configured `Bugsnag` client is re-exported for `Bugsnag.notify(err)`.",
+  "files": [{ "path": "src/index.ts", "type": "registry:source" }]
+}

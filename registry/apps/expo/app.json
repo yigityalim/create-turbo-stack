@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "{{pkg-name}}",
+    "slug": "{{pkg-name}}",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {},
+    "web": {}
+  }
+}

@@ -105,7 +105,9 @@ export function resolveRootFiles(
     isDirectory: false,
   });
 
-  // .gitignore
+  // .gitignore — the env rules are deliberately bulletproof: ignore every
+  // `.env*` and re-include only the committed `*.example` templates, so a real
+  // `.env.production` / `.env.local` can never slip into a commit.
   nodes.push({
     path: ".gitignore",
     content: `node_modules
@@ -115,9 +117,11 @@ dist
 out
 build
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.*.example
 *.tsbuildinfo
+next-env.d.ts
 .DS_Store
 coverage
 `,
@@ -155,6 +159,21 @@ coverage
   nodes.push({
     path: ".github/workflows/ci.yml",
     content: buildCiWorkflow(preset.basics.packageManager),
+    isDirectory: false,
+  });
+
+  // GitHub Actions security workflows — CodeQL code scanning + dependency
+  // review on PRs. Both ship hardened (least-privilege token, no persisted
+  // credentials). CodeQL/dependency-review are free on public repos; private
+  // repos need GitHub Advanced Security, noted inline in each file.
+  nodes.push({
+    path: ".github/workflows/codeql.yml",
+    content: buildCodeqlWorkflow(),
+    isDirectory: false,
+  });
+  nodes.push({
+    path: ".github/workflows/dependency-review.yml",
+    content: buildDependencyReviewWorkflow(),
     isDirectory: false,
   });
 
@@ -272,6 +291,10 @@ on:
   pull_request:
     branches: [main]
 
+# Least-privilege default token — CI only needs to read the checkout.
+permissions:
+  contents: read
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -280,11 +303,82 @@ jobs:
       SKIP_ENV_VALIDATION: "1"
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 ${setup}
       - run: ${pm} run lint
       - run: ${pm} run type-check
       - run: ${pm} run test
       - run: ${pm} run build
+`;
+}
+
+/**
+ * CodeQL code scanning — static analysis for JS/TS on push, PR, and a weekly
+ * schedule. Free on public repositories; private repos need GitHub Advanced
+ * Security (the init step prints a clear error otherwise). Hardened with a
+ * least-privilege token and a non-persisted checkout.
+ */
+function buildCodeqlWorkflow(): string {
+  return `name: CodeQL
+
+# Free on public repos. Private repos require GitHub Advanced Security;
+# delete this file if your repo is private and GHAS is not enabled.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - uses: github/codeql-action/analyze@v3
+`;
+}
+
+/**
+ * Dependency review — blocks a PR that introduces a vulnerable or
+ * disallowed-license dependency. Runs only on pull requests. Free on public
+ * repos; private repos need the dependency graph (GitHub Advanced Security).
+ */
+function buildDependencyReviewWorkflow(): string {
+  return `name: Dependency review
+
+# Free on public repos. Private repos require the dependency graph
+# (GitHub Advanced Security); delete this file if it is not enabled.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/dependency-review-action@v4
 `;
 }
 

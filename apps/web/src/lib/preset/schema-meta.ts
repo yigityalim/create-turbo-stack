@@ -249,13 +249,17 @@ const LABELS: Record<
   "errorTracking.none": { label: "None", description: "No error tracking" },
 
   // Email
-  "email.react-email-resend": {
-    label: "React Email + Resend",
-    description: "Modern email with React components",
+  "email.resend": {
+    label: "Resend",
+    description: "Modern transactional email, typed Result API",
   },
-  "email.nodemailer": {
-    label: "Nodemailer",
-    description: "Classic Node.js email sending",
+  "email.sendgrid": {
+    label: "SendGrid",
+    description: "SendGrid transactional email",
+  },
+  "email.plunk": {
+    label: "Plunk",
+    description: "Open-source, self-hostable email",
   },
   "email.none": { label: "None", description: "No email integration" },
 

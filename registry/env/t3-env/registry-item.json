@@ -1,6 +1,6 @@
 {
   "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
-  "name": "env-t3",
+  "name": "env",
   "type": "registry:package",
   "slot": "env",
   "variant": "t3-env",

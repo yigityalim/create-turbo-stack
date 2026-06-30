@@ -1,0 +1,13 @@
+{
+  "name": "logger",
+  "type": "registry:package",
+  "environment": "universal",
+  "build": "none",
+  "lib": ["ES2022", "WebWorker"],
+  "dependencies": [],
+  "exports": ["."],
+  "description": "Structured leveled logger — JSON-line transport, child loggers, base fields, and pluggable redaction.",
+  "categories": ["foundation", "observability", "logging"],
+  "docs": "A dependency-free structured logger.\n\n- `createLogger(options)` → `{ debug, info, warn, error, child }`. Each method takes a message and an optional context object.\n- `level` gates output (`debug` < `info` < `warn` < `error`); default `info`.\n- `transport` receives a `LogRecord` (`level`, `message`, `time`, `context`). The default `jsonConsoleTransport` writes one JSON line per record on the matching console method.\n- `base` fields are merged into every record and inherited by `child(context)` loggers.\n- `redact` rewrites context before it reaches the transport. Pair it with the `errors` package's `sanitize` to strip PII: `createLogger({ redact: (c) => sanitize(c) as Record<string, unknown> })`.",
+  "files": [{ "path": "src/index.ts", "type": "registry:source" }]
+}

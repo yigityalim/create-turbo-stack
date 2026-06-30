@@ -98,41 +98,49 @@ describe("detectIntegrations", () => {
 
   // Email
 
-  it("detects react-email-resend via resend", async () => {
+  it("detects resend via resend", async () => {
     tmp = await createFixture({
       "packages/email/package.json": { dependencies: { resend: "^3.0.0" } },
     });
     const r = await detectIntegrations(tmp);
-    expect(r.integrations.email).toBe("react-email-resend");
+    expect(r.integrations.email).toBe("resend");
     expect(r.detections.email.confidence).toBe("certain");
   });
 
-  it("detects react-email-resend via @react-email/components", async () => {
+  it("detects resend via @react-email/components", async () => {
     tmp = await createFixture({
       "packages/email/package.json": {
         dependencies: { "@react-email/components": "^0.0.22" },
       },
     });
     const r = await detectIntegrations(tmp);
-    expect(r.integrations.email).toBe("react-email-resend");
+    expect(r.integrations.email).toBe("resend");
   });
 
-  it("detects nodemailer via nodemailer", async () => {
+  it("detects sendgrid via @sendgrid/mail", async () => {
     tmp = await createFixture({
-      "packages/email/package.json": { dependencies: { nodemailer: "^6.0.0" } },
+      "packages/email/package.json": { dependencies: { "@sendgrid/mail": "^8.0.0" } },
     });
     const r = await detectIntegrations(tmp);
-    expect(r.integrations.email).toBe("nodemailer");
+    expect(r.integrations.email).toBe("sendgrid");
   });
 
-  it("resend takes priority over nodemailer", async () => {
+  it("detects plunk via @plunk/node", async () => {
+    tmp = await createFixture({
+      "packages/email/package.json": { dependencies: { "@plunk/node": "^3.0.0" } },
+    });
+    const r = await detectIntegrations(tmp);
+    expect(r.integrations.email).toBe("plunk");
+  });
+
+  it("resend takes priority over sendgrid", async () => {
     tmp = await createFixture({
       "packages/email/package.json": {
-        dependencies: { resend: "^3.0.0", nodemailer: "^6.0.0" },
+        dependencies: { resend: "^3.0.0", "@sendgrid/mail": "^8.0.0" },
       },
     });
     const r = await detectIntegrations(tmp);
-    expect(r.integrations.email).toBe("react-email-resend");
+    expect(r.integrations.email).toBe("resend");
   });
 
   it("returns none email when no email dep", async () => {
@@ -248,7 +256,7 @@ describe("detectIntegrations", () => {
     const r = await detectIntegrations(tmp);
     expect(r.integrations.rateLimit).toBe("upstash");
     expect(r.integrations.errorTracking).toBe("sentry");
-    expect(r.integrations.email).toBe("react-email-resend");
+    expect(r.integrations.email).toBe("resend");
   });
 
   it("detects integrations found only in nested packages (not root)", async () => {

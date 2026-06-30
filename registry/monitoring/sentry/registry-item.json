@@ -1,0 +1,19 @@
+{
+  "name": "monitoring-sentry",
+  "type": "registry:package",
+  "description": "Sentry error tracking (@sentry/node) — server-side init helper and re-exported SDK.",
+  "slot": "monitoring",
+  "variant": "sentry",
+  "environment": "node",
+  "build": "none",
+  "lib": ["ES2022"],
+  "dependencies": ["@sentry/node"],
+  "registryDependencies": ["env"],
+  "envVars": {
+    "SENTRY_DSN": "https://examplePublicKey@o0.ingest.sentry.io/0"
+  },
+  "exports": ["."],
+  "categories": ["monitoring", "observability"],
+  "docs": "Server-side Sentry via @sentry/node. Call `initMonitoring()` once at startup (before other imports) to wire up error + performance capture; `captureException` and the full SDK are re-exported as `Sentry`. Next.js apps additionally get `@sentry/nextjs` from the app scaffold for client/edge coverage.",
+  "files": [{ "path": "src/index.ts", "type": "registry:source" }]
+}

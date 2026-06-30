@@ -1,0 +1,14 @@
+{
+  "name": "app-nextjs-api-only",
+  "type": "registry:package",
+  "description": "Next.js 16 headless API — App Router route handlers, no UI.",
+  "slot": "app",
+  "variant": "nextjs-api-only",
+  "categories": ["app", "nextjs", "api"],
+  "docs": "App-router Next.js 16 app with only route handlers (`app/route.ts`, `app/[slug]/route.ts`) — no pages, no CSS. `{{workspace-deps}}` is expanded into `transpilePackages` for the raw-TS workspace packages it consumes.",
+  "files": [
+    { "path": "next.config.ts", "type": "registry:source" },
+    { "path": "src/app/route.ts", "type": "registry:source" },
+    { "path": "src/app/[slug]/route.ts", "type": "registry:source" }
+  ]
+}

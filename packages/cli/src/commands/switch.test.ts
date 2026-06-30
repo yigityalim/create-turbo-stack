@@ -72,7 +72,7 @@ describe("categoryMeta — known categories", () => {
 
   it("'email' maps to email enum", () => {
     const meta = categoryMeta("email");
-    expect(meta?.enum).toContain("react-email-resend");
+    expect(meta?.enum).toContain("resend");
   });
 
   it("'rateLimit' maps to rate limit enum", () => {
@@ -164,8 +164,8 @@ describe("applySwitch — integrations", () => {
   });
 
   it("switches email", () => {
-    const result = applySwitch(basePreset(), "email", "react-email-resend");
-    expect(result?.integrations.email).toBe("react-email-resend");
+    const result = applySwitch(basePreset(), "email", "resend");
+    expect(result?.integrations.email).toBe("resend");
   });
 
   it("switches rateLimit", () => {

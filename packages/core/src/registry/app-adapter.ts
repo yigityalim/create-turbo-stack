@@ -78,11 +78,16 @@ export function materializeAsApp(
   ];
 
   // Item source files — placeholders substituted, written under `<base>/`.
+  // `cssDirectives` flows in as `{{css-sources}}` so the app's single
+  // `globals.css` picks up the CSS packages it consumes (paths are relative
+  // to the app root, which is where the item places `globals.css`).
   const itemResult = materializeRegistryItem(item, {
     scope,
     pkgName: app.name,
     pm: preset.basics.packageManager,
     pkgRoot: base,
+    cssSources: cssDirectives,
+    workspaceDeps: Object.keys(appRefs),
   });
   nodes.push(...itemResult.nodes);
 

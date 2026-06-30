@@ -25,7 +25,7 @@ export const VERSIONS = {
   tailwindVite: "^4.0.0",
   twAnimateCss: "^1.0.0",
   clsx: "^2.1.1",
-  tailwindMerge: "^2.5.0",
+  tailwindMerge: "^3.0.0",
 
   // React / Next.js
   next: "^15.0.0",
@@ -38,12 +38,21 @@ export const VERSIONS = {
   // Vite
   vite: "^6.0.0",
   vitejsPluginReact: "^4.0.0",
+  vue: "^3.5.0",
+  vitejsPluginVue: "^5.2.0",
+  vueTsc: "^2.2.0",
+  vueTsconfig: "^0.7.0",
+
+  // Expo / React Native
+  expo: "~56.0.0",
+  expoStatusBar: "~56.0.0",
+  reactNative: "0.85.3",
 
   // Svelte / SvelteKit
   svelte: "^5.0.0",
   sveltejsKit: "^2.0.0",
   sveltejsAdapterAuto: "^3.0.0",
-  sveltejsVitePluginSvelte: "^4.0.0",
+  sveltejsVitePluginSvelte: "^5.0.0",
   svelteCheck: "^4.0.0",
 
   // Astro
@@ -83,7 +92,9 @@ export const VERSIONS = {
 
   betterAuth: "^1.0.0",
   clerkNextjs: "^6.0.0",
-  nextAuth: "^5.0.0",
+  // next-auth v5 (Auth.js) is the app-router-native API but still ships under
+  // the beta tag — `^5.0.0` won't resolve, so pin the beta explicitly.
+  nextAuth: "5.0.0-beta.31",
 
   // Env
   t3Env: "^0.12.0",

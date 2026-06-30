@@ -35,6 +35,63 @@
       "checksum": "sha256-4df44e1391f087e79d86a931bf22f08c68d7c024975ccede6efa7e77f8015ff7"
     },
     {
+      "name": "errors",
+      "type": "registry:package",
+      "description": "Catalog-driven AppError, Result type, retry/timeout, and a PII sanitizer — framework-agnostic error handling.",
+      "dependencies": [],
+      "registryDependencies": [],
+      "categories": [
+        "foundation",
+        "errors"
+      ],
+      "environment": "universal",
+      "build": "none",
+      "checksum": "sha256-e2c4a790d3cd39bcff37086b4c9622a56572681aef899c709a54921adff8584f"
+    },
+    {
+      "name": "flags",
+      "type": "registry:package",
+      "description": "Typed feature flags with pluggable sources (env, DB, remote) and literal-widening defaults.",
+      "dependencies": [],
+      "registryDependencies": [],
+      "categories": [
+        "foundation",
+        "feature-flags"
+      ],
+      "environment": "node",
+      "build": "none",
+      "checksum": "sha256-cdd404318ab1697e2e1caae3dd8fc5720bbe44a80b8acc318df04a8b9c5a9848"
+    },
+    {
+      "name": "logger",
+      "type": "registry:package",
+      "description": "Structured leveled logger — JSON-line transport, child loggers, base fields, and pluggable redaction.",
+      "dependencies": [],
+      "registryDependencies": [],
+      "categories": [
+        "foundation",
+        "observability",
+        "logging"
+      ],
+      "environment": "universal",
+      "build": "none",
+      "checksum": "sha256-c4a8cb6dbcb16d5437dc59cc539584ebead05057e270ccf1b5aab056147c9a7f"
+    },
+    {
+      "name": "mailer",
+      "type": "registry:package",
+      "description": "Provider-agnostic transactional email: adapter seam, plugin lifecycle, retries + fallback, zero runtime deps.",
+      "dependencies": [],
+      "registryDependencies": [],
+      "categories": [
+        "foundation",
+        "email"
+      ],
+      "environment": "node",
+      "build": "none",
+      "checksum": "sha256-098d3aba5103bb269ef75d0a74774bb1b7ae07a0dafbc790ef34c5d2d99d7371"
+    },
+    {
       "name": "security",
       "type": "registry:package",
       "description": "OWASP security headers, nonce-based CSP builder, and origin/CSRF guard.",
@@ -66,6 +123,22 @@
       "environment": "universal",
       "build": "none",
       "checksum": "sha256-9642b65484310689340524a6f90f55c1073f5b795c9ff7c2856a442642b2c715"
+    },
+    {
+      "name": "types",
+      "type": "registry:package",
+      "description": "Shared TypeScript utility types, common Zod schemas, and a Database type slot.",
+      "dependencies": [
+        "zod"
+      ],
+      "registryDependencies": [],
+      "categories": [
+        "foundation",
+        "types"
+      ],
+      "environment": "universal",
+      "build": "none",
+      "checksum": "sha256-55fb040f2280030f52cb3a3768f7f74f178fab3c6c87be3a00f1acfe398fc0ce"
     }
   ]
 }

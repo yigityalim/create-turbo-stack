@@ -1,8 +1,5 @@
-// Core exports only. Adapters live at their own paths to keep framework
-// dependencies isolated and tree-shaking intact:
-//   {{scope}}/rate-limit/next
-//   {{scope}}/rate-limit/hono
-//   {{scope}}/rate-limit/sveltekit
+// Framework-agnostic rate limiting over Web-standard Request/Response.
+// Wire `limitRequest` / `rateLimitResponse` into your framework's middleware.
 
 export { Ratelimit } from "./core";
 export type {

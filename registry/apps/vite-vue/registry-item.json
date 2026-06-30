@@ -1,0 +1,16 @@
+{
+  "name": "app-vite-vue",
+  "type": "registry:package",
+  "description": "Vite + Vue 3 SPA — <script setup>, Tailwind v4 via @tailwindcss/vite.",
+  "slot": "app",
+  "variant": "vite-vue",
+  "categories": ["app", "vite", "vue"],
+  "docs": "Vite + Vue 3 single-page app using `<script setup>`. `style.css` lives at the app root and uses Tailwind v4 (`@tailwindcss/vite`); `{{css-sources}}` expands to `@source` directives for CSS-producing workspace packages the app consumes. Type-checking is `vue-tsc` (it understands `.vue`).",
+  "files": [
+    { "path": "index.html", "type": "registry:source" },
+    { "path": "vite.config.ts", "type": "registry:source" },
+    { "path": "style.css", "type": "registry:source" },
+    { "path": "src/main.ts", "type": "registry:source" },
+    { "path": "src/App.vue", "type": "registry:source" }
+  ]
+}

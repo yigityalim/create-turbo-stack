@@ -69,6 +69,16 @@
               "type": "string"
             }
           },
+          "scripts": {
+            "default": {},
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
           "envVars": {
             "default": {},
             "type": "object",
@@ -111,6 +121,28 @@
               "none",
               "tsup"
             ]
+          },
+          "slot": {
+            "type": "string",
+            "enum": [
+              "app",
+              "auth",
+              "db",
+              "api",
+              "env",
+              "email",
+              "monitoring",
+              "analytics",
+              "rate-limit",
+              "ai",
+              "cache",
+              "typescript-config",
+              "ui"
+            ]
+          },
+          "variant": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
           },
           "categories": {
             "default": [],
@@ -175,6 +207,7 @@
           "dependencies",
           "devDependencies",
           "registryDependencies",
+          "scripts",
           "envVars",
           "exports",
           "build",

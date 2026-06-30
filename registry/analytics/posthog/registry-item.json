@@ -1,19 +1,14 @@
 {
   "name": "analytics-posthog",
   "type": "registry:package",
+  "description": "PostHog product analytics — serverless-safe server capture, feature flags, and an optional browser client.",
   "slot": "analytics",
   "variant": "posthog",
   "environment": "node",
   "build": "none",
-  "lib": ["ES2022"],
-  "dependencies": ["posthog-node"],
-  "peerDependencies": {
-    "posthog-js": ">=1"
-  },
-  "peerDependenciesMeta": {
-    "posthog-js": { "optional": true }
-  },
-  "registryDependencies": ["env-t3"],
+  "lib": ["ES2022", "DOM"],
+  "dependencies": ["posthog-node", "posthog-js"],
+  "registryDependencies": ["env"],
   "envVars": {
     "POSTHOG_API_KEY": "phc_xxxxxxxx",
     "POSTHOG_HOST": "https://eu.i.posthog.com",

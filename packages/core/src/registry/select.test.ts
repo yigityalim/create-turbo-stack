@@ -75,17 +75,18 @@ describe("selectRegistryItems — api variant computation", () => {
     expect(api?.variant).toBe("trpc");
   });
 
-  it("hono standalone → hono-standalone variant", () => {
+  it("hono standalone → no api package (the Hono app IS the server)", () => {
     const requests = selectRegistryItems(
       basePreset({ api: { strategy: "hono", mode: "standalone-app" } }),
     );
-    const api = requests.find((r) => r.slot === "api");
-    expect(api?.variant).toBe("hono-standalone");
+    // standalone-app is served by `slot: app` (variant hono-standalone), so
+    // there is no separate `slot: api` package.
+    expect(requests.find((r) => r.slot === "api")).toBeUndefined();
   });
 
-  it("hono route handler → hono-route variant", () => {
+  it("hono nextjs-route → hono-route variant", () => {
     const requests = selectRegistryItems(
-      basePreset({ api: { strategy: "hono", mode: "route-handler" } }),
+      basePreset({ api: { strategy: "hono", mode: "nextjs-route" } }),
     );
     const api = requests.find((r) => r.slot === "api");
     expect(api?.variant).toBe("hono-route");

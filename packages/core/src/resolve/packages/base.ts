@@ -20,7 +20,7 @@ export function makeBasePackageFiles(
   base: string,
   extraDeps: Record<string, string> = {},
   extraDevDeps: Record<string, string> = {},
-  opts: { react?: boolean } = {},
+  opts: { react?: boolean; lib?: string[]; scripts?: Record<string, string> } = {},
 ): FileTreeNode[] {
   const nodes: FileTreeNode[] = [];
   const scope = preset.basics.scope;
@@ -46,6 +46,7 @@ export function makeBasePackageFiles(
     scripts: {
       ...(isTsConfigPkg ? {} : { lint: linter.lintScript }),
       ...(isTsConfigPkg ? {} : { "type-check": "tsc --noEmit" }),
+      ...(opts.scripts ?? {}),
     },
     dependencies: { ...extraDeps },
     devDependencies: {
@@ -72,14 +73,20 @@ export function makeBasePackageFiles(
 
   if (!isTsConfigPkg) {
     const tsconfigBase = isReact
-      ? "react.json"
+      ? "react-library.json"
       : pkg.type === "config"
         ? "base.json"
         : "library.json";
 
     const tsconfig: TsConfig = {
       extends: `${scope}/typescript-config/${tsconfigBase}`,
-      compilerOptions: { outDir: "./dist", rootDir: "./src" },
+      compilerOptions: {
+        outDir: "./dist",
+        rootDir: "./src",
+        // An item that declares `lib` (e.g. ["ES2022", "DOM"] for code that
+        // touches `window`) overrides the base config's lib.
+        ...(opts.lib ? { lib: opts.lib } : {}),
+      },
       include: ["src/**/*"],
       exclude: ["node_modules", "dist"],
     };

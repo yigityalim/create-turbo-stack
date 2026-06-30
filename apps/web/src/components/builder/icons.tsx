@@ -1241,8 +1241,8 @@ const PROVIDER_ICONS: Record<string, Record<string, React.FC<SvgProps>>> = {
     none: NoneTile,
   },
   email: {
-    "react-email-resend": ResendSvg,
-    // `nodemailer` ships PNG-only artwork upstream; card renders without one.
+    resend: ResendSvg,
+    // `sendgrid` / `plunk` have no bundled artwork; cards render without one.
     none: NoneTile,
   },
   rateLimit: {

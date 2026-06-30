@@ -1,0 +1,29 @@
+{
+  "name": "mailer",
+  "type": "registry:package",
+  "environment": "node",
+  "build": "none",
+  "lib": ["ES2022"],
+  "dependencies": [],
+  "envVars": {
+    "RESEND_API_KEY": "re_xxxxxxxxx",
+    "EMAIL_DOMAIN": "example.com"
+  },
+  "exports": ["."],
+  "description": "Provider-agnostic transactional email: adapter seam, plugin lifecycle, retries + fallback, zero runtime deps.",
+  "categories": ["foundation", "email"],
+  "docs": "Provider-agnostic transactional email with zero runtime dependencies.\n\n- `createMailer({ adapters, plugins?, retries?, backoff? })` → `{ send }`. The first adapter is primary; the rest are fallback routes tried in order, each retried with exponential backoff.\n- `resend({ apiKey })` — the built-in Resend adapter, implemented over `fetch` (no SDK). Write your own `EmailAdapter` for any other provider.\n- `sendEmail(input, options?)` — convenience single-provider send using `RESEND_API_KEY` from the environment; returns `{ data, error }` and never throws.\n- Plugins (`beforeSend`/`afterSend`/`onRetry`/`onError`): `defaultsPlugin` (org-wide headers/tags/metadata/reply-to/idempotency), `observabilityPlugin` (redacted send/retry/error events to your logger, metrics, tracer), `capturePlugin` (record the full lifecycle for tests).\n- `memoryProvider()` / `failingProvider()` — in-memory adapters for testing retries and fallback.\n\nSet `EMAIL_DOMAIN` (verify it with your provider) and edit the display names in `src/from.ts`. Bodies are `html`/`text`; render React Email templates to HTML with the `email-templates` package, then pass the result as `html`.",
+  "files": [
+    { "path": "src/index.ts", "type": "registry:source" },
+    { "path": "src/types.ts", "type": "registry:source" },
+    { "path": "src/errors.ts", "type": "registry:source" },
+    { "path": "src/client.ts", "type": "registry:source" },
+    { "path": "src/send.ts", "type": "registry:source" },
+    { "path": "src/from.ts", "type": "registry:source" },
+    { "path": "src/adapters/resend.ts", "type": "registry:source" },
+    { "path": "src/testing.ts", "type": "registry:source" },
+    { "path": "src/plugins/defaults.ts", "type": "registry:source" },
+    { "path": "src/plugins/observability.ts", "type": "registry:source" },
+    { "path": "src/plugins/capture.ts", "type": "registry:source" }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "name": "db-drizzle-postgres",
+  "type": "registry:package",
+  "description": "Drizzle ORM + PostgreSQL (postgres-js) — typed client, example schema, drizzle-kit config.",
+  "slot": "db",
+  "variant": "drizzle-postgres",
+  "dependencies": ["drizzle-orm", "postgres"],
+  "devDependencies": ["drizzle-kit"],
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push"
+  },
+  "registryDependencies": ["env"],
+  "envVars": {
+    "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/postgres"
+  },
+  "exports": ["."],
+  "categories": ["database", "drizzle"],
+  "docs": "Drizzle ORM over PostgreSQL via the postgres-js driver. Exports a typed `db` client and the schema. Generate/run migrations with `bunx drizzle-kit generate` / `migrate` (reads `DATABASE_URL`).",
+  "files": [
+    { "path": "src/index.ts", "type": "registry:source" },
+    { "path": "src/schema.ts", "type": "registry:source" },
+    { "path": "drizzle.config.ts", "type": "registry:source" }
+  ]
+}

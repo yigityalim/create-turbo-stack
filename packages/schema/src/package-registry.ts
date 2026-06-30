@@ -104,6 +104,12 @@ export const PackageRegistryItemSchema = z.object({
   /** Other registry packages required first (name or URL). */
   registryDependencies: z.array(z.string()).default([]),
   /**
+   * Extra package.json scripts merged on top of the engine's defaults
+   * (`lint`, `type-check`). Lets a package ship its own tooling commands —
+   * `prisma generate` on `postinstall`, `drizzle-kit` migration scripts, etc.
+   */
+  scripts: z.record(z.string(), z.string()).default({}),
+  /**
    * Env vars the package needs: name → example value. Names MUST be valid
    * shell identifiers and values single-line — these are interpolated into the
    * generated env package (`createEnv`) and `.env.example`, so an unvalidated

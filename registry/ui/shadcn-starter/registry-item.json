@@ -1,0 +1,23 @@
+{
+  "name": "ui-shadcn-starter",
+  "type": "registry:package",
+  "description": "shadcn/ui starter package — cn() helper and a Button component, ready for `shadcn add`.",
+  "slot": "ui",
+  "variant": "shadcn-starter",
+  "dependencies": [
+    "react",
+    "radix-ui",
+    "class-variance-authority",
+    "clsx",
+    "tailwind-merge",
+    "lucide-react"
+  ],
+  "exports": ["."],
+  "categories": ["ui", "components"],
+  "docs": "A workspace UI package in the shadcn/ui style. Re-exports `Button`, `buttonVariants`, and the `cn` class-merge helper from a barrel (`{{scope}}/ui`). Apps consume it via the workspace dependency and Tailwind scans `src/` through the app's `@source` directive. Add more components with `bunx shadcn@latest add <name>`.",
+  "files": [
+    { "path": "src/index.ts", "type": "registry:source" },
+    { "path": "src/lib/utils.ts", "type": "registry:source" },
+    { "path": "src/components/button.tsx", "type": "registry:source" }
+  ]
+}

@@ -1,13 +1,14 @@
 {
   "name": "email-plunk",
   "type": "registry:package",
+  "description": "Plunk transactional email (open-source, self-hostable) — same sendEmail interface as the other email providers.",
   "slot": "email",
   "variant": "plunk",
   "environment": "node",
   "build": "none",
   "lib": ["ES2022"],
   "dependencies": ["@plunk/node"],
-  "registryDependencies": ["env-t3"],
+  "registryDependencies": ["env"],
   "envVars": {
     "PLUNK_API_KEY": "sk_xxxxxxxx",
     "PLUNK_BASE_URL": "https://api.useplunk.com"

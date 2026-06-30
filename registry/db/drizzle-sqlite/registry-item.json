@@ -1,0 +1,26 @@
+{
+  "name": "db-drizzle-sqlite",
+  "type": "registry:package",
+  "description": "Drizzle ORM + SQLite (better-sqlite3) — typed client, example schema, drizzle-kit config.",
+  "slot": "db",
+  "variant": "drizzle-sqlite",
+  "dependencies": ["drizzle-orm", "better-sqlite3"],
+  "devDependencies": ["drizzle-kit", "@types/better-sqlite3"],
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push"
+  },
+  "registryDependencies": ["env"],
+  "envVars": {
+    "DATABASE_URL": "./local.db"
+  },
+  "exports": ["."],
+  "categories": ["database", "drizzle"],
+  "docs": "Drizzle ORM over SQLite via the better-sqlite3 driver (synchronous, file-backed). `DATABASE_URL` is a file path (or `:memory:`). Generate/run migrations with `bunx drizzle-kit generate` / `migrate`.",
+  "files": [
+    { "path": "src/index.ts", "type": "registry:source" },
+    { "path": "src/schema.ts", "type": "registry:source" },
+    { "path": "drizzle.config.ts", "type": "registry:source" }
+  ]
+}

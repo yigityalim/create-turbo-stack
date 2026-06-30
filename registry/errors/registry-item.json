@@ -1,0 +1,19 @@
+{
+  "name": "errors",
+  "type": "registry:package",
+  "environment": "universal",
+  "build": "none",
+  "lib": ["ES2022", "WebWorker"],
+  "dependencies": [],
+  "exports": [".", "./sanitizer", "./result"],
+  "description": "Catalog-driven AppError, Result type, retry/timeout, and a PII sanitizer — framework-agnostic error handling.",
+  "categories": ["foundation", "errors"],
+  "docs": "A typed error foundation with no runtime dependencies.\n\n- `AppError` — catalog-driven, framework-agnostic error. `toClient()` returns a safe payload (no detail/context); `toLog()` carries the full context — run it through `sanitize` before writing. Factories: `AppError.badRequest()`, `.unauthorized()`, `.notFound()`, `.rateLimited()`, `.internal()`, etc. Extend `ErrorCatalog` per app.\n- `toAppError(e)` / `isAppError(e)` — normalize any thrown value.\n- `Result<T, E>` with `ok`/`err`/`tryCatch` — return errors instead of throwing.\n- `retry(fn, opts)` — exponential backoff while the error is retryable; `withTimeout(promise, ms)` rejects with `TimeoutError`.\n- `sanitize(value)` (from `./sanitizer`) — recursively masks sensitive keys and secrets/PII in strings; the last line of defense before values reach a log transport. Pair it with the `logger` package's `redact` option.",
+  "files": [
+    { "path": "src/index.ts", "type": "registry:source" },
+    { "path": "src/app-error.ts", "type": "registry:source" },
+    { "path": "src/catalog.ts", "type": "registry:source" },
+    { "path": "src/result.ts", "type": "registry:source" },
+    { "path": "src/sanitizer.ts", "type": "registry:source" }
+  ]
+}

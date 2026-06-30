@@ -1,0 +1,10 @@
+{
+  "name": "app-hono-standalone",
+  "type": "registry:package",
+  "description": "Standalone Hono server (Node) — @hono/node-server entry, no frontend.",
+  "slot": "app",
+  "variant": "hono-standalone",
+  "categories": ["app", "hono", "api"],
+  "docs": "A standalone Hono HTTP server running on @hono/node-server. `tsx watch` in dev, `tsc` build. Add routes in `src/index.ts` or split them into a router module.",
+  "files": [{ "path": "src/index.ts", "type": "registry:source" }]
+}

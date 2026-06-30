@@ -1,0 +1,16 @@
+{
+  "name": "app-vite-react",
+  "type": "registry:package",
+  "description": "Vite + React 19 SPA — Tailwind v4 (@tailwindcss/vite), shadcn-ready index.css.",
+  "slot": "app",
+  "variant": "vite-react",
+  "categories": ["app", "vite", "react"],
+  "docs": "Vite + React 19 single-page app. `index.css` lives at the app root and uses Tailwind v4 via the first-party `@tailwindcss/vite` plugin; `{{css-sources}}` expands to `@source` directives for the CSS-producing workspace packages the app consumes.",
+  "files": [
+    { "path": "index.html", "type": "registry:source" },
+    { "path": "vite.config.ts", "type": "registry:source" },
+    { "path": "index.css", "type": "registry:source" },
+    { "path": "src/main.tsx", "type": "registry:source" },
+    { "path": "src/App.tsx", "type": "registry:source" }
+  ]
+}

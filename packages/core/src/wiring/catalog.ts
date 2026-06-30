@@ -54,6 +54,34 @@ export function computeCatalog(
     add("tw-animate-css", VERSIONS.twAnimateCss);
     add("clsx", VERSIONS.clsx);
     add("tailwind-merge", VERSIONS.tailwindMerge);
+    // The shadcn `ui` package is React regardless of which app framework
+    // consumes it — pin React + its types even when no app is React-based
+    // (e.g. a SvelteKit app that imports the UI package's styles).
+    add("react", VERSIONS.react);
+    add("react-dom", VERSIONS.reactDom);
+    add("@types/react", VERSIONS.typesReact);
+    add("@types/react-dom", VERSIONS.typesReactDom);
+  }
+
+  // Next.js apps pull in @sentry/nextjs directly (client + edge + build
+  // plugin) — the app-type adds it to package.json, so it needs a catalog pin.
+  if (
+    preset.integrations.errorTracking === "sentry" &&
+    preset.apps.some((a) => a.type === "nextjs" || a.type === "nextjs-api-only")
+  ) {
+    add("@sentry/nextjs", VERSIONS.sentryNextjs);
+  }
+
+  // Prisma ships a new client every major with breaking codegen changes —
+  // pin it (the items declare the deps but the catalog owns the version).
+  if (preset.database.strategy === "prisma") {
+    add("@prisma/client", VERSIONS.prismaClient);
+    add("prisma", VERSIONS.prisma);
+  }
+
+  // next-auth's stable `latest` is still v4; pin the v5 beta the item targets.
+  if (preset.auth.provider === "next-auth") {
+    add("next-auth", VERSIONS.nextAuth);
   }
 
   for (const app of preset.apps) {
@@ -77,6 +105,22 @@ export function computeCatalog(
       add("@types/react", VERSIONS.typesReact);
       add("@types/react-dom", VERSIONS.typesReactDom);
       if (preset.css.framework === "tailwind4") add("@tailwindcss/vite", VERSIONS.tailwindVite);
+    }
+    if (app.type === "vite-vue") {
+      add("vue", VERSIONS.vue);
+      add("@vitejs/plugin-vue", VERSIONS.vitejsPluginVue);
+      add("@vue/tsconfig", VERSIONS.vueTsconfig);
+      add("vue-tsc", VERSIONS.vueTsc);
+      add("vite", VERSIONS.vite);
+      add("@types/node", VERSIONS.typesNode);
+      if (preset.css.framework === "tailwind4") add("@tailwindcss/vite", VERSIONS.tailwindVite);
+    }
+    if (app.type === "expo") {
+      add("expo", VERSIONS.expo);
+      add("expo-status-bar", VERSIONS.expoStatusBar);
+      add("react", VERSIONS.react);
+      add("react-native", VERSIONS.reactNative);
+      add("@types/react", VERSIONS.typesReact);
     }
     if (app.type === "sveltekit") {
       add("@sveltejs/kit", VERSIONS.sveltejsKit);

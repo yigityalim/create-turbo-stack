@@ -9,6 +9,7 @@ import { materializeAsAutoPackage } from "../../registry/package-adapter";
 import { selectRegistryItems } from "../../registry/select";
 import { packageDirOf } from "../../utils/package-path";
 import { substitutePm } from "../../wiring/pm";
+import { buildEnvIndex } from "../env-package";
 import { resolveGenericPackage } from "./generic";
 
 /**
@@ -50,7 +51,17 @@ function resolveBaseNodes(
   if (request) {
     const item = items.find((i) => i.slot === request.slot && i.variant === request.variant);
     if (item) {
-      return materializeAsAutoPackage(preset, pkg, base, item);
+      const nodes = materializeAsAutoPackage(preset, pkg, base, item);
+      // The env package's source is COMPUTED from every selected item's
+      // declared env vars, not copied from the static t3-env file — that's
+      // how `env.POSTHOG_API_KEY` etc. become typed for consumers.
+      if (request.slot === "env") {
+        const indexPath = `${base}/src/index.ts`;
+        return nodes.map((n) =>
+          n.path === indexPath ? { ...n, content: buildEnvIndex(preset, items) } : n,
+        );
+      }
+      return nodes;
     }
     // Missing item for a slot the preset implies. Return empty so the
     // package directory simply doesn't exist; surfacing this hole is the

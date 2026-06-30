@@ -1,0 +1,16 @@
+{
+  "name": "app-sveltekit",
+  "type": "registry:package",
+  "description": "SvelteKit (Svelte 5) starter — adapter-auto, a single route, ready for svelte-kit sync.",
+  "slot": "app",
+  "variant": "sveltekit",
+  "categories": ["app", "sveltekit", "svelte"],
+  "docs": "SvelteKit app on Svelte 5 with `@sveltejs/adapter-auto`. `svelte-kit sync` generates `.svelte-kit/tsconfig.json` (the app's tsconfig extends it); type-check with `svelte-check`. Add routes under `src/routes/`.",
+  "files": [
+    { "path": "svelte.config.js", "type": "registry:source" },
+    { "path": "vite.config.ts", "type": "registry:source" },
+    { "path": "src/app.html", "type": "registry:source" },
+    { "path": "src/app.d.ts", "type": "registry:source" },
+    { "path": "src/routes/+page.svelte", "type": "registry:source" }
+  ]
+}

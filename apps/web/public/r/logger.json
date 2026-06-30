@@ -1,0 +1,34 @@
+{
+  "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
+  "name": "logger",
+  "type": "registry:package",
+  "description": "Structured leveled logger — JSON-line transport, child loggers, base fields, and pluggable redaction.",
+  "dependencies": [],
+  "devDependencies": [],
+  "registryDependencies": [],
+  "scripts": {},
+  "envVars": {},
+  "exports": [
+    "."
+  ],
+  "lib": [
+    "ES2022",
+    "WebWorker"
+  ],
+  "environment": "universal",
+  "build": "none",
+  "categories": [
+    "foundation",
+    "observability",
+    "logging"
+  ],
+  "docs": "A dependency-free structured logger.\n\n- `createLogger(options)` → `{ debug, info, warn, error, child }`. Each method takes a message and an optional context object.\n- `level` gates output (`debug` < `info` < `warn` < `error`); default `info`.\n- `transport` receives a `LogRecord` (`level`, `message`, `time`, `context`). The default `jsonConsoleTransport` writes one JSON line per record on the matching console method.\n- `base` fields are merged into every record and inherited by `child(context)` loggers.\n- `redact` rewrites context before it reaches the transport. Pair it with the `errors` package's `sanitize` to strip PII: `createLogger({ redact: (c) => sanitize(c) as Record<string, unknown> })`.",
+  "files": [
+    {
+      "path": "src/index.ts",
+      "type": "registry:source",
+      "content": "export type LogLevel = \"debug\" | \"info\" | \"warn\" | \"error\";\n\nconst ORDER: Record<LogLevel, number> = {\n  debug: 10,\n  info: 20,\n  warn: 30,\n  error: 40,\n};\n\nexport interface LogRecord {\n  level: LogLevel;\n  message: string;\n  time: string;\n  context?: Record<string, unknown>;\n}\n\nexport type LogTransport = (record: LogRecord) => void;\n\nexport interface LoggerOptions {\n  level?: LogLevel;\n  transport?: LogTransport;\n  /**\n   * Redact context before it reaches the transport. Pair with\n   * `{{scope}}/errors`'s `sanitize` to strip PII from logs.\n   */\n  redact?: (context: Record<string, unknown>) => Record<string, unknown>;\n  /** Fields merged into every record (and inherited by children). */\n  base?: Record<string, unknown>;\n}\n\nexport interface Logger {\n  debug(message: string, context?: Record<string, unknown>): void;\n  info(message: string, context?: Record<string, unknown>): void;\n  warn(message: string, context?: Record<string, unknown>): void;\n  error(message: string, context?: Record<string, unknown>): void;\n  child(context: Record<string, unknown>): Logger;\n}\n\n/** Default transport — one JSON line per record on the matching console method. */\nexport const jsonConsoleTransport: LogTransport = (record) => {\n  const line = JSON.stringify(record);\n  if (record.level === \"error\") console.error(line);\n  else if (record.level === \"warn\") console.warn(line);\n  else console.log(line);\n};\n\nexport function createLogger(options: LoggerOptions = {}): Logger {\n  const minLevel = ORDER[options.level ?? \"info\"];\n  const transport = options.transport ?? jsonConsoleTransport;\n  const redact = options.redact ?? ((context) => context);\n  const base = options.base ?? {};\n\n  function log(level: LogLevel, message: string, context?: Record<string, unknown>): void {\n    if (ORDER[level] < minLevel) return;\n    const merged = { ...base, ...context };\n    transport({\n      level,\n      message,\n      time: new Date().toISOString(),\n      context: Object.keys(merged).length > 0 ? redact(merged) : undefined,\n    });\n  }\n\n  return {\n    debug: (message, context) => log(\"debug\", message, context),\n    info: (message, context) => log(\"info\", message, context),\n    warn: (message, context) => log(\"warn\", message, context),\n    error: (message, context) => log(\"error\", message, context),\n    child: (context) => createLogger({ ...options, base: { ...base, ...context } }),\n  };\n}\n"
+    }
+  ],
+  "checksum": "sha256-c4a8cb6dbcb16d5437dc59cc539584ebead05057e270ccf1b5aab056147c9a7f"
+}

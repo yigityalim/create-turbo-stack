@@ -144,8 +144,9 @@
             "email": {
               "type": "string",
               "enum": [
-                "react-email-resend",
-                "nodemailer",
+                "resend",
+                "sendgrid",
+                "plunk",
                 "none"
               ]
             },
@@ -172,7 +173,11 @@
               ]
             },
             "envValidation": {
-              "type": "boolean"
+              "type": "string",
+              "enum": [
+                "t3-env",
+                "none"
+              ]
             }
           },
           "additionalProperties": false
@@ -313,8 +318,9 @@
               "items": {
                 "type": "string",
                 "enum": [
-                  "react-email-resend",
-                  "nodemailer",
+                  "resend",
+                  "sendgrid",
+                  "plunk",
                   "none"
                 ]
               }
@@ -483,8 +489,9 @@
               "items": {
                 "type": "string",
                 "enum": [
-                  "react-email-resend",
-                  "nodemailer",
+                  "resend",
+                  "sendgrid",
+                  "plunk",
                   "none"
                 ]
               }
@@ -534,7 +541,11 @@
               ]
             },
             "envValidation": {
-              "type": "boolean"
+              "type": "string",
+              "enum": [
+                "t3-env",
+                "none"
+              ]
             },
             "packageManager": {
               "type": "string",

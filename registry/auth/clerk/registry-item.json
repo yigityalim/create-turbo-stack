@@ -1,0 +1,19 @@
+{
+  "name": "auth-clerk",
+  "type": "registry:package",
+  "description": "Clerk authentication (@clerk/nextjs) — server helpers re-exported.",
+  "slot": "auth",
+  "variant": "clerk",
+  "environment": "node",
+  "build": "none",
+  "lib": ["ES2022"],
+  "dependencies": ["@clerk/nextjs"],
+  "envVars": {
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_xxxxxxxx",
+    "CLERK_SECRET_KEY": "sk_test_xxxxxxxx"
+  },
+  "exports": ["."],
+  "categories": ["auth", "clerk"],
+  "docs": "Clerk auth for Next.js. Re-exports the server helpers (`auth`, `currentUser`, `clerkClient`). Wrap your app in `<ClerkProvider>` and add Clerk's middleware in the app; Clerk reads its keys from the env automatically.",
+  "files": [{ "path": "src/index.ts", "type": "registry:source" }]
+}
