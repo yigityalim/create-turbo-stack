@@ -1,0 +1,49 @@
+{
+  "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
+  "name": "types",
+  "type": "registry:package",
+  "description": "Shared TypeScript utility types, common Zod schemas, and a Database type slot.",
+  "dependencies": [
+    "zod"
+  ],
+  "devDependencies": [],
+  "registryDependencies": [],
+  "scripts": {},
+  "envVars": {},
+  "exports": [
+    "."
+  ],
+  "lib": [
+    "ES2022"
+  ],
+  "environment": "universal",
+  "build": "none",
+  "categories": [
+    "foundation",
+    "types"
+  ],
+  "docs": "Shared, dependency-light TypeScript building blocks.\n\n- Utility types: `Brand` (nominal types), `Prettify`, `Maybe`, `Nullable`, `Awaitable`, `ValueOf`, `DeepPartial`, `RequireKeys`, `OptionalKeys`.\n- Common Zod schemas: `emailSchema`, `uuidSchema`, `slugSchema` (kebab-case), `idSchema`, `paginationSchema` (coerced `page`/`pageSize` with bounds).\n- A recursive `Json` type and a `Database` type slot — replace `Database` with your generated DB types (Supabase `gen types`, ORM-inferred, etc.).\n\nRequires `zod` for the schemas; drop `src/schemas.ts` and its re-export if you only want the types.",
+  "files": [
+    {
+      "path": "src/index.ts",
+      "type": "registry:source",
+      "content": "export type { Database, Json } from \"./database\";\nexport * from \"./schemas\";\nexport * from \"./utility\";\n"
+    },
+    {
+      "path": "src/utility.ts",
+      "type": "registry:source",
+      "content": "/** Nominal/branded primitive, e.g. `Brand<string, \"UserId\">`. */\nexport type Brand<T, B extends string> = T & { readonly __brand: B };\n\n/** Flatten an intersection so editor hovers show a clean object. */\nexport type Prettify<T> = { [K in keyof T]: T[K] } & {};\n\nexport type Maybe<T> = T | null | undefined;\nexport type Nullable<T> = T | null;\nexport type Awaitable<T> = T | Promise<T>;\nexport type ValueOf<T> = T[keyof T];\n\n/** Recursively make every property optional. */\nexport type DeepPartial<T> = T extends object ? { [K in keyof T]?: DeepPartial<T[K]> } : T;\n\n/** Make selected keys required. */\nexport type RequireKeys<T, K extends keyof T> = Prettify<T & { [P in K]-?: T[P] }>;\n\n/** Make selected keys optional. */\nexport type OptionalKeys<T, K extends keyof T> = Prettify<Omit<T, K> & { [P in K]?: T[P] }>;\n"
+    },
+    {
+      "path": "src/schemas.ts",
+      "type": "registry:source",
+      "content": "import { z } from \"zod\";\n\n/** Shared Zod schemas reused across apps and packages. */\n\nexport const emailSchema = z.email();\nexport const uuidSchema = z.uuid();\nexport const slugSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, \"must be kebab-case\");\n\nexport const idSchema = z.object({ id: uuidSchema });\nexport type Id = z.infer<typeof idSchema>;\n\nexport const paginationSchema = z.object({\n  page: z.coerce.number().int().min(1).default(1),\n  pageSize: z.coerce.number().int().min(1).max(100).default(20),\n});\nexport type Pagination = z.infer<typeof paginationSchema>;\n"
+    },
+    {
+      "path": "src/database.ts",
+      "type": "registry:source",
+      "content": "/**\n * Project database types. Replace with your generated types — Supabase's\n * `supabase gen types typescript`, an ORM's inferred types, etc. Until a schema\n * is linked this empty placeholder keeps imports resolving.\n */\nexport type Database = Record<string, never>;\n\nexport type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];\n"
+    }
+  ],
+  "checksum": "sha256-55fb040f2280030f52cb3a3768f7f74f178fab3c6c87be3a00f1acfe398fc0ce"
+}

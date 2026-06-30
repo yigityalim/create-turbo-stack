@@ -1,0 +1,13 @@
+{
+  "name": "flags",
+  "type": "registry:package",
+  "environment": "node",
+  "build": "none",
+  "lib": ["ES2022"],
+  "dependencies": [],
+  "exports": ["."],
+  "description": "Typed feature flags with pluggable sources (env, DB, remote) and literal-widening defaults.",
+  "categories": ["foundation", "feature-flags"],
+  "docs": "Typed feature flags with no runtime dependencies.\n\n- `createFlags({ defaults, source? })` → `{ get, isEnabled }`. `defaults` is a typed record of `boolean | string | number`; the optional async `source` overrides them at read time. Literal default types are widened (`false` → `boolean`) so a source can flip them.\n- `get(key)` resolves the source first, then the default; `isEnabled(key)` coerces to boolean.\n- `envSource(prefix = \"FLAG_\")` reads flags from environment variables (`FLAG_BETA=true` → `beta`), parsing `true`/`false`/numbers.\n\nBuild custom sources (DB, edge config, remote) by implementing `FlagSource = (key) => FlagValue | undefined | Promise<...>`.",
+  "files": [{ "path": "src/index.ts", "type": "registry:source" }]
+}

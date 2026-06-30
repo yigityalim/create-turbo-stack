@@ -11,6 +11,11 @@
     "react-email"
   ],
   "registryDependencies": [],
+  "scripts": {
+    "email": "email dev --dir src/emails --port 3000",
+    "email:export": "email export --dir src/emails --outDir exported --pretty",
+    "email:export:text": "email export --dir src/emails --outDir exported --pretty --plainText"
+  },
   "envVars": {},
   "exports": [
     "."

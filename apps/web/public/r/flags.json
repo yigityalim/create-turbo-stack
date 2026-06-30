@@ -1,0 +1,32 @@
+{
+  "$schema": "https://create-turbo-stack.dev/schema/package-registry.json",
+  "name": "flags",
+  "type": "registry:package",
+  "description": "Typed feature flags with pluggable sources (env, DB, remote) and literal-widening defaults.",
+  "dependencies": [],
+  "devDependencies": [],
+  "registryDependencies": [],
+  "scripts": {},
+  "envVars": {},
+  "exports": [
+    "."
+  ],
+  "lib": [
+    "ES2022"
+  ],
+  "environment": "node",
+  "build": "none",
+  "categories": [
+    "foundation",
+    "feature-flags"
+  ],
+  "docs": "Typed feature flags with no runtime dependencies.\n\n- `createFlags({ defaults, source? })` → `{ get, isEnabled }`. `defaults` is a typed record of `boolean | string | number`; the optional async `source` overrides them at read time. Literal default types are widened (`false` → `boolean`) so a source can flip them.\n- `get(key)` resolves the source first, then the default; `isEnabled(key)` coerces to boolean.\n- `envSource(prefix = \"FLAG_\")` reads flags from environment variables (`FLAG_BETA=true` → `beta`), parsing `true`/`false`/numbers.\n\nBuild custom sources (DB, edge config, remote) by implementing `FlagSource = (key) => FlagValue | undefined | Promise<...>`.",
+  "files": [
+    {
+      "path": "src/index.ts",
+      "type": "registry:source",
+      "content": "export type FlagValue = boolean | string | number;\n\n/** Resolve a flag from an external source (DB, env, remote). */\nexport type FlagSource = (key: string) => FlagValue | undefined | Promise<FlagValue | undefined>;\n\nexport interface FlagsOptions<T extends Record<string, FlagValue>> {\n  /** Default values — the source overrides these when it returns a value. */\n  defaults: T;\n  source?: FlagSource;\n}\n\n/** Widen a literal flag value (e.g. `false` -> `boolean`) — a source may override it. */\ntype Widen<V> = V extends boolean\n  ? boolean\n  : V extends number\n    ? number\n    : V extends string\n      ? string\n      : V;\n\nexport interface Flags<T extends Record<string, FlagValue>> {\n  get<K extends keyof T>(key: K): Promise<Widen<T[K]>>;\n  isEnabled(key: keyof T): Promise<boolean>;\n}\n\nexport function createFlags<T extends Record<string, FlagValue>>(\n  options: FlagsOptions<T>,\n): Flags<T> {\n  const get = async <K extends keyof T>(key: K): Promise<Widen<T[K]>> => {\n    const fromSource = options.source ? await options.source(String(key)) : undefined;\n    return (fromSource ?? options.defaults[key]) as Widen<T[K]>;\n  };\n\n  return {\n    get,\n    isEnabled: async (key) => Boolean(await get(key as keyof T)),\n  };\n}\n\n/** A source backed by environment variables, e.g. `FLAG_BETA=true`. */\nexport function envSource(\n  prefix = \"FLAG_\",\n  env: Record<string, string | undefined> = process.env,\n): FlagSource {\n  return (key) => {\n    const raw = env[prefix + key.toUpperCase()];\n    if (raw === undefined) return undefined;\n    if (raw === \"true\") return true;\n    if (raw === \"false\") return false;\n    const asNumber = Number(raw);\n    return Number.isNaN(asNumber) ? raw : asNumber;\n  };\n}\n"
+    }
+  ],
+  "checksum": "sha256-cdd404318ab1697e2e1caae3dd8fc5720bbe44a80b8acc318df04a8b9c5a9848"
+}

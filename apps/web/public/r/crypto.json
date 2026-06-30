@@ -6,6 +6,7 @@
   "dependencies": [],
   "devDependencies": [],
   "registryDependencies": [],
+  "scripts": {},
   "envVars": {},
   "exports": [
     ".",
